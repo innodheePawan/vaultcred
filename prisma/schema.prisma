@@ -1,0 +1,78 @@
+generator client {
+  provider = "node ./node_modules/@prisma/client/generator-build/index.js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String?
+  role          String    @default("USER") // ADMIN, USER, READ_ONLY
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  status        String    @default("INVITED") // ACTIVE, INACTIVE, INVITED
+
+  credentials   Credential[]
+  sharedWithMe  CredentialShare[]
+  auditLogs     AuditLog[]
+  invitesSent   Invite[]
+}
+
+model Credential {
+  id            String    @id @default(uuid())
+  name          String
+  type          String    // PASSWORD, API_KEY, OAUTH, ZIP, SSH, etc.
+  encryptedData String    // Encrypted JSON blob containing the secrets
+  ownerId       String
+  owner         User      @relation(fields: [ownerId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  version       Int       @default(1)
+  folder        String?
+  tags          String?   // Comma separated tags
+
+  shares        CredentialShare[]
+  auditLogs     AuditLog[]
+}
+
+model CredentialShare {
+  id            String      @id @default(uuid())
+  credentialId  String
+  credential    Credential  @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions   String      @default("READ") // READ, EDIT
+  createdAt     DateTime    @default(now())
+  
+  @@unique([credentialId, userId])
+}
+
+model Invite {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  token         String    @unique
+  role          String
+  expiresAt     DateTime
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdAt     DateTime  @default(now())
+  acceptedAt    DateTime?
+}
+
+model AuditLog {
+  id            String    @id @default(uuid())
+  action        String    // CREATE, UPDATE, DELETE, VIEW, DOWNLOAD, LOGIN, INVITE
+  details       String?   // JSON string with diff or details
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+  credentialId  String?
+  credential    Credential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
+  ipAddress     String?
+  timestamp     DateTime  @default(now())
+}
