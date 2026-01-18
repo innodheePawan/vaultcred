@@ -1,8 +1,11 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+    const session = await auth();
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
             <div className="text-center space-y-4">
@@ -13,10 +16,15 @@ export default function LandingPage() {
                     Secure, enterprise-grade credential management for your organization.
                 </p>
                 <div className="mt-10 flex items-center justify-center gap-x-6">
-                    <Link href="/login">
-                        <Button size="lg">Sign In</Button>
-                    </Link>
-
+                    {session?.user ? (
+                        <Link href="/dashboard">
+                            <Button size="lg">Go to Dashboard</Button>
+                        </Link>
+                    ) : (
+                        <Link href="/login">
+                            <Button size="lg">Sign In</Button>
+                        </Link>
+                    )}
                 </div>
             </div>
         </div>

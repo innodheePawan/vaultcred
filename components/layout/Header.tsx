@@ -3,11 +3,19 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Search, Bell, User, LogOut, Settings } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { clsx } from 'clsx';
 
 export function Header() {
+    const { data: session } = useSession();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    const userInitials = session?.user?.name
+        ? session.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+        : session?.user?.email?.substring(0, 2).toUpperCase() || 'U';
+
+    const userName = session?.user?.name || 'User';
+    const userEmail = session?.user?.email || '';
 
     return (
         <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center z-20">
@@ -46,9 +54,9 @@ export function Header() {
                             className="flex items-center gap-2 focus:outline-none"
                         >
                             <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium">
-                                JD
+                                {userInitials}
                             </div>
-                            <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200">John Doe</span>
+                            <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</span>
                             <User className="h-4 w-4 text-gray-400" />
                         </button>
 
@@ -57,7 +65,7 @@ export function Header() {
                             <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 animate-in fade-in zoom-in-95 duration-100">
                                 <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-600">
                                     <p className="text-xs text-gray-500 dark:text-gray-400">Signed in as</p>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">john.doe@company.com</p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userEmail}</p>
                                 </div>
                                 <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
                                     <User className="h-4 w-4" /> Profile
