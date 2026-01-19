@@ -2,7 +2,7 @@ import { getCredentialById } from '@/lib/actions/credentials';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, Folder, Shield, Calendar } from 'lucide-react';
+import { ArrowLeft, Clock, Folder, Shield, Calendar, Layers, Globe } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import CredentialSecrets from '@/components/credentials/CredentialSecrets';
 import DeleteCredentialButton from '@/components/credentials/DeleteButton';
@@ -39,16 +39,16 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
                                 {credential.type}
                             </div>
                             <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                <Folder className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
-                                {credential.folder || 'Root'}
+                                <Layers className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                                {credential.category || 'Uncategorized'}
                             </div>
                             <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
-                                Created {formatDate(credential.createdAt)}
+                                <Globe className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                                {credential.environment || 'N/A'}
                             </div>
                             <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
                                 <Clock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
-                                Updated {formatDate(credential.updatedAt)}
+                                Updated {credential.lastModifiedOn ? formatDate(credential.lastModifiedOn) : 'Never'}
                             </div>
                         </div>
                     </div>
@@ -62,31 +62,31 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
 
                 {/* Content */}
                 <div className="px-6 py-6">
-                    {credential.notes && (
+                    {credential.description && (
                         <div className="mb-8">
-                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Notes</h3>
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Description / Notes</h3>
                             <div className="prose dark:prose-invert text-gray-900 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
-                                {credential.notes}
+                                {credential.description}
                             </div>
                         </div>
                     )}
 
                     <div>
-                        <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Secrets</h3>
-                        <CredentialSecrets type={credential.type} data={credential} />
+                        <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Secrets & Details</h3>
+                        <CredentialSecrets type={credential.type} data={credential.details} />
                     </div>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-600">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Managed by <span className="font-medium text-gray-900 dark:text-white">{credential.owner.name}</span>
-                        {credential.owner.email && ` (${credential.owner.email})`}
+                        Created by <span className="font-medium text-gray-900 dark:text-white">{credential.createdBy.name}</span>
+                        {credential.createdBy.email && ` (${credential.createdBy.email})`} on {formatDate(credential.createdOn)}
                     </div>
 
                     <ShareSettings
                         credentialId={credential.id}
-                        shares={credential.shares}
-                        ownerId={credential.ownerId}
+                        shares={credential.accessList}
+                        ownerId={credential.createdById}
                         currentUserId={(await auth())?.user?.id}
                     />
                 </div>
@@ -94,3 +94,4 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
         </div>
     );
 }
+

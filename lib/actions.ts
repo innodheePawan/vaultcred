@@ -50,100 +50,29 @@ export async function authenticate(
     }
 }
 
-export async function createInvite(formData: FormData) {
-    const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
-        throw new Error('Unauthorized');
-    }
+import { acceptInvite } from '@/lib/iam/invites';
 
-    const email = formData.get('email') as string;
-    const role = formData.get('role') as string || 'USER';
-
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-        return { error: 'User already exists' };
-    }
-
-    const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    try {
-        const invite = await prisma.invite.create({
-            data: {
-                email,
-                role,
-                token,
-                expiresAt,
-                createdById: session.user.id,
-            },
-        });
-
-        // Upsert user as INVITED
-        await prisma.user.upsert({
-            where: { email },
-            update: {},
-            create: {
-                email,
-                role,
-                status: 'INVITED',
-            },
-        });
-
-        await logAudit({
-            action: 'CREATE_INVITE',
-            details: `Invited ${email} as ${role}`
-        });
-
-        return { success: true, token: invite.token };
-    } catch (error) {
-        console.error(error);
-        return { error: 'Failed to create invite' };
-    }
-}
+// ... (authenticate remains same)
 
 export async function registerUser(token: string, formData: FormData) {
-    const invite = await prisma.invite.findUnique({
-        where: { token },
-        include: { createdBy: true }
-    });
-
-    if (!invite) return { error: 'Invalid token' };
-    if (invite.acceptedAt) return { error: 'Invite already used' };
-    if (invite.expiresAt < new Date()) return { error: 'Invite expired' };
-
     const name = formData.get('name') as string;
     const password = formData.get('password') as string;
 
-    if (!password || password.length < 6) return { error: 'Password too weak' };
-
-    const hashedPassword = await hashPassword(password);
+    if (!name || !password || password.length < 6) {
+        return { error: 'Invalid name or password (min 6 chars)' };
+    }
 
     try {
-        await prisma.$transaction([
-            prisma.user.update({
-                where: { email: invite.email },
-                data: {
-                    name,
-                    passwordHash: hashedPassword,
-                    status: 'ACTIVE',
-                    // emailVerified: new Date(), // Field doesn't exist in our schema
-                },
-            }),
-            prisma.invite.update({
-                where: { id: invite.id },
-                data: { acceptedAt: new Date() },
-            }),
-        ]);
+        await acceptInvite(token, name, password);
 
         await logAudit({
             action: 'REGISTER_USER',
-            details: `User registered: ${name} (${invite.email})`
+            details: `User registered via invite token`
         });
 
         return { success: true };
-    } catch (error) {
-        console.error(error);
-        return { error: 'Registration failed' };
+    } catch (error: any) {
+        console.error("Registration failed:", error);
+        return { error: error.message || 'Registration failed' };
     }
 }

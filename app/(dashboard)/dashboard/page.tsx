@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 
 async function getDashboardStats(userId: string) {
   const [credentialCount, sharedCount, recentActivity] = await Promise.all([
-    prisma.credential.count({ where: { ownerId: userId } }),
-    prisma.credentialShare.count({ where: { userId } }),
+    // ...
+    prisma.credentialMaster.count({ where: { createdById: userId } }),
+    prisma.userGroupMapping.count({ where: { userId } }), // Replaced credentialAccess
     prisma.auditLog.findMany({
-      orderBy: { timestamp: 'desc' },
+      orderBy: { performedOn: 'desc' },
       take: 5,
-      include: { user: true, credential: true }
+      include: { performedBy: true, credential: true }
     })
   ]);
 
@@ -67,7 +68,7 @@ export default async function DashboardPage() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Shared with Me</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">My Groups</dt>
                   <dd>
                     <div className="text-lg font-medium text-gray-900 dark:text-white">{stats.sharedCount}</div>
                   </dd>
@@ -77,9 +78,9 @@ export default async function DashboardPage() {
           </div>
           <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
             <div className="text-sm">
-              <Link href="/credentials" className="font-medium text-indigo-600 hover:text-indigo-500">
-                View shared
-              </Link>
+              <div className="font-medium text-gray-500">
+                Access determined by groups
+              </div>
             </div>
           </div>
         </div>
@@ -124,7 +125,7 @@ export default async function DashboardPage() {
             <li key={log.id} className="px-5 py-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-900 dark:text-white">
-                  <span className="font-medium">{log.user?.name || log.user?.email || 'System'}</span>
+                  <span className="font-medium">{log.performedBy?.name || log.performedBy?.email || 'System'}</span>
                   {' '}
                   <span className="text-gray-500 dark:text-gray-400">
                     {log.action.toLowerCase().replace('_', ' ')}
@@ -134,11 +135,11 @@ export default async function DashboardPage() {
                 </div>
                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                   <Clock className="w-4 h-4 mr-1" />
-                  {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(log.performedOn).toLocaleDateString()} {new Date(log.performedOn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {log.details}
+                {log.details || log.action}
               </div>
             </li>
           ))}

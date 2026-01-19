@@ -18,17 +18,22 @@ export const metadata: Metadata = {
   description: "Secure, enterprise-grade credential management",
 };
 
-export default function RootLayout({
+import { auth } from "@/lib/auth";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" className="h-full">
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full flex flex-col`}
       >
-        <Providers>
+        <Providers session={session}>
           {children}
         </Providers>
       </body>

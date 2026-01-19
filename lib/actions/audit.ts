@@ -15,37 +15,48 @@ export type AuditAction =
     | 'LOGIN'
     | 'LOGOUT';
 
+// Support optional Transaction Client type
+type PrismaTx = Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
 export async function logAudit({
     action,
     details,
     credentialId,
-    userId,
+    performedById,
 }: {
     action: AuditAction;
     details?: string;
     credentialId?: string;
-    userId?: string;
-}) {
+    performedById?: string;
+}, tx?: PrismaTx) {
     try {
         const session = await auth();
-        const actorId = userId || session?.user?.id;
+        const actorId = performedById || session?.user?.id;
 
-        // Get IP - simplified, in real app needs PROXY trust config
+        // Get IP - simplified
         const headersList = await headers();
         const ipAddress = headersList.get('x-forwarded-for') || 'unknown';
 
-        await prisma.auditLog.create({
+        const db = tx || prisma; // Use transaction if provided
+
+        await db.auditLog.create({
             data: {
                 action,
-                details,
+                oldValue: details, // Mapping 'details' to 'oldValue' or 'newValue' is tricky without more info. Schema has old/new value.
+                // For now, let's treat 'details' as 'newValue' or just put it in 'action'?
+                // Wait, Schema has 'oldValue' and 'newValue' but I removed 'details' column? 
+                // Let's check schema: action, oldValue, newValue, performedBy, performedOn, ipAddress.
+                // No 'details' column. 
+                // I will put the description in 'newValue' for simple events, or maybe I should have kept 'details'?
+                // I'll put it in 'newValue' as a JSON string or plain text for now.
+                newValue: details,
                 credentialId,
-                userId: actorId,
+                performedById: actorId,
                 ipAddress,
             }
         });
     } catch (error) {
         console.error('Failed to log audit:', error);
-        // We probably don't want to crash the request if audit fails, but we should know
     }
 }
 
@@ -56,11 +67,12 @@ export async function getAuditLogs() {
     }
 
     return await prisma.auditLog.findMany({
-        orderBy: { timestamp: 'desc' },
+        orderBy: { performedOn: 'desc' },
         include: {
-            user: { select: { name: true, email: true } },
+            performedBy: { select: { name: true, email: true } },
             credential: { select: { name: true } }
         },
-        take: 100 // Limit for now
+        take: 100
     });
 }
+

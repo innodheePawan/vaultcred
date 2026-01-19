@@ -2,15 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ChevronDown, ChevronRight, LayoutDashboard, Key, Users, Settings, Shield, FileText } from 'lucide-react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { ChevronDown, ChevronRight, LayoutDashboard, Key, Users, Settings, Shield, FileText, Lock, Terminal, Folder } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useSession } from 'next-auth/react';
 
 type MenuItem = {
     title: string;
     href?: string;
     icon?: React.ReactNode;
     children?: MenuItem[];
+    param?: string; // Add param field to track type
 };
 
 const MENU_ITEMS: MenuItem[] = [
@@ -24,17 +26,19 @@ const MENU_ITEMS: MenuItem[] = [
         icon: <Key className="w-5 h-5" />,
         children: [
             { title: 'All Credentials', href: '/credentials' },
-            { title: 'Passwords', href: '/credentials/passwords' },
-            { title: 'API Keys', href: '/credentials/api-keys' },
-            { title: 'Certificates', href: '/credentials/certificates' },
+            { title: 'Passwords', href: '/credentials?type=PASSWORD', param: 'PASSWORD' },
+            { title: 'API Keys', href: '/credentials?type=API_OAUTH', param: 'API_OAUTH' },
+            { title: 'Certificates', href: '/credentials?type=KEY_CERT', param: 'KEY_CERT' },
+            { title: 'Tokens', href: '/credentials?type=TOKEN', param: 'TOKEN' },
+            { title: 'Secure Notes', href: '/credentials?type=SECURE_NOTE', param: 'SECURE_NOTE' },
+            { title: 'Files', href: '/credentials?type=FILE', param: 'FILE' },
         ],
     },
     {
         title: 'Admin',
         icon: <Shield className="w-5 h-5" />,
         children: [
-            { title: 'Users & Roles', href: '/admin/users' },
-            { title: 'Invite Users', href: '/admin/invites' },
+            { title: 'Users & Groups', href: '/admin/users' },
             { title: 'Audit Logs', href: '/admin/audit' },
         ],
     },
@@ -45,13 +49,11 @@ const MENU_ITEMS: MenuItem[] = [
     },
 ];
 
-import { useSession } from 'next-auth/react';
-
-// ...
-
 export function Sidebar({ className }: { className?: string }) {
     const [expandedItems, setExpandedItems] = useState<string[]>(['Credentials', 'Admin']);
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const currentType = searchParams.get('type');
     const { data: session } = useSession();
 
     const filteredItems = MENU_ITEMS.filter(item => {
@@ -65,6 +67,30 @@ export function Sidebar({ className }: { className?: string }) {
         setExpandedItems((prev) =>
             prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
         );
+    };
+
+    const isActive = (item: MenuItem) => {
+        if (item.href === pathname) {
+            // If it's the exact path match (e.g. /dashboard)
+            // But for credentials, we need to check params too
+            if (pathname === '/credentials') {
+                if (item.param) {
+                    return currentType === item.param;
+                } else {
+                    return !currentType; // "All Credentials" matches only when no type param
+                }
+            }
+            return true;
+        }
+        // Handle query param matches for full hrefs
+        if (item.href?.includes('?')) {
+            const [path, query] = item.href.split('?');
+            const itemParams = new URLSearchParams(query);
+            const itemType = itemParams.get('type');
+            return pathname === path && currentType === itemType;
+        }
+
+        return false;
     };
 
     return (
@@ -97,7 +123,7 @@ export function Sidebar({ className }: { className?: string }) {
                                                     href={child.href || '#'}
                                                     className={clsx(
                                                         "block px-3 py-2 text-sm rounded-md transition-colors",
-                                                        pathname === child.href
+                                                        isActive(child)
                                                             ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold"
                                                             : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"
                                                     )}
@@ -113,7 +139,7 @@ export function Sidebar({ className }: { className?: string }) {
                                     href={item.href || '#'}
                                     className={clsx(
                                         "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                                        pathname === item.href
+                                        isActive(item)
                                             ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
                                             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                                     )}

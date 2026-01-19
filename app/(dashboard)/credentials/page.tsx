@@ -1,24 +1,82 @@
 import { getCredentials } from '@/lib/actions/credentials';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, Folder, Key, Lock, Terminal } from 'lucide-react';
-import { formatDate } from '@/lib/utils'; // I'll need a date formatter
+import { Plus, Folder, Key, Lock, Terminal, FileText, ArrowUp, ArrowDown } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
+import CredentialFilters from '@/components/credentials/CredentialFilters';
 
 function getIconForType(type: string) {
     switch (type) {
         case 'PASSWORD': return <Lock className="w-4 h-4" />;
-        case 'API_KEY': return <Key className="w-4 h-4" />;
-        case 'SSH': return <Terminal className="w-4 h-4" />;
-        default: return <Folder className="w-4 h-4" />; // Generic
+        case 'API_OAUTH': return <Key className="w-4 h-4" />;
+        case 'KEY_CERT': return <FileText className="w-4 h-4" />;
+        case 'TOKEN': return <Terminal className="w-4 h-4" />;
+        case 'FILE': return <Folder className="w-4 h-4" />;
+        case 'SECURE_NOTE': return <FileText className="w-4 h-4" />;
+        default: return <Folder className="w-4 h-4" />;
     }
 }
 
-import CredentialSearch from '@/components/credentials/CredentialSearch';
+type SortOrder = 'asc' | 'desc';
 
-export default async function CredentialsPage(props: { searchParams: Promise<{ q?: string }> }) {
+function SortableHeader({
+    column,
+    label,
+    currentSort,
+    currentOrder,
+    searchParams
+}: {
+    column: string,
+    label: string,
+    currentSort?: string,
+    currentOrder?: string,
+    searchParams: any
+}) {
+    const isSorted = currentSort === column;
+    const nextOrder = isSorted && currentOrder === 'asc' ? 'desc' : 'asc';
+
+    // Construct URL Params manually to keep other filters
+    const params = new URLSearchParams(searchParams);
+    params.set('sort', column);
+    params.set('order', nextOrder);
+
+    return (
+        <Link href={`/credentials?${params.toString()}`} className="group flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
+            {label}
+            <span className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200">
+                {isSorted ? (
+                    currentOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                ) : (
+                    <ArrowDown className="w-3 h-3 opacity-0 group-hover:opacity-50" />
+                )}
+            </span>
+        </Link>
+    );
+}
+
+export default async function CredentialsPage(props: {
+    searchParams: Promise<{
+        q?: string,
+        type?: string,
+        category?: string,
+        environment?: string,
+        sort?: string,
+        order?: 'asc' | 'desc'
+    }>
+}) {
     const searchParams = await props.searchParams;
-    const query = searchParams?.q;
-    const credentials = await getCredentials(query);
+    const { q, type, category, environment, sort, order } = searchParams;
+
+    const credentials = await getCredentials({
+        query: q,
+        type,
+        category,
+        environment,
+        sort,
+        order
+    });
+
+    const createLink = type ? `/credentials/create?type=${type}` : '/credentials/create';
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4">
@@ -31,40 +89,44 @@ export default async function CredentialsPage(props: { searchParams: Promise<{ q
                         Manage your secure passwords, keys, and tokens.
                     </p>
                 </div>
-                <div className="flex gap-4 items-center">
-                    <CredentialSearch />
-                    <Link href="/credentials/create">
-                        <Button>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add New
-                        </Button>
-                    </Link>
-                </div>
+                <Link href={createLink}>
+                    <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add New
+                    </Button>
+                </Link>
             </div>
+
+            <CredentialFilters />
 
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
                 {credentials.length === 0 ? (
                     <div className="p-12 text-center text-gray-500 dark:text-gray-400">
-                        <p>No credentials found.</p>
-                        <Link href="/credentials/create" className="text-indigo-600 hover:underline mt-2 inline-block">
-                            Create your first credential
-                        </Link>
+                        <p>No credentials found matching your filters.</p>
+                        {(q || type || category || environment) && (
+                            <Link href="/credentials" className="text-indigo-600 hover:underline mt-2 inline-block">
+                                Clear all filters
+                            </Link>
+                        )}
                     </div>
                 ) : (
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Name
+                                    <SortableHeader column="name" label="Name" currentSort={sort} currentOrder={order} searchParams={searchParams} />
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Type
+                                    <SortableHeader column="type" label="Type" currentSort={sort} currentOrder={order} searchParams={searchParams} />
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Folder
+                                    <SortableHeader column="category" label="Category" currentSort={sort} currentOrder={order} searchParams={searchParams} />
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Last Updated
+                                    <SortableHeader column="environment" label="Env" currentSort={sort} currentOrder={order} searchParams={searchParams} />
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <SortableHeader column="lastModifiedOn" label="Last Modified" currentSort={sort} currentOrder={order} searchParams={searchParams} />
                                 </th>
                                 <th scope="col" className="relative px-6 py-3">
                                     <span className="sr-only">Access</span>
@@ -85,20 +147,27 @@ export default async function CredentialsPage(props: { searchParams: Promise<{ q
                                                         {cred.name}
                                                     </Link>
                                                 </div>
-                                                {/* notes are encrypted, can't show in list view */}
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                                             {cred.type}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {cred.folder || '-'}
+                                        {cred.category || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cred.environment === 'Prod' ? 'bg-red-100 text-red-800' :
+                                            cred.environment === 'QA' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }`}>
+                                            {cred.environment || '-'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {formatDate(cred.updatedAt)}
+                                        {cred.lastModifiedOn ? formatDate(cred.lastModifiedOn) : '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <Link href={`/credentials/${cred.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
@@ -114,3 +183,4 @@ export default async function CredentialsPage(props: { searchParams: Promise<{ q
         </div>
     );
 }
+

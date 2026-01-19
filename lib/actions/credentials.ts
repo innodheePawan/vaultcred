@@ -6,137 +6,346 @@ import { encrypt, decrypt } from '@/lib/crypto';
 import { logAudit } from '@/lib/actions/audit';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { writeFile, mkdir, readFile } from 'fs/promises';
+import { join } from 'path';
 
-const CredentialSchema = z.object({
+// ----------------------------------------------------------------------
+// Zod Schemas
+// ----------------------------------------------------------------------
+
+const BaseSchema = z.object({
     name: z.string().min(1, 'Name is required'),
-    type: z.enum(['PASSWORD', 'API_KEY', 'SSH', 'OTHER']),
-    username: z.string().optional(),
-    password: z.string().optional(),
-    key: z.string().optional(),
-    notes: z.string().optional(),
+    category: z.enum(['Application', 'Infra', 'Integration']).optional(),
+    environment: z.enum(['Dev', 'QA', 'Prod']).optional(),
+    description: z.string().optional(),
     folder: z.string().optional(),
+    tags: z.string().optional(),
 });
 
-export type CredentialData = {
-    username?: string;
-    password?: string;
-    key?: string;
-    notes?: string;
-    [key: string]: any;
-};
+const PasswordSchema = BaseSchema.extend({
+    type: z.literal('PASSWORD'),
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(1, 'Password is required'),
+    host: z.string().optional(),
+    port: z.coerce.number().optional(),
+});
+
+const ApiKeySchema = BaseSchema.extend({
+    type: z.literal('API_OAUTH'),
+    clientId: z.string().optional(),
+    clientSecret: z.string().optional(),
+    apiKey: z.string().optional(),
+    tokenEndpoint: z.string().url().optional().or(z.literal('')),
+    authEndpoint: z.string().url().optional().or(z.literal('')),
+    scopes: z.string().optional(),
+});
+
+const KeyCertSchema = BaseSchema.extend({
+    type: z.literal('KEY_CERT'),
+    keyType: z.enum(['SSL', 'SSH', 'PGP', 'TLS', 'SIGNING']),
+    keyFormat: z.enum(['PEM', 'DER', 'PFX']).optional(),
+    publicKey: z.string().optional(),
+    publicKeyFileName: z.string().optional(),
+    privateKey: z.string().optional(),
+    privateKeyFileName: z.string().optional(),
+    passphrase: z.string().optional(),
+    expiryDate: z.string().optional(),
+});
+
+const TokenSchema = BaseSchema.extend({
+    type: z.literal('TOKEN'),
+    token: z.string().min(1, "Token is required"),
+    tokenType: z.enum(['Bearer', 'JWT']).optional(),
+    issuer: z.string().optional(),
+    expiryDate: z.string().optional(),
+});
+
+const NoteSchema = BaseSchema.extend({
+    type: z.literal('SECURE_NOTE'),
+    note: z.string().min(1, "Note content is required"),
+});
+
+const FileSchema = BaseSchema.extend({
+    type: z.literal('FILE'),
+    fileName: z.string().min(1, "File name is required"),
+    fileContent: z.string().min(1, "File content is required"), // For now, passing content string. Later multipart.
+    fileType: z.string().optional(),
+});
+
+// Union Schema for Validating Form Data
+const CredentialSchema = z.discriminatedUnion('type', [
+    PasswordSchema,
+    ApiKeySchema,
+    KeyCertSchema,
+    TokenSchema,
+    NoteSchema,
+    FileSchema,
+]).superRefine((data, ctx) => {
+    if (data.type === 'API_OAUTH') {
+        if (!data.apiKey && (!data.clientId || !data.clientSecret)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Either API Key or Client ID/Secret must be provided",
+                path: ["apiKey"]
+            });
+        }
+    }
+});
+
+// ----------------------------------------------------------------------
+// Actions
+// ----------------------------------------------------------------------
 
 export async function createCredential(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user) {
-        return { error: 'Unauthorized' };
+    if (!session?.user) return { error: 'Unauthorized' };
+
+    const rawData = Object.fromEntries(formData.entries());
+    const validation = CredentialSchema.safeParse(rawData);
+
+    if (!validation.success) {
+        console.error("Validation Error:", validation.error.format());
+        return { error: 'Validation Failed', details: validation.error.flatten().fieldErrors };
     }
 
-    const rawData = {
-        name: formData.get('name') as string,
-        type: formData.get('type') as string,
-        username: formData.get('username') as string,
-        password: formData.get('password') as string,
-        key: formData.get('key') as string,
-        notes: formData.get('notes') as string,
-        folder: formData.get('folder') as string,
-    };
-
-    // Basic validation (can be enhanced)
-    if (!rawData.name || !rawData.type) {
-        return { error: 'Name and Type are required' };
-    }
-
-    // Construct the data object to be encrypted
-    const secretData: CredentialData = {};
-    if (rawData.username) secretData.username = rawData.username;
-    if (rawData.password) secretData.password = rawData.password;
-    if (rawData.key) secretData.key = rawData.key;
-    if (rawData.notes) secretData.notes = rawData.notes;
+    const data = validation.data;
 
     try {
-        const encryptedData = encrypt(JSON.stringify(secretData));
+        await prisma.$transaction(async (tx) => {
+            const master = await tx.credentialMaster.create({
+                data: {
+                    name: data.name,
+                    type: data.type,
+                    category: data.category || null,
+                    environment: data.environment || null,
+                    description: data.description || null,
+                    createdById: session.user.id!,
+                    lastModifiedById: session.user.id!,
+                }
+            });
 
-        const newCredential = await prisma.credential.create({
-            data: {
-                name: rawData.name,
-                type: rawData.type,
-                encryptedData,
-                ownerId: session.user.id,
-                folder: rawData.folder || null,
-            },
-        });
+            if (data.type === 'PASSWORD') {
+                await tx.credPassword.create({
+                    data: {
+                        credentialId: master.id,
+                        username: data.username,
+                        passwordEncrypted: encrypt(data.password),
+                        host: data.host || null,
+                        port: data.port || null,
+                    }
+                });
+            } else if (data.type === 'API_OAUTH') {
+                await tx.credApiOAuth.create({
+                    data: {
+                        credentialId: master.id,
+                        clientId: data.clientId || null,
+                        clientSecretEnc: data.clientSecret ? encrypt(data.clientSecret) : null,
+                        apiKeyEncrypted: data.apiKey ? encrypt(data.apiKey) : null,
+                        tokenEndpoint: data.tokenEndpoint || null,
+                        authEndpoint: data.authEndpoint || null,
+                        scopes: data.scopes || null,
+                    }
+                });
+            } else if (data.type === 'KEY_CERT') {
+                await tx.credKeyCert.create({
+                    data: {
+                        credentialId: master.id,
+                        keyType: data.keyType,
+                        keyFormat: data.keyFormat || null,
+                        publicKey: data.publicKey || null,
+                        publicKeyFileName: data.publicKeyFileName || null,
+                        privateKeyEnc: data.privateKey ? encrypt(data.privateKey) : null,
+                        privateKeyFileName: data.privateKeyFileName || null,
+                        passphraseEnc: data.passphrase ? encrypt(data.passphrase) : null,
+                        validTo: data.expiryDate ? new Date(data.expiryDate) : null,
+                    }
+                });
+            } else if (data.type === 'TOKEN') {
+                await tx.credToken.create({
+                    data: {
+                        credentialId: master.id,
+                        tokenEncrypted: encrypt(data.token),
+                        tokenType: data.tokenType || null,
+                        issuer: data.issuer || null,
+                        expiresAt: data.expiryDate ? new Date(data.expiryDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                    }
+                });
+            } else if (data.type === 'SECURE_NOTE') {
+                await tx.credSecureNote.create({
+                    data: {
+                        credentialId: master.id,
+                        noteEncrypted: encrypt(data.note)
+                    }
+                });
+            } else if (data.type === 'FILE') {
+                // Handling File: Write to disk (simulated secure storage)
+                const uploadDir = join(process.cwd(), 'secure_uploads');
+                await mkdir(uploadDir, { recursive: true });
+                const filePath = join(uploadDir, `${master.id}_${data.fileName}`);
 
-        await logAudit({
-            action: 'CREATE_CREDENTIAL',
-            credentialId: newCredential.id,
-            details: `Created credential '${newCredential.name}' of type ${newCredential.type}`
+                // In a real app we'd encrypt the file content itself before writing
+                // For this demo, we write plaintext or base64 to disk, but 'filePath' is what we store
+                await writeFile(filePath, data.fileContent);
+
+                await tx.credFile.create({
+                    data: {
+                        credentialId: master.id,
+                        fileName: data.fileName,
+                        filePath: filePath,
+                        fileType: data.fileType || 'unknown',
+                    }
+                });
+            }
+
+            await logAudit({
+                action: 'CREATE_CREDENTIAL',
+                credentialId: master.id,
+                details: `Created credential '${master.name}' of type ${master.type}`,
+                performedById: session.user.id
+            }, tx);
         });
 
         revalidatePath('/credentials');
-        return { success: true };
+        return { success: true, message: 'Credential created successfully!' };
+
     } catch (error) {
-        console.error('Failed to create credential:', error);
-        return { error: 'Failed to create credential' };
+        console.error("Failed to create credential:", error);
+        return { error: 'Failed to create credential. ' + (error as Error).message };
     }
 }
 
-export async function getCredentials(query?: string) {
+import { getUserAccessContext } from '@/lib/iam/permissions';
+
+export async function getCredentials(params?: {
+    query?: string;
+    type?: string;
+    category?: string;
+    environment?: string;
+    sort?: string;
+    order?: 'asc' | 'desc';
+}) {
     const session = await auth();
     if (!session?.user) return [];
 
-    const credentials = await prisma.credential.findMany({
-        where: {
-            AND: [
-                query ? {
-                    OR: [
-                        { name: { contains: query } },
-                        // { type: { contains: query } } // Type is enum, might crash if query not match
-                    ]
-                } : {},
-                {
-                    OR: [
-                        { ownerId: session.user.id },
-                        {
-                            shares: {
-                                some: {
-                                    userId: session.user.id,
-                                },
-                            },
-                        },
-                    ],
-                }
-            ]
-        },
-        orderBy: { updatedAt: 'desc' },
-        include: {
-            owner: { select: { name: true, email: true } }
-        }
-    });
+    const { query, type: typeFilter, category, environment, sort, order } = params || {};
 
-    return credentials;
+    // 1. Get User IAM Context
+    const accessContext = await getUserAccessContext(session.user.id!);
+
+    // 2. Build Permission Filters
+    // If Admin, no extra filters needed (except what they requested).
+    // If User, we must restrict to allowed Scope.
+
+    // We start with the user's requested filters, but we must AND them with the Allowed Scope.
+    // OR, we verify if the requested filter is allowed, and if so, use it.
+    // If no specific filter requested, we return the UNION of all allowed scopes.
+
+    let permissionWhere: any = {};
+
+    if (!accessContext.isAdmin) {
+        // Build OR array for permissions
+        const orConditions: any[] = [];
+        const { permissions } = accessContext;
+
+        // Check for Global Access (* / *)
+        if (permissions['*']?.['*']) {
+            // Full access, do nothing (permissionWhere remains empty)
+        } else {
+            // Iterate all rules
+            // We need to convert the Map structure to Prisma OR conditions
+            // This is slightly complex because we need to handle wildcards.
+
+            // Optimization: If we have many rules, this could get large.
+            // But typically a user has few groups.
+
+            Object.keys(permissions).forEach(cat => {
+                Object.keys(permissions[cat]).forEach(env => {
+                    // We consider 'READ', 'EDIT', 'CREATE', 'ADMIN' as visible.
+                    const perms = permissions[cat][env];
+                    if (perms.has('READ') || perms.has('EDIT') || perms.has('CREATE') || perms.has('ADMIN')) {
+                        const condition: any = {};
+                        if (cat !== '*') condition.category = cat;
+                        if (env !== '*') condition.environment = env;
+                        orConditions.push(condition);
+                    }
+                });
+            });
+
+            if (orConditions.length === 0) {
+                return []; // No access
+            }
+
+            permissionWhere = { OR: orConditions };
+        }
+    }
+
+    const where: any = {
+        AND: [
+            permissionWhere, // Enforce IAM Access
+            // { createdById: session.user.id } // OLD CHECK REMOVED
+        ]
+    };
+
+    if (query) {
+        where.AND.push({
+            OR: [
+                { name: { contains: query } },
+                { description: { contains: query } },
+                { detailsPassword: { username: { contains: query } } },
+                { detailsKeyCert: { publicKeyFileName: { contains: query } } },
+                { detailsFile: { fileName: { contains: query } } }
+            ]
+        });
+    }
+
+    if (typeFilter) where.AND.push({ type: typeFilter });
+    if (category) where.AND.push({ category });
+    if (environment) where.AND.push({ environment });
+
+    const orderBy: any = {};
+    if (sort) {
+        orderBy[sort] = order || 'asc';
+    } else {
+        orderBy.lastModifiedOn = 'desc';
+    }
+
+    try {
+        const credentials = await prisma.credentialMaster.findMany({
+            where,
+            orderBy,
+            include: {
+                createdBy: { select: { name: true, email: true } }
+            }
+        });
+        return credentials;
+    } catch (error) {
+        console.error("Error fetching credentials:", error);
+        return [];
+    }
 }
 
 export async function getCredentialById(id: string) {
     const session = await auth();
     if (!session?.user) return null;
 
-    const credential = await prisma.credential.findUnique({
+    const credential = await prisma.credentialMaster.findUnique({
         where: { id },
         include: {
-            owner: { select: { id: true, name: true, email: true } },
-            shares: {
-                include: {
-                    user: { select: { id: true, name: true, email: true } }
-                }
-            }
+            createdBy: { select: { id: true, name: true, email: true } },
+            accessList: { include: { user: { select: { id: true, name: true, email: true } } } },
+            detailsPassword: true,
+            detailsApi: true,
+            detailsKeyCert: true,
+            detailsToken: true,
+            detailsFile: true,
+            detailsNote: true,
         }
     });
 
     if (!credential) return null;
 
-    // Check permissions
-    const isOwner = credential.ownerId === session.user.id;
-    const isShared = credential.shares.some((s: any) => s.userId === session.user.id);
+    const isOwner = credential.createdById === session.user.id;
+    const isShared = credential.accessList.some(s => s.userId === session.user.id);
     const isAdmin = session.user.role === 'ADMIN';
 
     if (!isOwner && !isShared && !isAdmin) return null;
@@ -144,21 +353,74 @@ export async function getCredentialById(id: string) {
     await logAudit({
         action: 'VIEW_CREDENTIAL',
         credentialId: credential.id,
-        details: `Viewed credential '${credential.name}'`
+        details: `Viewed credential '${credential.name}'`,
+        performedById: session.user.id
     });
 
-    // Decrypt data
-    let decryptedData = {};
-    try {
-        decryptedData = JSON.parse(decrypt(credential.encryptedData));
-    } catch (e) {
-        console.error("Failed to decrypt", e);
-        decryptedData = { error: "Decryption failed" };
+    let details: any = {};
+
+    if (credential.type === 'PASSWORD' && credential.detailsPassword) {
+        const d = credential.detailsPassword;
+        details = {
+            username: d.username,
+            password: decrypt(d.passwordEncrypted),
+            host: d.host,
+            port: d.port
+        };
+    } else if (credential.type === 'API_OAUTH' && credential.detailsApi) {
+        const d = credential.detailsApi;
+        details = {
+            clientId: d.clientId,
+            clientSecret: d.clientSecretEnc ? decrypt(d.clientSecretEnc) : undefined,
+            apiKey: d.apiKeyEncrypted ? decrypt(d.apiKeyEncrypted) : undefined,
+            tokenEndpoint: d.tokenEndpoint,
+            authEndpoint: d.authEndpoint,
+            scopes: d.scopes
+        };
+    } else if (credential.type === 'KEY_CERT' && credential.detailsKeyCert) {
+        const d = credential.detailsKeyCert;
+        details = {
+            keyType: d.keyType,
+            keyFormat: d.keyFormat,
+            publicKey: d.publicKey,
+            publicKeyFileName: d.publicKeyFileName,
+            privateKey: d.privateKeyEnc ? decrypt(d.privateKeyEnc) : undefined,
+            privateKeyFileName: d.privateKeyFileName,
+            passphrase: d.passphraseEnc ? decrypt(d.passphraseEnc) : undefined,
+            expiryDate: d.validTo
+        };
+    } else if (credential.type === 'TOKEN' && credential.detailsToken) {
+        const d = credential.detailsToken;
+        details = {
+            token: decrypt(d.tokenEncrypted),
+            tokenType: d.tokenType,
+            issuer: d.issuer,
+            expiryDate: d.expiresAt
+        };
+    } else if (credential.type === 'SECURE_NOTE' && credential.detailsNote) {
+        const d = credential.detailsNote;
+        details = {
+            note: decrypt(d.noteEncrypted)
+        };
+    } else if (credential.type === 'FILE' && credential.detailsFile) {
+        const d = credential.detailsFile;
+        let content = '';
+        try {
+            content = await readFile(d.filePath, 'utf-8');
+        } catch (e) {
+            content = 'Error reading file content';
+        }
+        details = {
+            fileName: d.fileName,
+            filePath: d.filePath,
+            fileType: d.fileType,
+            fileContent: content
+        };
     }
 
     return {
         ...credential,
-        ...decryptedData as CredentialData
+        details
     };
 }
 
@@ -166,106 +428,26 @@ export async function deleteCredential(id: string) {
     const session = await auth();
     if (!session?.user) return { error: 'Unauthorized' };
 
-    try {
-        const credential = await prisma.credential.findUnique({ where: { id } });
-        if (!credential) return { error: 'Not found' };
+    const credential = await prisma.credentialMaster.findUnique({ where: { id } });
+    if (!credential) return { error: 'Not found' };
 
-        if (credential.ownerId !== session.user.id && session.user.role !== 'ADMIN') {
-            return { error: 'Unauthorized' };
-        }
-
-        await prisma.credential.delete({ where: { id } });
-
-        await logAudit({
-            action: 'DELETE_CREDENTIAL',
-            credentialId: id,
-            details: `Deleted credential '${credential.name}'`
-        });
-        revalidatePath('/credentials');
-        return { success: true };
-    } catch (error) {
-        console.error("Failed to delete", error);
-
-        return { error: 'Failed to delete' };
+    if (credential.createdById !== session.user.id && session.user.role !== 'ADMIN') {
+        return { error: 'Unauthorized' };
     }
+
+    await prisma.credentialMaster.delete({ where: { id } });
+
+    await logAudit({
+        action: 'DELETE_CREDENTIAL',
+        credentialId: id,
+        details: `Deleted credential '${credential.name}'`,
+        performedById: session.user.id
+    });
+
+    revalidatePath('/credentials');
+    return { success: true };
 }
 
 export async function updateCredential(id: string, prevState: any, formData: FormData) {
-    const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
-
-    const rawData = {
-        name: formData.get('name') as string,
-        username: formData.get('username') as string,
-        password: formData.get('password') as string,
-        key: formData.get('key') as string,
-        notes: formData.get('notes') as string,
-    };
-
-    if (!rawData.name) {
-        return { error: 'Name is required' };
-    }
-
-    try {
-        const credential = await prisma.credential.findUnique({ where: { id } });
-        if (!credential) return { error: 'Not found' };
-
-        if (credential.ownerId !== session.user.id && session.user.role !== 'ADMIN') {
-            return { error: 'Unauthorized' };
-        }
-
-        // Decrypt existing to merge
-        let secretData: CredentialData = {};
-        try {
-            secretData = JSON.parse(decrypt(credential.encryptedData));
-        } catch (e) {
-            console.error("Decryption failed during update", e);
-            // If decryption fails, we might just overwrite with new data if provided, or error?
-            // Safer to error, but if they want to reset it... let's assume we proceed with empty if failed.
-        }
-
-        // Update logic: if field is provided (non-empty) or if it's explicitly cleared? 
-        // Form sends empty string for untouched password/key. 
-        // We will assume empty string means "no change" for secrets.
-        // For non-secrets (username, notes), empty string might mean "delete content".
-
-        // For simplicity:
-        // Username/Notes: Always update (allow clear).
-        // Password/Key: Update only if not empty.
-
-        if (rawData.username !== null) secretData.username = rawData.username;
-        if (rawData.notes !== null) secretData.notes = rawData.notes;
-
-        if (rawData.password && rawData.password.trim() !== '') {
-            secretData.password = rawData.password;
-        }
-        if (rawData.key && rawData.key.trim() !== '') {
-            secretData.key = rawData.key;
-        }
-
-        const encryptedData = encrypt(JSON.stringify(secretData));
-
-        await prisma.credential.update({
-            where: { id },
-            data: {
-                name: rawData.name,
-                encryptedData,
-                updatedAt: new Date(),
-            }
-        });
-
-        await logAudit({
-            action: 'UPDATE_CREDENTIAL',
-            credentialId: id,
-            details: `Updated credential '${rawData.name}'`
-        });
-
-        revalidatePath('/credentials');
-        revalidatePath(`/credentials/${id}`);
-        return { success: true };
-
-    } catch (error) {
-        console.error("Failed to update", error);
-        return { error: 'Failed to update credential' };
-    }
+    return { error: "Update not implemented yet" };
 }

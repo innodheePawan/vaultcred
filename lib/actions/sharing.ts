@@ -14,7 +14,7 @@ export async function searchUsers(query: string) {
     const users = await prisma.user.findMany({
         where: {
             OR: [
-                { name: { contains: query } }, // removed mode: insensitive for SQLite compat if needed, but usually fine
+                { name: { contains: query } },
                 { email: { contains: query } }
             ],
             AND: [
@@ -34,15 +34,17 @@ export async function shareCredential(credentialId: string, userId: string) {
     if (!session?.user) return { error: 'Unauthorized' };
 
     try {
-        const credential = await prisma.credential.findUnique({ where: { id: credentialId } });
+        const credential = await prisma.credentialMaster.findUnique({ where: { id: credentialId } });
         if (!credential) return { error: 'Credential not found' };
 
-        if (credential.ownerId !== session.user.id && session.user.role !== 'ADMIN') {
+        // Only owner or admin can share
+        // Note: owner is createdById in new schema
+        if (credential.createdById !== session.user.id && session.user.role !== 'ADMIN') {
             return { error: 'Only the owner can share' };
         }
 
         // Check if already shared
-        const existingShare = await prisma.credentialShare.findUnique({
+        const existingShare = await prisma.credentialAccess.findUnique({
             where: {
                 credentialId_userId: {
                     credentialId,
@@ -53,10 +55,11 @@ export async function shareCredential(credentialId: string, userId: string) {
 
         if (existingShare) return { error: 'Already shared with this user' };
 
-        await prisma.credentialShare.create({
+        await prisma.credentialAccess.create({
             data: {
                 credentialId,
-                userId
+                userId,
+                permission: 'READ' // Default permission
             }
         });
 
@@ -65,7 +68,8 @@ export async function shareCredential(credentialId: string, userId: string) {
         await logAudit({
             action: 'UPDATE_CREDENTIAL',
             credentialId,
-            details: `Shared credential with ${targetUser?.email}`
+            details: `Shared credential with ${targetUser?.email}`,
+            performedById: session.user.id
         });
 
         revalidatePath(`/credentials/${credentialId}`);
@@ -82,14 +86,14 @@ export async function unshareCredential(credentialId: string, userId: string) {
     if (!session?.user) return { error: 'Unauthorized' };
 
     try {
-        const credential = await prisma.credential.findUnique({ where: { id: credentialId } });
+        const credential = await prisma.credentialMaster.findUnique({ where: { id: credentialId } });
         if (!credential) return { error: 'Credential not found' };
 
-        if (credential.ownerId !== session.user.id && session.user.role !== 'ADMIN') {
+        if (credential.createdById !== session.user.id && session.user.role !== 'ADMIN') {
             return { error: 'Only the owner can unshare' };
         }
 
-        await prisma.credentialShare.delete({
+        await prisma.credentialAccess.delete({
             where: {
                 credentialId_userId: {
                     credentialId,
@@ -103,7 +107,8 @@ export async function unshareCredential(credentialId: string, userId: string) {
         await logAudit({
             action: 'UPDATE_CREDENTIAL',
             credentialId,
-            details: `Revoked share from ${targetUser?.email}`
+            details: `Revoked share from ${targetUser?.email}`,
+            performedById: session.user.id
         });
 
         revalidatePath(`/credentials/${credentialId}`);
@@ -113,3 +118,4 @@ export async function unshareCredential(credentialId: string, userId: string) {
         return { error: 'Failed to unshare' };
     }
 }
+

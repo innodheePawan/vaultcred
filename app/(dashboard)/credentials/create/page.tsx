@@ -3,7 +3,10 @@
 import { createCredential } from '@/lib/actions/credentials';
 import CredentialForm from '@/components/credentials/CredentialForm';
 
-export default function CreateCredentialPage() {
+export default async function CreateCredentialPage(props: { searchParams: Promise<{ type?: string }> }) {
+    const searchParams = await props.searchParams;
+    const type = searchParams.type;
+
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
             <div className="md:flex md:items-center md:justify-between mb-8">
@@ -12,10 +15,18 @@ export default function CreateCredentialPage() {
                         Add New Credential
                     </h2>
                 </div>
+                <div className="mt-4 flex md:ml-4 md:mt-0">
+                    <a
+                        href="/dashboard"
+                        className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                        Back to Dashboard
+                    </a>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                <CredentialForm action={createCredential} />
+                <CredentialForm action={createCredential} initialData={type ? { type } : undefined} />
             </div>
         </div>
     );
