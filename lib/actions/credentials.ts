@@ -111,7 +111,7 @@ export async function createCredential(prevState: any, formData: FormData) {
     const data = validation.data;
 
     try {
-        await prisma.$transaction(async (tx) => {
+        const master = await prisma.$transaction(async (tx) => {
             const master = await tx.credentialMaster.create({
                 data: {
                     name: data.name,
@@ -196,13 +196,14 @@ export async function createCredential(prevState: any, formData: FormData) {
                     }
                 });
             }
+            return master;
+        });
 
-            await logAudit({
-                action: 'CREATE_CREDENTIAL',
-                credentialId: master.id,
-                details: `Created credential '${master.name}' of type ${master.type}`,
-                performedById: session.user.id
-            }, tx);
+        await logAudit({
+            action: 'CREATE_CREDENTIAL',
+            credentialId: master.id,
+            details: `Created credential '${master.name}' of type ${master.type}`,
+            userId: session.user.id
         });
 
         revalidatePath('/credentials');
@@ -354,7 +355,7 @@ export async function getCredentialById(id: string) {
         action: 'VIEW_CREDENTIAL',
         credentialId: credential.id,
         details: `Viewed credential '${credential.name}'`,
-        performedById: session.user.id
+        userId: session.user.id
     });
 
     let details: any = {};
@@ -435,13 +436,26 @@ export async function deleteCredential(id: string) {
         return { error: 'Unauthorized' };
     }
 
-    await prisma.credentialMaster.delete({ where: { id } });
+    const master = await prisma.$transaction(async (tx) => {
+        // Delete the credential master record
+        const deletedCredential = await tx.credentialMaster.delete({ where: { id } });
+        // If there are related detail records (e.g., detailsPassword, detailsApi, etc.)
+        // and they are not configured with `onDelete: Cascade` in the Prisma schema,
+        // you would need to explicitly delete them here.
+        // For example:
+        // if (deletedCredential.type === 'PASSWORD') {
+        //     await tx.credentialDetailsPassword.delete({ where: { credentialMasterId: id } });
+        // }
+        // Assuming `onDelete: Cascade` is set up for detail tables,
+        // deleting the master record is sufficient.
+        return deletedCredential;
+    });
 
     await logAudit({
         action: 'DELETE_CREDENTIAL',
         credentialId: id,
         details: `Deleted credential '${credential.name}'`,
-        performedById: session.user.id
+        userId: session.user.id
     });
 
     revalidatePath('/credentials');

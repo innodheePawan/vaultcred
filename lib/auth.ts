@@ -56,9 +56,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     const user = await getUser(email);
 
                     if (!user) {
-
                         return null;
                     }
+
+                    if (user.status !== 'ACTIVE') {
+                        console.log(`[Auth] Blocked login for inactive user: ${email}`);
+                        return null;
+                    }
+
 
                     if (!user.passwordHash) {
 

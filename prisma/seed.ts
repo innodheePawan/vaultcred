@@ -14,6 +14,7 @@ async function main() {
 
     const hashedPassword = await hashPassword(password)
 
+    // 1. Create Default Admin User
     const user = await prisma.user.upsert({
         where: { email },
         update: {},
@@ -26,21 +27,42 @@ async function main() {
         },
     })
 
-    // --------------------------------------
-    // IAM SEEDING
-    // --------------------------------------
+    // 2. Create User Groups (Role Groups)
 
-    // 1. Create System Groups
+    // Administrator
     const adminGroup = await prisma.userGroup.upsert({
-        where: { name: 'Admins' },
+        where: { name: 'Administrator' },
         update: {},
         create: {
-            name: 'Admins',
-            description: 'System Administrators',
+            name: 'Administrator',
+            description: 'Full System Access',
             isSystem: true,
         }
     })
 
+    // Moderator
+    const moderatorGroup = await prisma.userGroup.upsert({
+        where: { name: 'Moderator' },
+        update: {},
+        create: {
+            name: 'Moderator',
+            description: 'Can View/Edit Credentials, No User Invite',
+            isSystem: true,
+        }
+    })
+
+    // Viewer
+    const viewerGroup = await prisma.userGroup.upsert({
+        where: { name: 'Viewer' },
+        update: {},
+        create: {
+            name: 'Viewer',
+            description: 'Read-Only Access',
+            isSystem: true,
+        }
+    })
+
+    // Developers (Standard)
     const developersGroup = await prisma.userGroup.upsert({
         where: { name: 'Developers' },
         update: {},
@@ -51,7 +73,8 @@ async function main() {
         }
     })
 
-    // 2. Create Access Policies (Access Groups)
+
+    // 3. Create Access Policies (Access Groups)
 
     // Admin Policy (Full Access)
     const adminAccess = await prisma.accessGroup.upsert({
@@ -65,6 +88,40 @@ async function main() {
                     permission: 'ADMIN',
                     // Null category/env means ALL
                 }
+            }
+        }
+    })
+
+    // Moderator Policy
+    const moderatorAccess = await prisma.accessGroup.upsert({
+        where: { name: 'Moderator Access' },
+        update: {},
+        create: {
+            name: 'Moderator Access',
+            description: 'Edit and View all Credentials',
+            policies: {
+                create: [
+                    { permission: 'READ' },
+                    { permission: 'EDIT' },
+                    { permission: 'CREATE' },
+                    { permission: 'DOWNLOAD' }
+                ]
+            }
+        }
+    })
+
+    // Viewer Policy
+    const viewerAccess = await prisma.accessGroup.upsert({
+        where: { name: 'Viewer Access' },
+        update: {},
+        create: {
+            name: 'Viewer Access',
+            description: 'Read-only access to all credentials',
+            policies: {
+                create: [
+                    { permission: 'READ' },
+                    { permission: 'DOWNLOAD' }
+                ]
             }
         }
     })
@@ -85,7 +142,56 @@ async function main() {
         }
     })
 
-    // 3. Assign User to Admin Group
+    // 4. Assign Policies to Groups (Group Access)
+
+    // Administrator -> Full Admin Access
+    await prisma.userGroupAccess.upsert({
+        where: {
+            userGroupId_accessGroupId: {
+                userGroupId: adminGroup.id,
+                accessGroupId: adminAccess.id
+            }
+        },
+        update: {},
+        create: {
+            userGroupId: adminGroup.id,
+            accessGroupId: adminAccess.id,
+        }
+    })
+
+    // Moderator -> Moderator Access
+    await prisma.userGroupAccess.upsert({
+        where: {
+            userGroupId_accessGroupId: {
+                userGroupId: moderatorGroup.id,
+                accessGroupId: moderatorAccess.id
+            }
+        },
+        update: {},
+        create: {
+            userGroupId: moderatorGroup.id,
+            accessGroupId: moderatorAccess.id,
+        }
+    })
+
+    // Viewer -> Viewer Access
+    await prisma.userGroupAccess.upsert({
+        where: {
+            userGroupId_accessGroupId: {
+                userGroupId: viewerGroup.id,
+                accessGroupId: viewerAccess.id
+            }
+        },
+        update: {},
+        create: {
+            userGroupId: viewerGroup.id,
+            accessGroupId: viewerAccess.id,
+        }
+    })
+
+    // 5. Assign Users to Groups
+
+    // Assign Admin User to Administrator Group
     await prisma.userGroupMapping.upsert({
         where: {
             userId_groupId: {
@@ -101,22 +207,8 @@ async function main() {
         }
     })
 
-    // 4. Assign Policy to Admin Group
-    await prisma.userGroupAccess.upsert({
-        where: {
-            userGroupId_accessGroupId: {
-                userGroupId: adminGroup.id,
-                accessGroupId: adminAccess.id
-            }
-        },
-        update: {},
-        create: {
-            userGroupId: adminGroup.id,
-            accessGroupId: adminAccess.id,
-        }
-    })
-
-    console.log({ user, adminGroup, adminAccess })
+    console.log('Seeding completed successfully.')
+    console.log(`Created Groups: ${adminGroup.name}, ${moderatorGroup.name}, ${viewerGroup.name}`)
 }
 
 main()

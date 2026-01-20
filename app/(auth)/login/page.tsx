@@ -5,11 +5,22 @@ import { authenticate } from '@/lib/actions';
 import { Button } from '@/components/ui/button'; // Assuming I'll create a button component or use raw HTML for now
 import { AlertCircle } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
 export default function LoginPage() {
-    const [errorMessage, dispatch, isPending] = useActionState(
+    const [state, dispatch, isPending] = useActionState(
         authenticate,
         undefined,
     );
+    const router = useRouter();
+
+    useEffect(() => {
+        if (state?.success) {
+            router.refresh();
+            router.push('/dashboard');
+        }
+    }, [state, router]);
 
     return (
         <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8 bg-gray-50 dark:bg-gray-900">
@@ -84,14 +95,21 @@ export default function LoginPage() {
                         aria-live="polite"
                         aria-atomic="true"
                     >
-                        {errorMessage && (
+                        {state?.error && (
                             <>
                                 <AlertCircle className="h-5 w-5 text-red-500" />
-                                <p className="text-sm text-red-500">{errorMessage}</p>
+                                <p className="text-sm text-red-500">{state.error}</p>
                             </>
                         )}
                     </div>
                 </form>
+
+                <p className="mt-10 text-center text-sm text-gray-500">
+                    Received an invite code?{' '}
+                    <a href="/invite" className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">
+                        Redeem it here
+                    </a>
+                </p>
             </div>
         </div>
     );
