@@ -2,7 +2,7 @@ import { getCredentialById } from '@/lib/actions/credentials';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, Folder, Shield, Calendar, Layers, Globe } from 'lucide-react';
+import { ArrowLeft, Clock, Folder, Shield, Calendar, Layers, Globe, EyeOff } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import CredentialSecrets from '@/components/credentials/CredentialSecrets';
 import DeleteCredentialButton from '@/components/credentials/DeleteButton';
@@ -50,6 +50,19 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
                                 <Clock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
                                 Updated {credential.lastModifiedOn ? formatDate(credential.lastModifiedOn) : 'Never'}
                             </div>
+                            {credential.isPersonal && (
+                                <div className="mt-2 flex items-center text-sm font-medium text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/50 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
+                                    <EyeOff className="flex-shrink-0 mr-1.5 h-4 w-4" />
+                                    Personal (Private)
+                                </div>
+                            )}
+                            {credential.expiryDate && (
+                                <div className={`mt-2 flex items-center text-sm ${new Date(credential.expiryDate) < new Date() ? 'text-red-700 dark:text-red-400 font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
+                                    <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5" />
+                                    Expires: {formatDate(credential.expiryDate)}
+                                    {new Date(credential.expiryDate) < new Date() && " (Expired)"}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="mt-4 flex md:mt-0 md:ml-4 gap-3">

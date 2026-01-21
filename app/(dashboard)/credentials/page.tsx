@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plus, Folder, Key, Lock, Terminal, FileText, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { Suspense } from 'react';
 import CredentialFilters from '@/components/credentials/CredentialFilters';
 
 function getIconForType(type: string) {
@@ -97,7 +98,9 @@ export default async function CredentialsPage(props: {
                 </Link>
             </div>
 
-            <CredentialFilters />
+            <Suspense fallback={<div>Loading filters...</div>}>
+                <CredentialFilters />
+            </Suspense>
 
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
                 {credentials.length === 0 ? (
@@ -146,6 +149,18 @@ export default async function CredentialsPage(props: {
                                                     <Link href={`/credentials/${cred.id}`} className="hover:underline">
                                                         {cred.name}
                                                     </Link>
+                                                </div>
+                                                <div className="flex gap-1 mt-1">
+                                                    {cred.isPersonal && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
+                                                            Personal
+                                                        </span>
+                                                    )}
+                                                    {cred.expiryDate && new Date(cred.expiryDate) < new Date() && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-200 dark:border-red-800">
+                                                            Expired
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

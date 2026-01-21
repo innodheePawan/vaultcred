@@ -55,7 +55,8 @@ export default function ShareSettings({ credentialId, shares, ownerId, currentUs
         });
     };
 
-    const alreadySharedIds = new Set(shares.map((s: any) => s.userId));
+    const safeShares = shares || [];
+    const alreadySharedIds = new Set(safeShares.map((s: any) => s.userId));
 
     return (
         <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
@@ -103,10 +104,10 @@ export default function ShareSettings({ credentialId, shares, ownerId, currentUs
             </div>
 
             <div className="space-y-3">
-                {shares.length === 0 ? (
+                {safeShares.length === 0 ? (
                     <p className="text-sm text-gray-500 italic">Not shared with anyone.</p>
                 ) : (
-                    shares.map((share: any) => (
+                    safeShares.map((share: any) => (
                         <div key={share.userId} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
                             <div className="flex items-center">
                                 <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 mr-3">

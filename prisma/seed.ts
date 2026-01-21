@@ -12,6 +12,78 @@ async function main() {
         console.warn('WARNING: Using default password in production!')
     }
 
+    // ----------------------------------------------------------------------
+    // 3. IAM: Create System Groups & Policies
+    // ----------------------------------------------------------------------
+
+    // Define System Groups and their Permissions
+    const systemGroups = [
+        {
+            name: 'ADMIN',
+            description: 'Operational Admins (Scoped or Global)',
+            permissions: ['ADMIN', 'CREATE', 'EDIT', 'VIEW', 'DOWNLOAD']
+        },
+        {
+            name: 'USER',
+            description: 'Standard Users (Contributors)',
+            permissions: ['VIEW', 'DOWNLOAD', 'CREATE', 'EDIT']
+        },
+        {
+            name: 'CONSUMER',
+            description: 'Read-Only Consumers',
+            permissions: ['VIEW', 'DOWNLOAD']
+        },
+        {
+            name: 'AUDITOR',
+            description: 'Compliance Auditors',
+            permissions: ['VIEW'] // Specific Audit permission handled by logic or VIEW scope
+        }
+    ];
+
+    for (const groupDef of systemGroups) {
+        // Create Group
+        const group = await prisma.userGroup.upsert({
+            where: { name: groupDef.name },
+            update: { isSystem: true, description: groupDef.description },
+            create: {
+                name: groupDef.name,
+                description: groupDef.description,
+                isSystem: true
+            }
+        });
+
+        // Create Access Group for permissions
+        const accessGroupName = `${groupDef.name}_POLICY_AG`;
+        const accessGroup = await prisma.accessGroup.upsert({
+            where: { name: accessGroupName },
+            update: {},
+            create: { name: accessGroupName, description: `Policy for ${groupDef.name}` }
+        });
+
+        // Link UserGroup -> AccessGroup
+        await prisma.userGroupAccess.upsert({
+            where: { userGroupId_accessGroupId: { userGroupId: group.id, accessGroupId: accessGroup.id } },
+            update: {},
+            create: { userGroupId: group.id, accessGroupId: accessGroup.id }
+        });
+
+        // Create Policies
+        // Clear existing policies to reset to default definition? 
+        // Or just upsert. For simplicity, we delete existing for this system group AG and recreate.
+        await prisma.accessGroupPolicy.deleteMany({ where: { accessGroupId: accessGroup.id } });
+
+        for (const perm of groupDef.permissions) {
+            await prisma.accessGroupPolicy.create({
+                data: {
+                    accessGroupId: accessGroup.id,
+                    permission: perm,
+                    category: null, // ALL
+                    environment: null // ALL
+                }
+            });
+        }
+        console.log(`Seeded System Group: ${groupDef.name}`);
+    }
     const hashedPassword = await hashPassword(password)
 
     // 1. Create Default Admin User

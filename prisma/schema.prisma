@@ -58,7 +58,10 @@ model Invite {
   // Store intended group assignments as JSON or simple relation? 
   // For simplicity, we can auto-assign generic groups or store IDs.
   // Storing as JSON string for now to be flexible on what groups they get on join.
-  targetGroupIds String?  @map("target_group_ids") 
+  targetGroupIds String?  @map("target_group_ids")
+  
+  targetScopedCategories    String?   @map("target_scoped_categories") // CSV
+  targetScopedEnvironments  String?   @map("target_scoped_environments") // CSV 
 
   @@map("user_invites")
 }
@@ -92,6 +95,9 @@ model UserGroupMapping {
   
   assignedAt  DateTime  @default(now()) @map("assigned_at")
   assignedBy  String?   @map("assigned_by") // Audit who added them
+
+  scopedCategories    String?   @map("scoped_categories") // CSV, null = all
+  scopedEnvironments  String?   @map("scoped_environments") // CSV, null = all
 
   @@id([userId, groupId])
   @@map("iam_user_group_mapping")
@@ -152,6 +158,7 @@ model CredentialMaster {
   status          String    @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
   description     String?   // Encrypted or plain? Assuming plain for search based on req "Secure Text" usually means encrypted, but Desc often widely searchable. User said "Description Secure Text". Let's assume Encrypted if sensitive, but typically metadata. I'll make it String for now, can be encrypted content.
   expiryDate      DateTime? @map("expiry_date")
+  isPersonal      Boolean   @default(false) @map("is_personal")
   version         Int       @default(1)
   
   createdById     String    @map("created_by")
@@ -315,4 +322,21 @@ model ExpiryNotification {
   lastNotified     DateTime? @map("last_notified")
 
   @@map("expiry_notification")
+}
+
+// --------------------------------------
+// SYSTEM SETTINGS
+// --------------------------------------
+
+model SystemSettings {
+  id              Int      @id @default(1)
+  applicationName String   @default("VaultSecure") @map("application_name")
+  companyName     String   @default("My Company") @map("company_name")
+  logoUrl         String?  @map("logo_url")
+  themeColor      String?  @map("theme_color")
+  
+  updatedAt   DateTime @updatedAt @map("updated_on")
+  updatedBy   String?  @map("updated_by")
+
+  @@map("system_settings")
 }

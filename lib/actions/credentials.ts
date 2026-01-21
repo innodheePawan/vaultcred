@@ -20,6 +20,8 @@ const BaseSchema = z.object({
     description: z.string().optional(),
     folder: z.string().optional(),
     tags: z.string().optional(),
+    isPersonal: z.coerce.boolean().optional(),
+    expiryDate: z.string().optional(), // ISO format date string
 });
 
 const PasswordSchema = BaseSchema.extend({
@@ -119,6 +121,8 @@ export async function createCredential(prevState: any, formData: FormData) {
                     category: data.category || null,
                     environment: data.environment || null,
                     description: data.description || null,
+                    isPersonal: data.isPersonal || false,
+                    expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
                     createdById: session.user.id!,
                     lastModifiedById: session.user.id!,
                 }
@@ -215,7 +219,7 @@ export async function createCredential(prevState: any, formData: FormData) {
     }
 }
 
-import { getUserAccessContext } from '@/lib/iam/permissions';
+import { getUserAccessContext, canAccess } from '@/lib/iam/permissions';
 
 export async function getCredentials(params?: {
     query?: string;
@@ -234,34 +238,29 @@ export async function getCredentials(params?: {
     const accessContext = await getUserAccessContext(session.user.id!);
 
     // 2. Build Permission Filters
-    // If Admin, no extra filters needed (except what they requested).
-    // If User, we must restrict to allowed Scope.
+    // Rule: Personal credentials are STRICTLY visible only to the creator.
+    // Rule: Shared credentials are visible to Admins OR via RBAC.
 
-    // We start with the user's requested filters, but we must AND them with the Allowed Scope.
-    // OR, we verify if the requested filter is allowed, and if so, use it.
-    // If no specific filter requested, we return the UNION of all allowed scopes.
+    const where: any = {
+        OR: [
+            { createdById: session.user.id } // Always see own items (Personal or Shared)
+        ]
+    };
 
-    let permissionWhere: any = {};
-
-    if (!accessContext.isAdmin) {
-        // Build OR array for permissions
+    if (accessContext.isAdmin) {
+        // Admin sees all SHARED items
+        where.OR.push({ isPersonal: false });
+    } else {
+        // Regular User: Check RBAC for SHARED items
         const orConditions: any[] = [];
         const { permissions } = accessContext;
 
-        // Check for Global Access (* / *)
         if (permissions['*']?.['*']) {
-            // Full access, do nothing (permissionWhere remains empty)
+            // Access to all SHARED
+            where.OR.push({ isPersonal: false });
         } else {
-            // Iterate all rules
-            // We need to convert the Map structure to Prisma OR conditions
-            // This is slightly complex because we need to handle wildcards.
-
-            // Optimization: If we have many rules, this could get large.
-            // But typically a user has few groups.
-
             Object.keys(permissions).forEach(cat => {
                 Object.keys(permissions[cat]).forEach(env => {
-                    // We consider 'READ', 'EDIT', 'CREATE', 'ADMIN' as visible.
                     const perms = permissions[cat][env];
                     if (perms.has('READ') || perms.has('EDIT') || perms.has('CREATE') || perms.has('ADMIN')) {
                         const condition: any = {};
@@ -272,23 +271,26 @@ export async function getCredentials(params?: {
                 });
             });
 
-            if (orConditions.length === 0) {
-                return []; // No access
+            if (orConditions.length > 0) {
+                where.OR.push({
+                    AND: [
+                        { isPersonal: false },
+                        { OR: orConditions }
+                    ]
+                });
             }
-
-            permissionWhere = { OR: orConditions };
         }
     }
 
-    const where: any = {
+    // 3. Apply Filters
+    const finalWhere: any = {
         AND: [
-            permissionWhere, // Enforce IAM Access
-            // { createdById: session.user.id } // OLD CHECK REMOVED
+            where
         ]
     };
 
     if (query) {
-        where.AND.push({
+        finalWhere.AND.push({
             OR: [
                 { name: { contains: query } },
                 { description: { contains: query } },
@@ -299,9 +301,9 @@ export async function getCredentials(params?: {
         });
     }
 
-    if (typeFilter) where.AND.push({ type: typeFilter });
-    if (category) where.AND.push({ category });
-    if (environment) where.AND.push({ environment });
+    if (typeFilter) finalWhere.AND.push({ type: typeFilter });
+    if (category) finalWhere.AND.push({ category });
+    if (environment) finalWhere.AND.push({ environment });
 
     const orderBy: any = {};
     if (sort) {
@@ -312,7 +314,7 @@ export async function getCredentials(params?: {
 
     try {
         const credentials = await prisma.credentialMaster.findMany({
-            where,
+            where: finalWhere,
             orderBy,
             include: {
                 createdBy: { select: { name: true, email: true } }
@@ -325,6 +327,8 @@ export async function getCredentials(params?: {
     }
 }
 
+
+
 export async function getCredentialById(id: string) {
     const session = await auth();
     if (!session?.user) return null;
@@ -333,7 +337,6 @@ export async function getCredentialById(id: string) {
         where: { id },
         include: {
             createdBy: { select: { id: true, name: true, email: true } },
-            accessList: { include: { user: { select: { id: true, name: true, email: true } } } },
             detailsPassword: true,
             detailsApi: true,
             detailsKeyCert: true,
@@ -345,11 +348,19 @@ export async function getCredentialById(id: string) {
 
     if (!credential) return null;
 
-    const isOwner = credential.createdById === session.user.id;
-    const isShared = credential.accessList.some(s => s.userId === session.user.id);
-    const isAdmin = session.user.role === 'ADMIN';
+    // IAM Access Check
+    const accessContext = await getUserAccessContext(session.user.id);
+    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'READ');
 
-    if (!isOwner && !isShared && !isAdmin) return null;
+    // Allow creator to always access (optional, but typical)
+    const isOwner = credential.createdById === session.user.id;
+
+    if (credential.isPersonal) {
+        if (!isOwner) return null; // STRICT: Only owner sees personal
+    } else {
+        // Shared
+        if (!accessContext.isAdmin && !isOwner && !hasAccess) return null;
+    }
 
     await logAudit({
         action: 'VIEW_CREDENTIAL',

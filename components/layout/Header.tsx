@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, Bell, User, LogOut, Settings } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
-import { clsx } from 'clsx';
 
-export function Header() {
+export function Header({ settings }: { settings?: any }) {
     const { data: session } = useSession();
+    const router = useRouter();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const userInitials = session?.user?.name
@@ -17,32 +18,59 @@ export function Header() {
     const userName = session?.user?.name || 'User';
     const userEmail = session?.user?.email || '';
 
+    const applicationName = settings?.applicationName || 'VaultSecure';
+    const logoUrl = settings?.logoUrl;
+
     return (
         <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center z-20">
-            {/* Logo Section - Matches Sidebar Width (w-64) */}
-            <div className="w-64 flex-shrink-0 h-full flex items-center px-6 border-r border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">V</div>
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">Vault<span className="text-blue-600">Secure</span></span>
-                </div>
+            {/* Logo Section - Matches Sidebar Width (w-64) - NO PADDING, Full Size */}
+            <div className="w-64 flex-shrink-0 h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900/50">
+                <Link href="/dashboard" className="flex items-center justify-center w-full h-full">
+                    {logoUrl ? (
+                        <img
+                            src={logoUrl}
+                            alt="Logo"
+                            className="w-full h-full object-contain"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                            {applicationName.substring(0, 1)}
+                        </div>
+                    )}
+                </Link>
+            </div>
+
+            {/* Application Name Section - Next to Logo (w-64) */}
+            <div className="w-64 flex-shrink-0 flex items-center justify-start h-full pl-4">
+                <span className="text-xl font-bold text-gray-900 dark:text-white truncate text-left">
+                    {applicationName}
+                </span>
             </div>
 
             {/* Header Content */}
             <div className="flex-1 flex items-center justify-between px-6 h-full">
-                {/* Global Search */}
-                <div className="max-w-md w-full relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
+
+                {/* Global Search - Centered */}
+                <div className="flex-1 flex justify-center max-w-2xl mx-auto">
+                    <div className="w-full max-w-md relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                            placeholder="Search users, credentials..."
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    router.push(`/credentials?q=${encodeURIComponent(e.currentTarget.value)}`);
+                                }
+                            }}
+                        />
                     </div>
-                    <input
-                        type="text"
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
-                        placeholder="Search users, credentials..."
-                    />
                 </div>
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-shrink-0">
                     <button className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
                         <Bell className="h-5 w-5" />
                     </button>

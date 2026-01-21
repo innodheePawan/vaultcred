@@ -122,6 +122,43 @@ export default function CredentialForm({ action, initialData, isEdit = false }: 
                         <option value="Prod">Production</option>
                     </select>
                 </div>
+
+                <div>
+                    <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Expiry Date
+                    </label>
+                    <input
+                        type="date"
+                        name="expiryDate"
+                        id="expiryDate"
+                        defaultValue={initialData?.expiryDate ? new Date(initialData.expiryDate).toISOString().split('T')[0] : ''}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white"
+                    />
+                </div>
+
+                <div className="md:col-span-2 flex items-center space-x-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
+                    <div className="flex items-center h-5">
+                        <input
+                            id="isPersonal"
+                            name="isPersonal"
+                            type="checkbox"
+                            value="true"
+                            defaultChecked={initialData?.isPersonal}
+                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        />
+                    </div>
+                    <div className="ml-3">
+                        <label htmlFor="isPersonal" className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            Personal Credential
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                Private
+                            </span>
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            If checked, this credential will be <strong>hidden from everyone else</strong>, including Admins. Only you can access it.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6"></div>
@@ -292,11 +329,6 @@ export default function CredentialForm({ action, initialData, isEdit = false }: 
                                 <option value="Bearer">Bearer</option>
                                 <option value="JWT">JWT</option>
                             </select>
-                        </div>
-                        <div>
-                            <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Expiry Date <span className="text-red-500">*</span></label>
-                            <input type="date" name="expiryDate" id="expiryDate" required defaultValue={initialData?.details?.expiryDate ? new Date(initialData.details.expiryDate).toISOString().split('T')[0] : ''}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
                         </div>
                     </div>
                 </div>
