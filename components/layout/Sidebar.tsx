@@ -49,16 +49,24 @@ const MENU_ITEMS: MenuItem[] = [
     },
 ];
 
-export function Sidebar({ className }: { className?: string }) {
+export function Sidebar({ className, role: initialRole, showSettings, showAdminMenu }: { className?: string; role?: string; showSettings?: boolean; showAdminMenu?: boolean }) {
     const [expandedItems, setExpandedItems] = useState<string[]>(['Credentials', 'Admin']);
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const currentType = searchParams.get('type');
     const { data: session } = useSession();
 
+    // Use server-passed role (immediate) or client-side session role (fallback/update)
+    const userRole = initialRole || session?.user?.role;
+
     const filteredItems = MENU_ITEMS.filter(item => {
         if (item.title === 'Admin') {
-            return session?.user?.role === 'ADMIN';
+            // Use explicit prop if provided, otherwise fallback to Role check
+            return showAdminMenu ?? (userRole === 'ADMIN');
+        }
+        if (item.title === 'Settings') {
+            // Check explicit prop. Default to true if not provided (legacy behavior)
+            return showSettings ?? true;
         }
         return true;
     });
@@ -94,7 +102,7 @@ export function Sidebar({ className }: { className?: string }) {
     };
 
     return (
-        <aside className={clsx("w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full", className)}>
+        <aside className={clsx("w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full z-30 relative", className)}>
             <div className="flex-1 overflow-y-auto py-4">
                 <nav className="space-y-1 px-2">
                     {filteredItems.map((item) => (

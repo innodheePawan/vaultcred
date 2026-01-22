@@ -70,7 +70,7 @@ const NoteSchema = BaseSchema.extend({
 const FileSchema = BaseSchema.extend({
     type: z.literal('FILE'),
     fileName: z.string().min(1, "File name is required"),
-    fileContent: z.string().min(1, "File content is required"), // For now, passing content string. Later multipart.
+    fileContent: z.string().min(1, "File content is required"), // Base64 string from frontend
     fileType: z.string().optional(),
 });
 
@@ -94,6 +94,19 @@ const CredentialSchema = z.discriminatedUnion('type', [
     }
 });
 
+// Helper to safely convert string to Buffer
+const toBuffer = (str: string | null | undefined, encoding: 'utf-8' | 'base64' = 'utf-8'): Buffer | null => {
+    if (!str) return null;
+    return Buffer.from(str, encoding);
+};
+
+// Helper to safely convert Buffer to string
+const toString = (buf: Buffer | null | undefined, encoding: 'utf-8' | 'base64' = 'utf-8'): string | undefined => {
+    if (!buf) return undefined;
+    if (Buffer.isBuffer(buf)) return buf.toString(encoding);
+    return buf as unknown as string; // Fallback if Prisma returns string unexpectedly
+};
+
 // ----------------------------------------------------------------------
 // Actions
 // ----------------------------------------------------------------------
@@ -112,14 +125,36 @@ export async function createCredential(prevState: any, formData: FormData) {
 
     const data = validation.data;
 
+    // RBAC: Enforce Creation Scopes
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const accessContext = await getUserAccessContext(session.user.id!);
+
+    if (!data.isPersonal) {
+        // Shared Credential Validation
+        if (data.category) {
+            if (!accessContext.allowedCategories.includes('*') && !accessContext.allowedCategories.includes(data.category)) {
+                return { error: `Unauthorized: Invalid Category '${data.category}' for your role.` };
+            }
+        }
+        if (data.environment) {
+            if (!accessContext.allowedEnvironments.includes('*') && !accessContext.allowedEnvironments.includes(data.environment)) {
+                return { error: `Unauthorized: Invalid Environment '${data.environment}' for your role.` };
+            }
+        }
+        if (!accessContext.isAdmin && !canAccess(accessContext, data.category || null, data.environment || null, 'CREATE')) {
+            return { error: 'Unauthorized: You do not have permission to create credentials here.' };
+        }
+    }
+
     try {
         const master = await prisma.$transaction(async (tx) => {
             const master = await tx.credentialMaster.create({
                 data: {
                     name: data.name,
                     type: data.type,
-                    category: data.category || null,
-                    environment: data.environment || null,
+                    // If Personal, force Category/Environment to NULL
+                    category: data.isPersonal ? null : (data.category || null),
+                    environment: data.isPersonal ? null : (data.environment || null),
                     description: data.description || null,
                     isPersonal: data.isPersonal || false,
                     expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
@@ -133,7 +168,7 @@ export async function createCredential(prevState: any, formData: FormData) {
                     data: {
                         credentialId: master.id,
                         username: data.username,
-                        passwordEncrypted: encrypt(data.password),
+                        passwordEncrypted: encrypt(data.password), // Returns String
                         host: data.host || null,
                         port: data.port || null,
                     }
@@ -156,7 +191,7 @@ export async function createCredential(prevState: any, formData: FormData) {
                         credentialId: master.id,
                         keyType: data.keyType,
                         keyFormat: data.keyFormat || null,
-                        publicKey: data.publicKey || null,
+                        publicKey: data.publicKey || null, // Assuming String (PEM)
                         publicKeyFileName: data.publicKeyFileName || null,
                         privateKeyEnc: data.privateKey ? encrypt(data.privateKey) : null,
                         privateKeyFileName: data.privateKeyFileName || null,
@@ -182,21 +217,19 @@ export async function createCredential(prevState: any, formData: FormData) {
                     }
                 });
             } else if (data.type === 'FILE') {
-                // Handling File: Write to disk (simulated secure storage)
+                // Determine file path for legacy/metadata support, but store content in DB
                 const uploadDir = join(process.cwd(), 'secure_uploads');
+                // Ensure dir exists even if we don't write content to disk (optional)
                 await mkdir(uploadDir, { recursive: true });
                 const filePath = join(uploadDir, `${master.id}_${data.fileName}`);
-
-                // In a real app we'd encrypt the file content itself before writing
-                // For this demo, we write plaintext or base64 to disk, but 'filePath' is what we store
-                await writeFile(filePath, data.fileContent);
 
                 await tx.credFile.create({
                     data: {
                         credentialId: master.id,
                         fileName: data.fileName,
-                        filePath: filePath,
+                        filePath: filePath, // Retain path for metadata
                         fileType: data.fileType || 'unknown',
+                        fileContent: data.fileContent || null, // Store Base64 String directly
                     }
                 });
             }
@@ -207,7 +240,8 @@ export async function createCredential(prevState: any, formData: FormData) {
             action: 'CREATE_CREDENTIAL',
             credentialId: master.id,
             details: `Created credential '${master.name}' of type ${master.type}`,
-            userId: session.user.id
+            userId: session.user.id,
+            isPersonal: master.isPersonal
         });
 
         revalidatePath('/credentials');
@@ -328,7 +362,6 @@ export async function getCredentials(params?: {
 }
 
 
-
 export async function getCredentialById(id: string) {
     const session = await auth();
     if (!session?.user) return null;
@@ -366,16 +399,18 @@ export async function getCredentialById(id: string) {
         action: 'VIEW_CREDENTIAL',
         credentialId: credential.id,
         details: `Viewed credential '${credential.name}'`,
-        userId: session.user.id
+        userId: session.user.id,
+        isPersonal: credential.isPersonal
     });
 
     let details: any = {};
 
+    // Decrypt and pass Strings directly (Schema is @Text)
     if (credential.type === 'PASSWORD' && credential.detailsPassword) {
         const d = credential.detailsPassword;
         details = {
             username: d.username,
-            password: decrypt(d.passwordEncrypted),
+            password: d.passwordEncrypted ? decrypt(d.passwordEncrypted) : '',
             host: d.host,
             port: d.port
         };
@@ -394,7 +429,7 @@ export async function getCredentialById(id: string) {
         details = {
             keyType: d.keyType,
             keyFormat: d.keyFormat,
-            publicKey: d.publicKey,
+            publicKey: d.publicKey, // PEM String
             publicKeyFileName: d.publicKeyFileName,
             privateKey: d.privateKeyEnc ? decrypt(d.privateKeyEnc) : undefined,
             privateKeyFileName: d.privateKeyFileName,
@@ -404,7 +439,7 @@ export async function getCredentialById(id: string) {
     } else if (credential.type === 'TOKEN' && credential.detailsToken) {
         const d = credential.detailsToken;
         details = {
-            token: decrypt(d.tokenEncrypted),
+            token: d.tokenEncrypted ? decrypt(d.tokenEncrypted) : '',
             tokenType: d.tokenType,
             issuer: d.issuer,
             expiryDate: d.expiresAt
@@ -412,16 +447,24 @@ export async function getCredentialById(id: string) {
     } else if (credential.type === 'SECURE_NOTE' && credential.detailsNote) {
         const d = credential.detailsNote;
         details = {
-            note: decrypt(d.noteEncrypted)
+            note: d.noteEncrypted ? decrypt(d.noteEncrypted) : ''
         };
     } else if (credential.type === 'FILE' && credential.detailsFile) {
         const d = credential.detailsFile;
+        // If content is in DB as Base64 String
         let content = '';
-        try {
-            content = await readFile(d.filePath, 'utf-8');
-        } catch (e) {
-            content = 'Error reading file content';
+        if (d.fileContent) {
+            content = d.fileContent; // Already Base64 String
+        } else {
+            // Fallback to disk read (migration support?)
+            try {
+                const fs = await import('fs/promises');
+                content = await fs.readFile(d.filePath, 'utf-8'); // Assuming legacy was textual/base64
+            } catch (e) {
+                content = '';
+            }
         }
+
         details = {
             fileName: d.fileName,
             filePath: d.filePath,
@@ -443,22 +486,18 @@ export async function deleteCredential(id: string) {
     const credential = await prisma.credentialMaster.findUnique({ where: { id } });
     if (!credential) return { error: 'Not found' };
 
-    if (credential.createdById !== session.user.id && session.user.role !== 'ADMIN') {
+    // Check permission logic
+    const accessContext = await getUserAccessContext(session.user.id);
+    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'ADMIN'); // Need Admin or Owner
+    const isOwner = credential.createdById === session.user.id;
+
+    if (!isOwner && !accessContext.isAdmin && !hasAccess) {
         return { error: 'Unauthorized' };
     }
 
     const master = await prisma.$transaction(async (tx) => {
         // Delete the credential master record
         const deletedCredential = await tx.credentialMaster.delete({ where: { id } });
-        // If there are related detail records (e.g., detailsPassword, detailsApi, etc.)
-        // and they are not configured with `onDelete: Cascade` in the Prisma schema,
-        // you would need to explicitly delete them here.
-        // For example:
-        // if (deletedCredential.type === 'PASSWORD') {
-        //     await tx.credentialDetailsPassword.delete({ where: { credentialMasterId: id } });
-        // }
-        // Assuming `onDelete: Cascade` is set up for detail tables,
-        // deleting the master record is sufficient.
         return deletedCredential;
     });
 
@@ -466,7 +505,8 @@ export async function deleteCredential(id: string) {
         action: 'DELETE_CREDENTIAL',
         credentialId: id,
         details: `Deleted credential '${credential.name}'`,
-        userId: session.user.id
+        userId: session.user.id,
+        isPersonal: credential.isPersonal
     });
 
     revalidatePath('/credentials');

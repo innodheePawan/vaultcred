@@ -1,11 +1,17 @@
-'use client';
-
 import { createCredential } from '@/lib/actions/credentials';
 import CredentialForm from '@/components/credentials/CredentialForm';
+import { auth } from '@/lib/auth';
+import { getUserAccessContext } from '@/lib/iam/permissions';
+import { redirect } from 'next/navigation';
 
 export default async function CreateCredentialPage(props: { searchParams: Promise<{ type?: string }> }) {
+    const session = await auth();
+    if (!session?.user) redirect('/login');
+
     const searchParams = await props.searchParams;
     const type = searchParams.type;
+
+    const ctx = await getUserAccessContext(session.user.id);
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
@@ -26,7 +32,12 @@ export default async function CreateCredentialPage(props: { searchParams: Promis
             </div>
 
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                <CredentialForm action={createCredential} initialData={type ? { type } : undefined} />
+                <CredentialForm
+                    action={createCredential}
+                    initialData={type ? { type } : undefined}
+                    allowedCategories={ctx.allowedCategories}
+                    allowedEnvironments={ctx.allowedEnvironments}
+                />
             </div>
         </div>
     );

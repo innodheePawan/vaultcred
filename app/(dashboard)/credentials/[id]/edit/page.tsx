@@ -2,19 +2,21 @@ import { getCredentialById, updateCredential } from '@/lib/actions/credentials';
 import CredentialForm from '@/components/credentials/CredentialForm';
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { getUserAccessContext } from '@/lib/iam/permissions';
 
 export default async function EditCredentialPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
     const session = await auth();
     if (!session?.user) redirect('/login');
 
+    const ctx = await getUserAccessContext(session.user.id);
     const credential = await getCredentialById(params.id);
 
     if (!credential) {
         notFound();
     }
 
-    if (credential.ownerId !== session.user.id && session.user.role !== 'ADMIN') {
+    if (credential.createdById !== session.user.id && session.user.role !== 'ADMIN') {
         return (
             <div className="max-w-4xl mx-auto py-8 px-4 text-center">
                 <h2 className="text-xl font-bold text-red-600">Unauthorized</h2>
@@ -43,6 +45,8 @@ export default async function EditCredentialPage(props: { params: Promise<{ id: 
                     action={updateAction}
                     initialData={credential}
                     isEdit={true}
+                    allowedCategories={ctx.allowedCategories}
+                    allowedEnvironments={ctx.allowedEnvironments}
                 />
             </div>
         </div>

@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -58,10 +58,10 @@ model Invite {
   // Store intended group assignments as JSON or simple relation? 
   // For simplicity, we can auto-assign generic groups or store IDs.
   // Storing as JSON string for now to be flexible on what groups they get on join.
-  targetGroupIds String?  @map("target_group_ids")
+  targetGroupIds String?  @map("target_group_ids") @db.Text
   
-  targetScopedCategories    String?   @map("target_scoped_categories") // CSV
-  targetScopedEnvironments  String?   @map("target_scoped_environments") // CSV 
+  targetScopedCategories    String?   @map("target_scoped_categories") @db.Text
+  targetScopedEnvironments  String?   @map("target_scoped_environments") @db.Text
 
   @@map("user_invites")
 }
@@ -96,8 +96,8 @@ model UserGroupMapping {
   assignedAt  DateTime  @default(now()) @map("assigned_at")
   assignedBy  String?   @map("assigned_by") // Audit who added them
 
-  scopedCategories    String?   @map("scoped_categories") // CSV, null = all
-  scopedEnvironments  String?   @map("scoped_environments") // CSV, null = all
+  scopedCategories    String?   @map("scoped_categories") @db.Text
+  scopedEnvironments  String?   @map("scoped_environments") @db.Text
 
   @@id([userId, groupId])
   @@map("iam_user_group_mapping")
@@ -156,7 +156,7 @@ model CredentialMaster {
   category        String?   // Application, Infra, Integration
   environment     String?   // Dev, QA, Prod
   status          String    @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
-  description     String?   // Encrypted or plain? Assuming plain for search based on req "Secure Text" usually means encrypted, but Desc often widely searchable. User said "Description Secure Text". Let's assume Encrypted if sensitive, but typically metadata. I'll make it String for now, can be encrypted content.
+  description     String?   @db.Text
   expiryDate      DateTime? @map("expiry_date")
   isPersonal      Boolean   @default(false) @map("is_personal")
   version         Int       @default(1)
@@ -196,7 +196,7 @@ model CredPassword {
   credential        CredentialMaster @relation(fields: [credentialId], references: [id], onDelete: Cascade)
   
   username          String
-  passwordEncrypted String   @map("password_encrypted")
+  passwordEncrypted String   @map("password_encrypted") @db.Text
   host              String?
   port              Int?
 
@@ -209,11 +209,11 @@ model CredApiOAuth {
 
   // OAuth / API fields
   clientId          String?  @map("client_id")
-  clientSecretEnc   String?  @map("client_secret_encrypted")
-  apiKeyEncrypted   String?  @map("api_key_encrypted")
+  clientSecretEnc   String?  @map("client_secret_encrypted") @db.Text
+  apiKeyEncrypted   String?  @map("api_key_encrypted") @db.Text
   tokenEndpoint     String?  @map("token_url")
   authEndpoint      String?  @map("auth_url")
-  scopes            String?  // Multi-text stored as CSV or JSON
+  scopes            String?  @db.Text 
 
   @@map("cred_api_oauth")
 }
@@ -224,20 +224,20 @@ model CredKeyCert {
 
   keyType           String   @map("key_type") // SSL, SSH, PGP, TLS, SIGNING
   keyFormat         String?  @map("key_format") // PEM, DER, PFX
-  publicKey         String?  @map("public_key")
+  publicKey         String?  @map("public_key") @db.Text
   publicKeyFileName String?  @map("public_key_filename")
-  privateKeyEnc     String?  @map("private_key_encrypted")
+  privateKeyEnc     String?  @map("private_key_encrypted") @db.Text
   privateKeyFileName String? @map("private_key_filename")
-  passphraseEnc     String?  @map("passphrase_encrypted")
+  passphraseEnc     String?  @map("passphrase_encrypted") @db.Text
   
-  certificateFile   String?  @map("certificate_file")
-  certificateChain  String?  @map("certificate_chain")
+  certificateFile   String?  @map("certificate_file") @db.Text
+  certificateChain  String?  @map("certificate_chain") @db.Text
   issuer            String?
   subject           String?
   algorithm         String?
   keySize           Int?     @map("key_size")
   validFrom         DateTime? @map("valid_from")
-  validTo           DateTime? @map("valid_to") // User said Mandatory "Expiry", but we have Master expiry. This might be Cert specific expiry? Yes.
+  validTo           DateTime? @map("valid_to")
   fingerprint       String?
 
   @@map("cred_key_cert")
@@ -247,7 +247,7 @@ model CredToken {
   credentialId      String   @id @map("credential_id")
   credential        CredentialMaster @relation(fields: [credentialId], references: [id], onDelete: Cascade)
 
-  tokenEncrypted    String   @map("token_encrypted")
+  tokenEncrypted    String   @map("token_encrypted") @db.Text
   tokenType         String?  @map("token_type") // Bearer, JWT
   issuer            String?
   audience          String?
@@ -264,7 +264,8 @@ model CredFile {
   fileName          String?  @map("file_name")
   filePath          String   @map("file_path") // Path to storage
   fileType          String?  @map("file_type") // ZIP, TAR
-  filePasswordEnc   String?  @map("file_password_encrypted")
+  filePasswordEnc   String?  @map("file_password_encrypted") @db.Text
+  fileContent       String?  @map("file_content") @db.LongText
 
   @@map("cred_file")
 }
@@ -273,20 +274,10 @@ model CredSecureNote {
   credentialId      String   @id @map("credential_id")
   credential        CredentialMaster @relation(fields: [credentialId], references: [id], onDelete: Cascade)
 
-  noteEncrypted     String   @map("note_encrypted")
+  noteEncrypted     String   @map("note_encrypted") @db.LongText
 
   @@map("cred_secure_note")
 }
-
-// --------------------------------------
-// ACCESS CONTROL
-// --------------------------------------
-
-// DELETED: CredentialAccess model replaced by IAM Group Access
-
-// --------------------------------------
-// AUDIT LOG
-// --------------------------------------
 
 model AuditLog {
   id            String    @id @default(uuid()) @map("audit_id")
@@ -295,8 +286,8 @@ model AuditLog {
   credential    CredentialMaster? @relation(fields: [credentialId], references: [id])
   
   action        String    // CREATE, UPDATE, DELETE, VIEW, DOWNLOAD, LOGIN, INVITE
-  oldValue      String?   @map("old_value") // JSONB in Postgres, String in SQLite
-  newValue      String?   @map("new_value") // JSONB in Postgres, String in SQLite
+  oldValue      String?   @map("old_value") @db.Text
+  newValue      String?   @map("new_value") @db.Text
   
   performedById String?   @map("performed_by")
   performedBy   User?     @relation("PerformedBy", fields: [performedById], references: [id])
@@ -309,10 +300,6 @@ model AuditLog {
   @@map("audit_log")
 }
 
-// --------------------------------------
-// OPTIONAL: EXPIRY & NOTIFICATION
-// --------------------------------------
-
 model ExpiryNotification {
   id               String   @id @default(uuid()) @map("notification_id")
   credentialId     String   @map("credential_id")
@@ -324,16 +311,13 @@ model ExpiryNotification {
   @@map("expiry_notification")
 }
 
-// --------------------------------------
-// SYSTEM SETTINGS
-// --------------------------------------
-
 model SystemSettings {
   id              Int      @id @default(1)
   applicationName String   @default("VaultSecure") @map("application_name")
   companyName     String   @default("My Company") @map("company_name")
-  logoUrl         String?  @map("logo_url")
+  logoUrl         String?  @map("logo_url") @db.LongText
   themeColor      String?  @map("theme_color")
+  auditPersonalCredentials Boolean @default(true) @map("audit_personal_credentials")
   
   updatedAt   DateTime @updatedAt @map("updated_on")
   updatedBy   String?  @map("updated_by")

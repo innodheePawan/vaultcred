@@ -13,10 +13,14 @@ type CredentialFormProps = {
     action: (prevState: any, formData: FormData) => Promise<any>;
     initialData?: any;
     isEdit?: boolean;
+    allowedCategories?: string[]; // passed from server
+    allowedEnvironments?: string[]; // passed from server
 };
 
-export default function CredentialForm({ action, initialData, isEdit = false }: CredentialFormProps) {
+export default function CredentialForm({ action, initialData, isEdit = false, allowedCategories = ['*'], allowedEnvironments = ['*'] }: CredentialFormProps) {
     const [type, setType] = useState(initialData?.type || 'PASSWORD');
+    const [isPersonal, setIsPersonal] = useState(initialData?.isPersonal || false);
+
     const [formState, formAction, isPending] = useActionState(action, initialState);
     const state = formState || initialState;
 
@@ -40,6 +44,18 @@ export default function CredentialForm({ action, initialData, isEdit = false }: 
         };
         reader.readAsText(file);
     };
+
+    // Filter Options based on Permissions
+    const ALL_CATEGORIES = ['Application', 'Infra', 'Integration'];
+    const ALL_ENVIRONMENTS = ['Dev', 'QA', 'Prod'];
+
+    const filteredCategories = allowedCategories.includes('*')
+        ? ALL_CATEGORIES
+        : ALL_CATEGORIES.filter(c => allowedCategories.includes(c));
+
+    const filteredEnvironments = allowedEnvironments.includes('*')
+        ? ALL_ENVIRONMENTS
+        : ALL_ENVIRONMENTS.filter(e => allowedEnvironments.includes(e));
 
     return (
         <form action={formAction} className="space-y-6 max-w-4xl mx-auto p-4 md:p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -98,13 +114,18 @@ export default function CredentialForm({ action, initialData, isEdit = false }: 
                     <select
                         id="category"
                         name="category"
-                        defaultValue={initialData?.category || 'Application'}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white"
+                        defaultValue={initialData?.category || filteredCategories[0]}
+                        disabled={isPersonal || filteredCategories.length === 0}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:opacity-50"
                     >
-                        <option value="Application">Application</option>
-                        <option value="Infra">Infrastructure</option>
-                        <option value="Integration">Integration</option>
+                        {/* If filtered list is empty (and not personal), maybe show a placeholder? */}
+                        {filteredCategories.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                        ))}
                     </select>
+                    {filteredCategories.length === 0 && !isPersonal && (
+                        <p className="text-xs text-red-500 mt-1">No allowed categories.</p>
+                    )}
                 </div>
 
                 <div>
@@ -114,13 +135,17 @@ export default function CredentialForm({ action, initialData, isEdit = false }: 
                     <select
                         id="environment"
                         name="environment"
-                        defaultValue={initialData?.environment || 'Dev'}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white"
+                        defaultValue={initialData?.environment || filteredEnvironments[0]}
+                        disabled={isPersonal || filteredEnvironments.length === 0}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:opacity-50"
                     >
-                        <option value="Dev">Development</option>
-                        <option value="QA">QA / Staging</option>
-                        <option value="Prod">Production</option>
+                        {filteredEnvironments.map(e => (
+                            <option key={e} value={e}>{e === 'QA' ? 'QA / Staging' : (e === 'Dev' ? 'Development' : 'Production')}</option>
+                        ))}
                     </select>
+                    {filteredEnvironments.length === 0 && !isPersonal && (
+                        <p className="text-xs text-red-500 mt-1">No allowed environments.</p>
+                    )}
                 </div>
 
                 <div>
@@ -143,7 +168,8 @@ export default function CredentialForm({ action, initialData, isEdit = false }: 
                             name="isPersonal"
                             type="checkbox"
                             value="true"
-                            defaultChecked={initialData?.isPersonal}
+                            checked={isPersonal}
+                            onChange={(e) => setIsPersonal(e.target.checked)}
                             className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
                         />
                     </div>

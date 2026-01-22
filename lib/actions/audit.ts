@@ -22,8 +22,18 @@ export async function logAudit(data: {
     oldValue?: string;
     newValue?: string;
     userId?: string; // Optional override if session not available (e.g. during login)
+    isPersonal?: boolean;
 }) {
     try {
+        // Check System Settings for Personal Audit Toggle
+        if (data.isPersonal) {
+            const settings = await prisma.systemSettings.findFirst({ select: { auditPersonalCredentials: true } });
+            // If setting exists and is explicitly false, skip logging
+            if (settings && settings.auditPersonalCredentials === false) {
+                return;
+            }
+        }
+
         let userId = data.userId;
 
         // If no userId provided, try to get from session
@@ -41,15 +51,8 @@ export async function logAudit(data: {
         await prisma.auditLog.create({
             data: {
                 action: data.action,
-                oldValue: data.details || data.oldValue, // Map details to oldValue or use separate field if schema allows? Schema has oldValue/newValue. 
-                // Wait, schema has oldValue and newValue. Details is not in schema. 
-                // Let's check schema again.
-                // Schema: action, oldValue, newValue, performedById, credentialId, ipAddress.
-                // It does NOT have 'details'. 
-                // So I should map 'details' to 'newValue' or just format it into one of them.
-                // Usually 'details' implies a description. I'll put it in newValue for now or concat.
-                newValue: data.newValue || data.details,
                 oldValue: data.oldValue,
+                newValue: data.newValue || data.details,
                 performedById: userId,
                 credentialId: data.credentialId,
                 ipAddress: ip,
@@ -83,8 +86,33 @@ export async function getAuditLogs({
         return { error: 'Unauthorized' };
     }
 
+    // RBAC Check meant for Auditors or Admins
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getUserAccessContext(session.user.id);
+
+    // Check for 'AUDIT' permission or Admin status
+    if (!ctx.isAdmin && !canAccess(ctx, null, null, 'AUDIT')) {
+        return { error: 'Unauthorized: Insufficient permissions to view Audit Logs' };
+    }
+
     // Build Where Clause
     const where: any = {};
+
+    // Scope Restriction for Non-Admins
+    if (!ctx.isAdmin) {
+        const credFilter: any = {};
+        // If not '*', restrict to allowed list. If list is empty, effectively blocks access (in: []).
+        if (!ctx.allowedCategories.includes('*')) {
+            credFilter.category = { in: ctx.allowedCategories };
+        }
+        if (!ctx.allowedEnvironments.includes('*')) {
+            credFilter.environment = { in: ctx.allowedEnvironments };
+        }
+
+        if (Object.keys(credFilter).length > 0) {
+            where.credential = credFilter;
+        }
+    }
 
     if (search) {
         where.OR = [
