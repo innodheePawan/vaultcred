@@ -9,6 +9,8 @@ import { SessionTimeout } from "@/components/layout/SessionTimeout";
 import { Suspense } from 'react';
 
 import { getSystemSettings } from "@/lib/actions/settings";
+import { prisma } from "@/lib/prisma"; // Added prisma to fetch user directly
+
 
 export default async function DashboardLayout({
     children,
@@ -17,6 +19,13 @@ export default async function DashboardLayout({
 }) {
     const settings = await getSystemSettings();
     const session = await auth();
+
+    let currentUser = null;
+    if (session?.user?.id) {
+        currentUser = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        });
+    }
 
     let showSettings = false;
     let showAdminMenu = false;
@@ -37,7 +46,8 @@ export default async function DashboardLayout({
     return (
         <>
             <SessionTimeout timeoutMs={600000} />
-            <Header settings={settings} />
+            {/* Pass currentUser which contains profileImage */}
+            <Header settings={settings} user={currentUser} />
             <div className="flex flex-1 overflow-hidden">
                 <Suspense fallback={<div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700" />}>
                     <Sidebar

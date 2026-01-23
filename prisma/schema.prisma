@@ -19,6 +19,7 @@ model User {
   name          String?   @map("full_name")
   role          String    @default("USER") // ADMIN, USER (No READ_ONLY, handled by groups)
   status        String    @default("ACTIVE") // ACTIVE, INACTIVE, INVITED
+  profileImage  String?   @map("profile_image") @db.LongText
   
   // Invite & Auth fields
   inviteToken   String?   @map("invite_token")

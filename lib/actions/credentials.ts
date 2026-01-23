@@ -264,13 +264,15 @@ export async function getCredentials(params?: {
     type?: string;
     category?: string;
     environment?: string;
+    expiry?: string;
+    scope?: string;
     sort?: string;
     order?: 'asc' | 'desc';
 }) {
     const session = await auth();
     if (!session?.user) return [];
 
-    const { query, type: typeFilter, category, environment, sort, order } = params || {};
+    const { query, type: typeFilter, category, environment, expiry, scope, sort, order } = params || {};
 
     // 1. Get User IAM Context
     const accessContext = await getUserAccessContext(session.user.id!);
@@ -327,6 +329,13 @@ export async function getCredentials(params?: {
         ]
     };
 
+    // Explicit Scope Filter (Personal vs Shared) overrides default visibility if specific
+    if (scope === 'personal') {
+        finalWhere.AND.push({ isPersonal: true });
+    } else if (scope === 'shared') {
+        finalWhere.AND.push({ isPersonal: false });
+    }
+
     if (query) {
         finalWhere.AND.push({
             OR: [
@@ -342,6 +351,24 @@ export async function getCredentials(params?: {
     if (typeFilter) finalWhere.AND.push({ type: typeFilter });
     if (category) finalWhere.AND.push({ category });
     if (environment) finalWhere.AND.push({ environment });
+
+    if (expiry) {
+        const now = new Date();
+        if (expiry === 'expired') {
+            finalWhere.AND.push({
+                expiryDate: { lt: now }
+            });
+        } else if (expiry === 'near_expiry') {
+            const nearFuture = new Date();
+            nearFuture.setDate(now.getDate() + 60);
+            finalWhere.AND.push({
+                expiryDate: {
+                    gte: now,
+                    lte: nearFuture
+                }
+            });
+        }
+    }
 
     const orderBy: any = {};
     if (sort) {

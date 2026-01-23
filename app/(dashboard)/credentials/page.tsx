@@ -61,6 +61,8 @@ export default async function CredentialsPage(props: {
         type?: string,
         category?: string,
         environment?: string,
+        expiry?: string,
+        scope?: string,
         sort?: string,
         order?: 'asc' | 'desc'
     }>
@@ -73,6 +75,8 @@ export default async function CredentialsPage(props: {
         type,
         category,
         environment,
+        expiry: searchParams.expiry,
+        scope: searchParams.scope,
         sort,
         order
     });

@@ -72,8 +72,9 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                     const passwordsMatch = await verifyPassword(password, user.passwordHash);
                     if (passwordsMatch) {
-
-                        return user;
+                        return {
+                            ...user,
+                        };
                     } else {
 
                     }

@@ -6,14 +6,17 @@ import { useRouter } from 'next/navigation';
 import { Search, Bell, User, LogOut, Settings } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 
-export function Header({ settings }: { settings?: any }) {
+export function Header({ settings, user }: { settings?: any, user?: any }) {
     const { data: session } = useSession();
     const router = useRouter();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-    const userInitials = session?.user?.name
-        ? session.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
-        : session?.user?.email?.substring(0, 2).toUpperCase() || 'U';
+    // Use passed user object (from DB) or session fallback
+    const displayUser = user || session?.user;
+
+    const userInitials = displayUser?.name
+        ? displayUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+        : displayUser?.email?.substring(0, 2).toUpperCase() || 'U';
 
     const userName = session?.user?.name || 'User';
     const userEmail = session?.user?.email || '';
@@ -81,8 +84,12 @@ export function Header({ settings }: { settings?: any }) {
                             onClick={() => setIsProfileOpen(!isProfileOpen)}
                             className="flex items-center gap-2 focus:outline-none"
                         >
-                            <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium">
-                                {userInitials}
+                            <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium overflow-hidden">
+                                {displayUser?.profileImage ? (
+                                    <img src={displayUser.profileImage} alt="Profile" className="h-full w-full object-cover" />
+                                ) : (
+                                    userInitials
+                                )}
                             </div>
                             <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</span>
                             <User className="h-4 w-4 text-gray-400" />
