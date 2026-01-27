@@ -17,20 +17,29 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const settings = await getSystemSettings();
+    let settings;
+    try {
+        settings = await getSystemSettings();
+    } catch (e) {
+        settings = { applicationName: 'VaultSecure', logoUrl: null };
+    }
     const session = await auth();
 
     let currentUser = null;
-    if (session?.user?.id) {
-        currentUser = await prisma.user.findUnique({
-            where: { id: session.user.id }
-        });
+    if (process.env.DATABASE_URL && session?.user?.id) {
+        try {
+            currentUser = await prisma.user.findUnique({
+                where: { id: session.user.id }
+            });
+        } catch (e) {
+            console.warn("Failed to fetch current user in layout (DB offline?):", e);
+        }
     }
 
     let showSettings = false;
     let showAdminMenu = false;
 
-    if (session?.user?.id) {
+    if (process.env.DATABASE_URL && session?.user?.id) {
         try {
             const ctx = await getUserAccessContext(session.user.id);
             // Settings: Strictly Super Admin

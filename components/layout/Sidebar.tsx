@@ -61,12 +61,12 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
 
     const filteredItems = MENU_ITEMS.filter(item => {
         if (item.title === 'Admin') {
-            // Use explicit prop if provided, otherwise fallback to Role check
-            return showAdminMenu ?? (userRole === 'ADMIN');
+            // Show if explicit prop is true OR if session role is ADMIN (fallback)
+            return showAdminMenu || (userRole === 'ADMIN');
         }
         if (item.title === 'Settings') {
-            // Check explicit prop. Default to true if not provided (legacy behavior)
-            return showSettings ?? true;
+            // Show if explicit prop is true OR if session role is ADMIN (fallback)
+            return showSettings || (userRole === 'ADMIN');
         }
         return true;
     });

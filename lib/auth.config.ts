@@ -13,7 +13,29 @@ export const authConfig = {
                 nextUrl.pathname.startsWith('/credentials') ||
                 nextUrl.pathname.startsWith('/admin') ||
                 nextUrl.pathname.startsWith('/profile') ||
+                nextUrl.pathname.startsWith('/admin') ||
+                nextUrl.pathname.startsWith('/profile') ||
                 nextUrl.pathname.startsWith('/settings');
+
+            // Setup User Handling OR Missing Database Configuration
+            const isDbMissing = !process.env.DATABASE_URL;
+            const isSetupUser = (auth?.user as any)?.id === 'setup-temp-id';
+
+            // 1. If DB is missing, strictly force Setup
+            if (isDbMissing) {
+                if (nextUrl.pathname === '/setup') return true;
+                return Response.redirect(new URL('/setup', nextUrl));
+            }
+
+            // 2. If DB is configured, but user is stuck in Setup Mode (Stale Session)
+            if (!isDbMissing && isSetupUser) {
+                // If they are on setup page, redirect them to login to refresh session
+                if (nextUrl.pathname === '/setup') {
+                    return Response.redirect(new URL('/api/auth/signout', nextUrl));
+                }
+                // For other pages, signout/login cycle is best safe guard
+                return Response.redirect(new URL('/api/auth/signout', nextUrl));
+            }
 
             if (isProtected) {
                 if (isLoggedIn) {
