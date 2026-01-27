@@ -25,6 +25,12 @@ export async function logAudit(data: {
     isPersonal?: boolean;
 }) {
     try {
+        // Skip logging if Database is not configured (Setup Mode)
+        if (!process.env.DATABASE_URL) {
+            console.log('[Audit] Skipped log (DB not configured):', data.action);
+            return;
+        }
+
         // Check System Settings for Personal Audit Toggle
         if (data.isPersonal) {
             const settings = await prisma.systemSettings.findFirst({ select: { auditPersonalCredentials: true } });

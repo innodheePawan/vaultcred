@@ -21,10 +21,16 @@ export const authConfig = {
             const isDbMissing = !process.env.DATABASE_URL;
             const isSetupUser = (auth?.user as any)?.id === 'setup-temp-id';
 
-            // 1. If DB is missing, strictly force Setup
+            // 1. If DB is missing, strictly force Setup but allow Login flow
             if (isDbMissing) {
-                if (nextUrl.pathname === '/setup') return true;
-                return Response.redirect(new URL('/setup', nextUrl));
+                const isLogin = nextUrl.pathname.startsWith('/login');
+                const isApi = nextUrl.pathname.startsWith('/api') || nextUrl.pathname.startsWith('/_next') || nextUrl.pathname.includes('.');
+                const isSetup = nextUrl.pathname.startsWith('/setup');
+                const isRoot = nextUrl.pathname === '/';
+
+                if (isLogin || isApi || isSetup || isRoot) return true;
+
+                return Response.redirect(new URL('/login', nextUrl));
             }
 
             // 2. If DB is configured, but user is stuck in Setup Mode (Stale Session)
@@ -74,4 +80,5 @@ export const authConfig = {
         }
     },
     providers: [], // Configured in auth.ts
+    secret: process.env.NEXTAUTH_SECRET || 'setup-secret-placeholder',
 } satisfies NextAuthConfig;

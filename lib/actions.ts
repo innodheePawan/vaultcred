@@ -20,12 +20,15 @@ export async function authenticate(
         });
 
         // If redirect: false works and doesn't throw, we reach here.
+        // Fetch session to determine role for redirection
+        const session = await auth();
+
         await logAudit({
             action: 'LOGIN',
             details: `Login successful for ${formData.get('email')}`
         });
 
-        return { success: true };
+        return { success: true, role: session?.user?.role, userId: session?.user?.id };
 
     } catch (error) {
         if (error instanceof AuthError) {

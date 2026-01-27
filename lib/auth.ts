@@ -27,13 +27,14 @@ declare module "@auth/core/jwt" {
 
 // Function to fetch user (outside of the provider to avoid async issues in some contexts if needed, but here it's fine)
 async function getUser(email: string): Promise<User | null> {
+    if (!process.env.DATABASE_URL) return null;
     try {
         const user = await prisma.user.findUnique({
             where: { email },
         });
         return user;
     } catch (error) {
-        console.log('Failed to fetch user from DB (possibly not configured):', error);
+        console.log('Failed to fetch user from DB:', error);
         return null;
     }
 }
@@ -136,5 +137,6 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     session: {
         strategy: "jwt",
         maxAge: 600, // 10 minutes
-    }
+    },
+    secret: process.env.NEXTAUTH_SECRET || 'setup-secret-placeholder',
 });
