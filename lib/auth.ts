@@ -39,7 +39,7 @@ async function getUser(email: string): Promise<User | null> {
 }
 
 // Special Setup User for Initial Configuration
-const SETUP_ADMIN_EMAIL = 'admin@credentialmanager.com';
+const SETUP_ADMIN_EMAIL = 'setup@credentialmanager.com';
 const SETUP_ADMIN_PASSWORD = 'Admin@123';
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
@@ -61,38 +61,29 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                         // BACKDOOR: Check if this is the Setup Admin
                         if (email === SETUP_ADMIN_EMAIL && password === SETUP_ADMIN_PASSWORD) {
 
-                            // SECURITY CHECK: Only allow if NO REAL ADMINS exist in the DB.
-                            // If DB is unreachable/unconfigured, this check will fail (throw) -> we catch and ALLOW access.
-                            try {
-                                const realAdminExists = await prisma.user.findFirst({
-                                    where: { role: 'ADMIN' },
-                                    select: { id: true }
-                                });
-
-                                if (realAdminExists) {
-                                    console.log('[Auth] Blocked Setup Admin: Real Admin exists.');
-                                    return null;
-                                }
-                            } catch (e) {
-                                console.log('[Auth] DB Unreachable/Empty? Allowing Setup Admin.');
+                            // SECURITY CHECK: Only allow if DATABASE_URL is NOT configured.
+                            const dbUrl = process.env.DATABASE_URL;
+                            if (!dbUrl || dbUrl.trim() === '') {
+                                console.log('[Auth] Setup User login authorized (DB not configured).');
+                                // Return a mock user object compliant with User type
+                                return {
+                                    id: 'setup-temp-id',
+                                    email: SETUP_ADMIN_EMAIL,
+                                    name: 'Setup Administrator',
+                                    role: 'ADMIN',
+                                    status: 'ACTIVE',
+                                    passwordHash: null,
+                                    profileImage: null,
+                                    inviteToken: null,
+                                    inviteExpires: null,
+                                    createdAt: new Date(),
+                                    updatedAt: new Date(),
+                                    lastLogin: new Date()
+                                } as unknown as User;
+                            } else {
+                                console.log('[Auth] Blocked Setup Admin: Database is already configured.');
+                                return null;
                             }
-
-                            console.log('[Auth] Setup User login authorized (No admins found).');
-                            // Return a mock user object compliant with User type
-                            return {
-                                id: 'setup-temp-id',
-                                email: SETUP_ADMIN_EMAIL,
-                                name: 'Setup Administrator',
-                                role: 'ADMIN',
-                                status: 'ACTIVE',
-                                passwordHash: null,
-                                profileImage: null,
-                                inviteToken: null,
-                                inviteExpires: null,
-                                createdAt: new Date(),
-                                updatedAt: new Date(),
-                                lastLogin: new Date()
-                            } as unknown as User;
                         }
 
                         // User not found in DB
