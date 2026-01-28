@@ -139,4 +139,5 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         maxAge: 600, // 10 minutes
     },
     secret: process.env.NEXTAUTH_SECRET || 'setup-secret-placeholder',
+    trustHost: true,
 });
