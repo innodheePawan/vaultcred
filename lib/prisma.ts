@@ -1,4 +1,6 @@
-import 'dotenv/config'; // Force load env vars
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {

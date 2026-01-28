@@ -132,12 +132,25 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 session.user.id = token.id as string;
             }
             return session;
+        },
+        async redirect({ url, baseUrl }) {
+            // Allows relative callback URLs
+            if (url.startsWith("/")) return `${baseUrl}${url}`
+            // Allows callback URLs on the same origin
+            if (new URL(url).origin === baseUrl) return url
+
+            // Allow redirect to the configured NEXTAUTH_URL equivalent in production if different
+            // This is useful if the baseUrl is determined as localhost but we want to allow the prod domain
+            if (process.env.NEXT_PUBLIC_APP_URL && url.startsWith(process.env.NEXT_PUBLIC_APP_URL)) {
+                return url;
+            }
+
+            return baseUrl
         }
     },
     session: {
         strategy: "jwt",
         maxAge: 600, // 10 minutes
     },
-    secret: process.env.NEXTAUTH_SECRET || 'setup-secret-placeholder',
-    trustHost: true,
 });
+
