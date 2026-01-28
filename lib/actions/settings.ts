@@ -18,6 +18,8 @@ export async function getSystemSettings() {
         }
         return settings;
     } catch (error) {
+        // Log the specific error to help with debugging (e.g. 500 error cause)
+        console.error("Failed to fetch system settings (DB Error):", error);
         return { applicationName: 'VaultSecure', logoUrl: null };
     }
 }
