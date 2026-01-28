@@ -18,7 +18,7 @@ if (!dbUrl) {
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     datasources: {
         db: {
-            url: dbUrl || 'mysql://setup:setup@localhost:3306/setup_placeholder',
+            url: dbUrl,
         },
     },
 });
