@@ -14,10 +14,14 @@ if (!dbUrl) {
     console.log("✅ [Prisma] Connecting to:", safeUrl);
 }
 
+// Prevent crash on startup if Env Var is missing. 
+// Connection will fail later (caught by try/catch), but app will boot.
+const safeDbUrl = dbUrl || "mysql://dummy:dummy@localhost:3306/dummy";
+
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     datasources: {
         db: {
-            url: dbUrl,
+            url: safeDbUrl,
         },
     },
 });
