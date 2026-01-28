@@ -6,7 +6,7 @@ frontend:
         - npm ci
         - echo "DATABASE_URL=$DATABASE_URL" >> .env
         - echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
-        - echo "NEXTAUTH_URL=$NEXTAUTH_URL" >> .env
+        - if [ -z "$NEXTAUTH_URL" ]; then echo "NEXTAUTH_URL=$NEXT_PUBLIC_APP_URL" >> .env; else echo "NEXTAUTH_URL=$NEXTAUTH_URL" >> .env; fi
         - echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" >> .env
     build:
       commands:
