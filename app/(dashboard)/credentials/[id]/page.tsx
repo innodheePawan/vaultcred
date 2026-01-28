@@ -98,7 +98,7 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
 
                     <ShareSettings
                         credentialId={credential.id}
-                        shares={credential.accessList}
+                        shares={[]} /* accessList not implemented yet */
                         ownerId={credential.createdById}
                         currentUserId={(await auth())?.user?.id}
                     />

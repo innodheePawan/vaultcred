@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { createInvite } from '@/lib/actions';
+import { inviteUser } from '@/lib/actions/admin';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -13,7 +13,7 @@ const initialState = {
 
 export default function InvitePage() {
     const [state, formAction, isPending] = useActionState(async (prev: any, formData: FormData) => {
-        const result = await createInvite(formData);
+        const result = await inviteUser(prev, formData);
         if (result.error) return { ...prev, error: result.error, message: null, token: null };
         if (result.success) return { ...prev, message: 'Invite created successfully!', token: result.token, error: null };
         return prev;

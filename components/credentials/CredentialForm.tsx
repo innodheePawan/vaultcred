@@ -21,7 +21,7 @@ export default function CredentialForm({ action, initialData, isEdit = false, al
     const [type, setType] = useState(initialData?.type || 'PASSWORD');
     const [isPersonal, setIsPersonal] = useState(initialData?.isPersonal || false);
 
-    const [formState, formAction, isPending] = useActionState(action, initialState);
+    const [formState, formAction, isPending] = useActionState(action, initialState as any);
     const state = formState || initialState;
 
     // Track original filenames for Key/Cert uploads

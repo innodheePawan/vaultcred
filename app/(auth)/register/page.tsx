@@ -24,7 +24,7 @@ function RegisterContent() {
         if (result.error) return { ...prev, error: result.error, message: null };
         if (result.success) return { ...prev, message: 'Registration successful! You can now login.', error: null };
         return prev;
-    }, initialState);
+    }, initialState as any);
 
     if (!token) {
         return (
