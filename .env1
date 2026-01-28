@@ -1,0 +1,6 @@
+
+DATABASE_URL="mysql://myengl8r_credManagementUser2:H7wYaY2Lw,h7@43.225.55.182:3306/myengl8r_credManagement2"
+
+MASTER_KEY="453990eb69a5b22bdc921fed9da46b0673140d134d29b15f6288275b656a0dc2"
+
+NEXTAUTH_SECRET="3ff0c2a98a1bbe9bc564f46e61fd884f0fea45f237dbaa9542f92eaef33bf7a9"
