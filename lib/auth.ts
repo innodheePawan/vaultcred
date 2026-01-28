@@ -134,18 +134,27 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             return session;
         },
         async redirect({ url, baseUrl }) {
-            // Allows relative callback URLs
-            if (url.startsWith("/")) return `${baseUrl}${url}`
-            // Allows callback URLs on the same origin
-            if (new URL(url).origin === baseUrl) return url
+            // Robust Base URL Detection
+            // 1. Use NEXT_PUBLIC_APP_URL (from Amplify/Env) if available
+            // 2. Fallback to NEXTAUTH_URL
+            // 3. Fallback to the 'baseUrl' passed by NextAuth (which might be localhost of current request)
+            const effectiveBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || baseUrl;
 
-            // Allow redirect to the configured NEXTAUTH_URL equivalent in production if different
-            // This is useful if the baseUrl is determined as localhost but we want to allow the prod domain
+            // Ensure no trailing slash for consistency
+            const cleanBaseUrl = effectiveBaseUrl.endsWith('/') ? effectiveBaseUrl.slice(0, -1) : effectiveBaseUrl;
+
+            // Allows relative callback URLs
+            if (url.startsWith("/")) return `${cleanBaseUrl}${url}`
+
+            // Allows callback URLs on the permitted domains (same as cleanBaseUrl)
+            if (new URL(url).origin === cleanBaseUrl) return url
+
+            // If the URL is absolute but matches our app domain, allow it
             if (process.env.NEXT_PUBLIC_APP_URL && url.startsWith(process.env.NEXT_PUBLIC_APP_URL)) {
                 return url;
             }
 
-            return baseUrl
+            return cleanBaseUrl;
         }
     },
     session: {
