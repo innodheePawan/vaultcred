@@ -7,7 +7,8 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true, // Optional: if type errors persist despite compile success (Next.js sometimes weird)
-  }
+  },
+  serverExternalPackages: ['@prisma/client'],
 };
 
 export default nextConfig;

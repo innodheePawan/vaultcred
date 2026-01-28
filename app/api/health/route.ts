@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// import { prisma } from '@/lib/prisma'; // Dynamic import used instead
 
 export async function GET() {
     const envStatus = {
@@ -11,6 +11,8 @@ export async function GET() {
     };
 
     try {
+        // Dynamically import prisma to avoid top-level crash if binary is missing
+        const { prisma } = await import('@/lib/prisma');
         await prisma.$connect();
         envStatus.dbConnection = 'SUCCESS';
     } catch (error: any) {
