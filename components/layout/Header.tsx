@@ -54,14 +54,14 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
             <div className="flex-1 flex items-center justify-between px-6 h-full">
 
                 {/* Global Search - Centered */}
-                <div className="flex-1 flex justify-center max-w-2xl mx-auto">
+                <div className="flex-1 flex max-w-2xl mx-auto">
                     <div className="w-full max-w-md relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="h-5 w-5 text-gray-400" />
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 focus:outline-none text-black focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
                             placeholder="Search users, credentials..."
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
