@@ -57,7 +57,7 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
                 <div className="flex-1 flex max-w-2xl mx-auto">
                     <div className="w-full max-w-md relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-5 w-5 text-gray-400" />
+                            <Search className="h-5 w-5 text-gray-500" />
                         </div>
                         <input
                             type="text"
