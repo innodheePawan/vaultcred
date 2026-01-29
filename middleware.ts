@@ -12,6 +12,7 @@ export default auth((req) => {
     const path = req.nextUrl.pathname;
     const isLogin = path.startsWith('/login');
     const isSetup = path.startsWith('/setup');
+    const isInvite = path.startsWith('/invite');
     const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.includes('.');
 
     // Auth Session
@@ -52,7 +53,7 @@ export default auth((req) => {
     // Let's add basic protection here for safety.
     // Allow root page to be visible to guests? Yes.
     // Dashboard protection
-    if (!isLoggedIn && !isLogin && !isApi && !isSetup && !isRoot) { // Protect Dashboard, allow Root
+    if (!isLoggedIn && !isLogin && !isApi && !isSetup && !isRoot && !isInvite) { // Protect Dashboard, allow Root & Invite
         return NextResponse.redirect(new URL('/login', req.url));
     }
 

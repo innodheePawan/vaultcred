@@ -26,9 +26,10 @@ export const authConfig = {
                 const isLogin = nextUrl.pathname.startsWith('/login');
                 const isApi = nextUrl.pathname.startsWith('/api') || nextUrl.pathname.startsWith('/_next') || nextUrl.pathname.includes('.');
                 const isSetup = nextUrl.pathname.startsWith('/setup');
+                const isInvite = nextUrl.pathname.startsWith('/invite');
                 const isRoot = nextUrl.pathname === '/';
 
-                if (isLogin || isApi || isSetup || isRoot) return true;
+                if (isLogin || isApi || isSetup || isRoot || isInvite) return true;
 
                 return Response.redirect(new URL('/login', nextUrl));
             }
