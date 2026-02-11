@@ -25,15 +25,15 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
     const logoUrl = settings?.logoUrl;
 
     return (
-        <header className="h-[55px] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center z-40 relative">
-            {/* Logo Section - Matches Sidebar Width (w-64) - NO PADDING, Full Size */}
-            <div className="w-64 flex-shrink-0 h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900/50">
+        <header className="h-[70px] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center z-40 relative">
+            {/* Logo Section - Matches Sidebar Width (w-64), auto-fits any logo size */}
+            <div className="w-64 flex-shrink-0 h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900/50 overflow-hidden">
                 <Link href="/dashboard" className="flex items-center justify-center w-full h-full">
                     {logoUrl ? (
                         <img
                             src={logoUrl}
                             alt="Logo"
-                            className="w-full h-full object-contain"
+                            style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }}
                         />
                     ) : (
                         <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">

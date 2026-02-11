@@ -7,14 +7,28 @@ import { hashPassword } from '@/lib/utils/password';
 // import { crypto } from 'next/dist/server/server-utils'; // Removed invalid import
 import { randomBytes } from 'crypto';
 import { logAudit } from '@/lib/actions/audit';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function authenticate(
     prevState: any,
     formData: FormData,
 ) {
+    const email = formData.get('email') as string;
+
+    // Rate limiting: 5 attempts per 15 minutes per email
+    const { allowed, retryAfterMs } = rateLimit(`login:${email}`, 5, 15 * 60 * 1000);
+    if (!allowed) {
+        const retryMinutes = Math.ceil(retryAfterMs / 60000);
+        await logAudit({
+            action: 'LOGIN_RATE_LIMITED',
+            details: `Rate limited login attempt for ${email}. Retry after ${retryMinutes} min.`
+        });
+        return { error: `Too many login attempts. Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.` };
+    }
+
     try {
         await signIn('credentials', {
-            email: formData.get('email'),
+            email,
             password: formData.get('password'),
             redirect: false,
         });
@@ -25,13 +39,17 @@ export async function authenticate(
 
         await logAudit({
             action: 'LOGIN',
-            details: `Login successful for ${formData.get('email')}`
+            details: `Login successful for ${email}`
         });
 
         return { success: true, role: session?.user?.role, userId: session?.user?.id };
 
     } catch (error) {
         if (error instanceof AuthError) {
+            await logAudit({
+                action: 'LOGIN_FAILED',
+                details: `Failed login attempt for ${email}`
+            });
             switch (error.type) {
                 case 'CredentialsSignin':
                     return { error: 'Invalid credentials.' };

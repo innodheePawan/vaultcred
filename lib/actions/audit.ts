@@ -100,11 +100,7 @@ export async function getAuditLogs({
     console.log('[Audit] Checking access for:', session.user.id);
 
     let ctx;
-    if (session.user.id === 'setup-temp-id') {
-        ctx = { isAdmin: true, allowedCategories: ['*'], allowedEnvironments: ['*'], permissions: {} };
-    } else {
-        ctx = await getUserAccessContext(session.user.id);
-    }
+    ctx = await getUserAccessContext(session.user.id);
 
     console.log('[Audit] Context:', JSON.stringify(ctx, null, 2));
 

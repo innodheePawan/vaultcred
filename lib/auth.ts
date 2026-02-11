@@ -39,10 +39,6 @@ async function getUser(email: string): Promise<User | null> {
     }
 }
 
-// Special Setup User for Initial Configuration
-const SETUP_ADMIN_EMAIL = 'setup@credentialmanager.com';
-const SETUP_ADMIN_PASSWORD = 'Admin@123';
-
 export const { auth, signIn, signOut, handlers } = NextAuth({
     ...authConfig,
     providers: [
@@ -59,35 +55,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     const user = await getUser(email);
 
                     if (!user) {
-                        // BACKDOOR: Check if this is the Setup Admin
-                        if (email === SETUP_ADMIN_EMAIL && password === SETUP_ADMIN_PASSWORD) {
-
-                            // SECURITY CHECK: Only allow if DATABASE_URL is NOT configured.
-                            const dbUrl = process.env.DATABASE_URL;
-                            if (!dbUrl || dbUrl.trim() === '') {
-                                console.log('[Auth] Setup User login authorized (DB not configured).');
-                                // Return a mock user object compliant with User type
-                                return {
-                                    id: 'setup-temp-id',
-                                    email: SETUP_ADMIN_EMAIL,
-                                    name: 'Setup Administrator',
-                                    role: 'ADMIN',
-                                    status: 'ACTIVE',
-                                    passwordHash: null,
-                                    profileImage: null,
-                                    inviteToken: null,
-                                    inviteExpires: null,
-                                    createdAt: new Date(),
-                                    updatedAt: new Date(),
-                                    lastLogin: new Date()
-                                } as unknown as User;
-                            } else {
-                                console.log('[Auth] Blocked Setup Admin: Database is already configured.');
-                                return null;
-                            }
-                        }
-
-                        // User not found in DB
+                        console.log('[Auth] No user found');
                         return null;
                     }
 

@@ -16,6 +16,16 @@ export default function SetupPage() {
         setStatus(null);
 
         const formData = new FormData(e.currentTarget);
+
+        // Client-side password match validation
+        const adminPassword = formData.get('adminPassword') as string;
+        const adminConfirm = formData.get('adminPasswordConfirm') as string;
+        if (adminPassword !== adminConfirm) {
+            setStatus({ error: 'Admin passwords do not match' });
+            setIsSaving(false);
+            return;
+        }
+
         const result = await configureSystem(formData);
 
         if (result.error) {
@@ -125,6 +135,60 @@ export default function SetupPage() {
                                 className="mt-1 block w-full sm:text-sm border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 py-2 px-3"
                             />
                         </div>
+
+                        {/* ── Admin Account Section ── */}
+                        <div className="border-t border-gray-600 pt-6 mt-6">
+                            <h3 className="text-lg font-medium text-white mb-2">
+                                Administrator Account
+                            </h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Create your first admin account. You&apos;ll use these credentials to log in.
+                            </p>
+
+                            <div>
+                                <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-300">
+                                    Admin Email
+                                </label>
+                                <input
+                                    id="adminEmail"
+                                    name="adminEmail"
+                                    type="email"
+                                    required
+                                    className="mt-1 block w-full sm:text-sm border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 py-2 px-3"
+                                    placeholder="admin@yourcompany.com"
+                                />
+                            </div>
+
+                            <div className="mt-4">
+                                <label htmlFor="adminPassword" className="block text-sm font-medium text-gray-300">
+                                    Admin Password
+                                </label>
+                                <input
+                                    id="adminPassword"
+                                    name="adminPassword"
+                                    type="password"
+                                    required
+                                    minLength={12}
+                                    className="mt-1 block w-full sm:text-sm border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 py-2 px-3"
+                                    placeholder="Min 12 chars, mixed case + number + special"
+                                />
+                            </div>
+
+                            <div className="mt-4">
+                                <label htmlFor="adminPasswordConfirm" className="block text-sm font-medium text-gray-300">
+                                    Confirm Password
+                                </label>
+                                <input
+                                    id="adminPasswordConfirm"
+                                    name="adminPasswordConfirm"
+                                    type="password"
+                                    required
+                                    minLength={12}
+                                    className="mt-1 block w-full sm:text-sm border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 py-2 px-3"
+                                />
+                            </div>
+                        </div>
+
 
                         {status?.error && (
                             <div className="rounded-md bg-red-900/50 p-4 border border-red-700">

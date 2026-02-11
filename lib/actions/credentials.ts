@@ -230,7 +230,7 @@ export async function createCredential(prevState: any, formData: FormData) {
                         fileName: data.fileName,
                         filePath: filePath, // Retain path for metadata
                         fileType: data.fileType || 'unknown',
-                        fileContent: data.fileContent || null, // Store Base64 String directly
+                        fileContent: data.fileContent ? encrypt(data.fileContent) : null, // Encrypt before storage
                     }
                 });
             }
@@ -485,7 +485,7 @@ export async function getCredentialById(id: string) {
         // If content is in DB as Base64 String
         let content = '';
         if (d.fileContent) {
-            content = d.fileContent; // Already Base64 String
+            content = decrypt(d.fileContent); // Decrypt from DB
         } else {
             // Fallback to disk read (migration support?)
             try {

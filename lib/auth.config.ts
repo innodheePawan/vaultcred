@@ -19,9 +19,8 @@ export const authConfig = {
 
             // Setup User Handling OR Missing Database Configuration
             const isDbMissing = !process.env.DATABASE_URL;
-            const isSetupUser = (auth?.user as any)?.id === 'setup-temp-id';
 
-            // 1. If DB is missing, strictly force Setup but allow Login flow
+            // 1. If DB is missing, allow setup and essential routes without auth
             if (isDbMissing) {
                 const isLogin = nextUrl.pathname.startsWith('/login');
                 const isApi = nextUrl.pathname.startsWith('/api') || nextUrl.pathname.startsWith('/_next') || nextUrl.pathname.includes('.');
@@ -31,17 +30,8 @@ export const authConfig = {
 
                 if (isLogin || isApi || isSetup || isRoot || isInvite) return true;
 
-                return Response.redirect(new URL('/login', nextUrl));
-            }
-
-            // 2. If DB is configured, but user is stuck in Setup Mode (Stale Session)
-            if (!isDbMissing && isSetupUser) {
-                // If they are on setup page, redirect them to login to refresh session
-                if (nextUrl.pathname === '/setup') {
-                    return Response.redirect(new URL('/api/auth/signout', nextUrl));
-                }
-                // For other pages, signout/login cycle is best safe guard
-                return Response.redirect(new URL('/api/auth/signout', nextUrl));
+                // Redirect to /setup instead of /login when DB is not configured
+                return Response.redirect(new URL('/setup', nextUrl));
             }
 
             if (isProtected) {
@@ -81,6 +71,6 @@ export const authConfig = {
         }
     },
     providers: [], // Configured in auth.ts
-    secret: process.env.NEXTAUTH_SECRET || 'setup-secret-placeholder',
+    secret: process.env.NEXTAUTH_SECRET,
     trustHost: true,
 } satisfies NextAuthConfig;

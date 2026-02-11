@@ -6,6 +6,7 @@ import { createInvite, validateInvite, acceptInvite } from '@/lib/iam/invites';
 import { getUserAccessContext, canAccess } from '@/lib/iam/permissions';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { clearRateLimit } from '@/lib/rate-limit';
 
 export async function getUsersAndInvites() {
     const session = await auth();
@@ -184,6 +185,14 @@ export async function updateUser(userId: string, formData: FormData) {
                 });
             }
         });
+
+        // Clear login rate limit when re-enabling a user
+        if (status === 'ACTIVE') {
+            const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+            if (user?.email) {
+                clearRateLimit(`login:${user.email}`);
+            }
+        }
 
         revalidatePath('/dashboard/admin/users');
         return { success: true, message: 'User updated successfully' };

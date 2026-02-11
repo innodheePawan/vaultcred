@@ -13,27 +13,12 @@ export default function LoginForm() {
     );
     const router = useRouter();
 
-    // Fix: We need to know which email was submitted to decide redirect?
-    // Actually, we can just try to access /dashboard. If it redirects to /login? No.
-    // If we are unconfigured, middleware blocks /dashboard.
-    // So if we are `setup@`, we MUST go to `/setup`.
-    // Let's rely on the input field value via Ref or State?
-    // Let's use `onSubmit` wrapper to capture email? No, `action`.
-    // Let's just assume if it succeeds and we get returned to /login (because dashboard blocked), that's bad.
-
-    // Let's use a ref to track the email being submitted.
     const emailRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (state?.success) {
             router.refresh(); // Refresh NextAuth session
-
-            // Redirect based on User Identity
-            if (state.userId === 'setup-temp-id') {
-                router.push('/setup');
-            } else {
-                router.push('/dashboard');
-            }
+            router.push('/dashboard');
         }
     }, [state, router]);
 

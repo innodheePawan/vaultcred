@@ -40,6 +40,7 @@ const MENU_ITEMS: MenuItem[] = [
         children: [
             { title: 'Users & Groups', href: '/admin/users' },
             { title: 'Audit Logs', href: '/admin/audit' },
+            { title: 'Bulk Import', href: '/credentials/bulk-import' },
         ],
     },
     {

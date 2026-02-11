@@ -23,22 +23,13 @@ export default auth((req) => {
 
     // SCENARIO 1: Database NOT Configured
     if (isUnconfigured) {
-        // Allow Login, API, Static, and Root Landing Page
-        if (isLogin || isApi || isRoot) {
+        // Allow API, Static assets, and the Setup page itself
+        if (isApi || isSetup) {
             return;
         }
 
-        // Allow Setup Page ONLY if logged in as ADMIN (which effectively means Setup Admin in this state)
-        if (isSetup) {
-            if (isLoggedIn && userRole === 'ADMIN') {
-                return;
-            }
-            // If not logged in, redirect to login
-            return NextResponse.redirect(new URL('/login', req.url));
-        }
-
-        // Redirect everything else to Login
-        return NextResponse.redirect(new URL('/login', req.url));
+        // Redirect everything else (including /login and /) to /setup
+        return NextResponse.redirect(new URL('/setup', req.url));
     }
 
     // SCENARIO 2: Database IS Configured

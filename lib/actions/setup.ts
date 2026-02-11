@@ -17,8 +17,25 @@ export async function configureSystem(formData: FormData) {
     const dbName = formData.get('dbName') as string;
     const dbPort = formData.get('dbPort') as string || '3306';
 
+    // Admin account fields (from setup wizard form)
+    const adminEmail = formData.get('adminEmail') as string;
+    const adminPassword = formData.get('adminPassword') as string;
+
     if (!dbHost || !dbUser || !dbName) {
         return { error: 'Missing required database fields' };
+    }
+
+    if (!adminEmail || !adminPassword) {
+        return { error: 'Admin email and password are required' };
+    }
+
+    if (adminPassword.length < 12) {
+        return { error: 'Admin password must be at least 12 characters' };
+    }
+
+    if (!/[A-Z]/.test(adminPassword) || !/[a-z]/.test(adminPassword) ||
+        !/[0-9]/.test(adminPassword) || !/[^A-Za-z0-9]/.test(adminPassword)) {
+        return { error: 'Password must include uppercase, lowercase, number, and special character' };
     }
 
     // 1. Construct DATABASE_URL
@@ -92,9 +109,7 @@ export async function configureSystem(formData: FormData) {
             // B. Seed Roles & Groups
             await seedRoles(prisma);
 
-            // C. Seed System Admin
-            const adminEmail = 'admin@innodhee.com';
-            const adminPassword = 'Admin@123';
+            // C. Seed System Admin (credentials from setup wizard form — validated above)
             const hashedPassword = await hash(adminPassword, 12);
 
             const existingUser = await prisma.user.findUnique({

@@ -1,8 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 
 const initialState = {
     message: null,
@@ -27,6 +27,33 @@ export default function CredentialForm({ action, initialData, isEdit = false, al
     // Track original filenames for Key/Cert uploads
     const [publicFileName, setPublicFileName] = useState('');
     const [privateFileName, setPrivateFileName] = useState('');
+    const [uploadedFileName, setUploadedFileName] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleCredFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Auto-populate fileName
+        const nameInput = document.getElementById('fileName') as HTMLInputElement;
+        if (nameInput) nameInput.value = file.name;
+
+        // Auto-populate fileType from extension
+        const ext = file.name.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+        const typeInput = document.getElementById('fileType') as HTMLInputElement;
+        if (typeInput) typeInput.value = ext;
+
+        setUploadedFileName(file.name);
+
+        // Read file as text so content is displayed as-is
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target?.result as string;
+            const textarea = document.getElementById('fileContent') as HTMLTextAreaElement;
+            if (textarea) textarea.value = text;
+        };
+        reader.readAsText(file);
+    };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
         const file = e.target.files?.[0];
@@ -374,6 +401,37 @@ export default function CredentialForm({ action, initialData, isEdit = false, al
             {/* FILE */}
             {type === 'FILE' && (
                 <div className="space-y-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                    {/* Upload Button */}
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    >
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={handleCredFileUpload}
+                        />
+                        <Upload className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
+                        {uploadedFileName ? (
+                            <>
+                                <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{uploadedFileName}</p>
+                                <p className="text-xs text-gray-500 mt-1">Click to replace</p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Click to upload a file</p>
+                                <p className="text-xs text-gray-500 mt-1">File name, type, and content will be auto-filled</p>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="relative flex items-center">
+                        <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                        <span className="flex-shrink mx-4 text-xs text-gray-400">or fill manually</span>
+                        <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="fileName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">File Name <span className="text-red-500">*</span></label>
@@ -388,7 +446,7 @@ export default function CredentialForm({ action, initialData, isEdit = false, al
                     </div>
                     <div>
                         <label htmlFor="fileContent" className="block text-sm font-medium text-gray-700 dark:text-gray-300">File Content (Text/Base64) <span className="text-red-500">*</span></label>
-                        <p className="text-xs text-gray-500 mb-2">Paste the content of the file here.</p>
+                        <p className="text-xs text-gray-500 mb-2">Auto-filled on upload, or paste content manually.</p>
                         <textarea name="fileContent" id="fileContent" rows={6} required={!isEdit} defaultValue={initialData?.details?.fileContent}
                             className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white font-mono text-xs" />
                     </div>
