@@ -15,8 +15,7 @@ import {
 } from 'recharts';
 import { useRouter } from 'next/navigation';
 
-const COLORS = ['#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6', '#EF4444'];
-// Matching the dark mode vibe: Green, Orange, Indigo/Purple
+const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4'];
 
 interface ChartData {
     name: string;
@@ -24,21 +23,21 @@ interface ChartData {
     expiring: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload as ChartData;
         return (
-            <div className="bg-gray-800 text-white p-3 rounded-lg shadow-xl border border-gray-700 text-xs">
-                <p className="font-bold mb-1">{data.name}</p>
+            <div className="bg-gray-900/95 backdrop-blur-sm text-white px-4 py-3 rounded-xl shadow-2xl border border-gray-700/50 text-xs">
+                <p className="font-bold text-sm mb-1.5">{data.name}</p>
                 <div className="space-y-1">
-                    <p className="flex justify-between gap-4">
-                        <span className="text-gray-400">Total:</span>
-                        <span>{data.value}</span>
+                    <p className="flex justify-between gap-6">
+                        <span className="text-gray-400">Total</span>
+                        <span className="font-semibold">{data.value}</span>
                     </p>
                     {data.expiring > 0 && (
-                        <p className="flex justify-between gap-4 text-amber-400">
-                            <span>Expiring:</span>
-                            <span>{data.expiring}</span>
+                        <p className="flex justify-between gap-6 text-amber-400">
+                            <span>Expiring</span>
+                            <span className="font-semibold">{data.expiring}</span>
                         </p>
                     )}
                 </div>
@@ -46,6 +45,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         );
     }
     return null;
+};
+
+// Custom legend with better styling
+const CustomLegend = ({ payload }: any) => {
+    if (!payload) return null;
+    return (
+        <div className="flex flex-col gap-2 pl-2">
+            {payload.map((entry: any, index: number) => (
+                <div key={index} className="flex items-center gap-2 text-xs cursor-pointer hover:opacity-80 transition-opacity">
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                    <span className="text-gray-600 dark:text-gray-400 truncate">{entry.value}</span>
+                </div>
+            ))}
+        </div>
+    );
 };
 
 // ---- Category Pie Chart ----
@@ -59,24 +73,29 @@ export function CategoryPieChart({ data }: { data: ChartData[] }) {
     };
 
     return (
-        <div className="h-full w-full min-h-[250px]">
-            {/* Title integrated in parent, just chart here */}
+        <div className="h-full w-full min-h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 0, bottom: 0, left: 0, right: 0 }}>
                     <Pie
                         data={data}
-                        cx="40%" // Left align pie
+                        cx="38%"
                         cy="50%"
-                        innerRadius="60%"
-                        outerRadius="90%"
-                        paddingAngle={4}
+                        innerRadius="55%"
+                        outerRadius="88%"
+                        paddingAngle={3}
                         dataKey="value"
-                        onClick={(data, index) => handleClick(data.payload)}
+                        onClick={(data) => handleClick(data.payload)}
                         cursor="pointer"
                         stroke="none"
+                        animationDuration={800}
+                        animationBegin={100}
                     >
                         {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                                className="hover:opacity-80 transition-opacity duration-200"
+                            />
                         ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
@@ -84,8 +103,7 @@ export function CategoryPieChart({ data }: { data: ChartData[] }) {
                         layout="vertical"
                         verticalAlign="middle"
                         align="right"
-                        iconType="circle"
-                        wrapperStyle={{ fontSize: '12px', lineHeight: '24px', right: 0 }}
+                        content={<CustomLegend />}
                     />
                 </PieChart>
             </ResponsiveContainer>
@@ -104,7 +122,7 @@ export function EnvironmentBarChart({ data }: { data: ChartData[] }) {
     };
 
     return (
-        <div className="h-full w-full min-h-[200px]">
+        <div className="h-full w-full min-h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={data}
@@ -121,16 +139,22 @@ export function EnvironmentBarChart({ data }: { data: ChartData[] }) {
                         tickLine={false}
                         axisLine={false}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(99, 102, 241, 0.06)' }} />
                     <Bar
                         dataKey="value"
-                        radius={[0, 4, 4, 0]}
-                        barSize={24}
+                        radius={[0, 8, 8, 0]}
+                        barSize={28}
                         cursor="pointer"
                         onClick={handleBarClick}
+                        animationDuration={800}
+                        animationBegin={200}
                     >
                         {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                                className="hover:opacity-80 transition-opacity duration-200"
+                            />
                         ))}
                     </Bar>
                 </BarChart>
