@@ -10,10 +10,13 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@otplib/plugin-base32-scure": "^13.2.1",
+    "@otplib/plugin-crypto-noble": "^13.2.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.4",
     "@types/bcryptjs": "^2.4.6",
+    "@types/qrcode": "^1.5.6",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -21,6 +24,8 @@
     "lucide-react": "^0.562.0",
     "next": "15.1.0",
     "next-auth": "^5.0.0-beta.30",
+    "otplib": "^13.2.1",
+    "qrcode": "^1.5.4",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "recharts": "^3.7.0",

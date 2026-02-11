@@ -25,6 +25,10 @@ model User {
   inviteToken   String?   @map("invite_token")
   inviteExpires DateTime? @map("invite_expires")
 
+  // 2FA Fields
+  twoFactorSecret      String?   @map("two_factor_secret") @db.Text
+  twoFactorEnabled     Boolean   @default(false) @map("two_factor_enabled")
+
   createdAt     DateTime  @default(now()) @map("created_on")
   updatedAt     DateTime  @updatedAt
   lastLogin     DateTime? @map("last_login")
@@ -319,6 +323,7 @@ model SystemSettings {
   logoUrl         String?  @map("logo_url") @db.LongText
   themeColor      String?  @map("theme_color")
   auditPersonalCredentials Boolean @default(true) @map("audit_personal_credentials")
+  twoFactorMandatory      Boolean @default(false) @map("two_factor_mandatory")
   
   updatedAt   DateTime @updatedAt @map("updated_on")
   updatedBy   String?  @map("updated_by")

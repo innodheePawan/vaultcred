@@ -59,6 +59,7 @@ export const authConfig = {
             if (user) {
                 token.role = (user as any).role;
                 token.id = (user as any).id;
+                token.twoFactorEnabled = (user as any).twoFactorEnabled;
             }
             return token;
         },
@@ -66,6 +67,8 @@ export const authConfig = {
             if (token && session.user) {
                 session.user.role = token.role as string;
                 session.user.id = token.id as string;
+                // @ts-ignore
+                session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
             }
             return session;
         }

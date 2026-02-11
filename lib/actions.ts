@@ -30,6 +30,7 @@ export async function authenticate(
         await signIn('credentials', {
             email,
             password: formData.get('password'),
+            code: formData.get('code') || undefined,
             redirect: false,
         });
 

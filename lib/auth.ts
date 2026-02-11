@@ -5,6 +5,11 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { verifyPassword } from "@/lib/utils/password"
 import { User } from "@prisma/client"
+import { OTP } from 'otplib';
+import { decrypt } from '@/lib/crypto';
+
+// OTP instance for verification
+const otp = new OTP();
 
 // Extend NextAuth types
 declare module "next-auth" {
@@ -14,6 +19,7 @@ declare module "next-auth" {
             email: string;
             name?: string | null;
             role: string;
+            twoFactorEnabled: boolean;
         }
     }
 }
@@ -22,10 +28,11 @@ declare module "@auth/core/jwt" {
     interface JWT {
         role: string;
         id: string;
+        twoFactorEnabled: boolean;
     }
 }
 
-// Function to fetch user (outside of the provider to avoid async issues in some contexts if needed, but here it's fine)
+// Function to fetch user
 async function getUser(email: string): Promise<User | null> {
     if (!process.env.DATABASE_URL) return null;
     try {
@@ -44,8 +51,6 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     providers: [
         Credentials({
             async authorize(credentials) {
-                // Logging removed
-
                 const parsedCredentials = z
                     .object({ email: z.string().email(), password: z.string().min(1) })
                     .safeParse(credentials);
@@ -64,22 +69,48 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                         return null;
                     }
 
-
                     if (!user.passwordHash) {
-
                         return null;
                     }
 
                     const passwordsMatch = await verifyPassword(password, user.passwordHash);
-                    if (passwordsMatch) {
-                        return {
-                            ...user,
-                        };
-                    } else {
-
+                    if (!passwordsMatch) {
+                        return null;
                     }
-                } else {
 
+                    // 2FA Verification
+                    // @ts-ignore - Prisma types may be stale
+                    if (user.twoFactorEnabled) {
+                        const twoFactorCode = (credentials as any).code as string | undefined;
+
+                        if (!twoFactorCode) {
+                            // No code provided — reject (frontend should have prompted)
+                            return null;
+                        }
+
+                        // @ts-ignore
+                        if (!user.twoFactorSecret) return null;
+                        // @ts-ignore
+                        const secret = decrypt(user.twoFactorSecret);
+
+                        try {
+                            const result = await otp.verify({
+                                token: twoFactorCode,
+                                secret,
+                            });
+                            const isValid = result && result.valid;
+                            if (!isValid) return null;
+                        } catch (error) {
+                            console.error('[Auth] 2FA Verify Error:', error);
+                            return null;
+                        }
+                    }
+
+                    return {
+                        ...user,
+                        // @ts-ignore
+                        twoFactorEnabled: user.twoFactorEnabled,
+                    };
                 }
 
                 return null;
@@ -91,6 +122,21 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             if (user) {
                 token.role = (user as User).role;
                 token.id = (user as User).id;
+                token.twoFactorEnabled = (user as any).twoFactorEnabled;
+            } else if (token.id) {
+                // Refresh twoFactorEnabled from DB on every token refresh
+                // so that enabling/disabling 2FA takes effect immediately
+                try {
+                    const dbUser = await prisma.user.findUnique({
+                        where: { id: token.id as string },
+                        select: { twoFactorEnabled: true },
+                    });
+                    if (dbUser) {
+                        token.twoFactorEnabled = dbUser.twoFactorEnabled;
+                    }
+                } catch (e) {
+                    // If DB is unavailable, keep existing token value
+                }
             }
             return token;
         },
@@ -98,26 +144,16 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             if (token && session.user) {
                 session.user.role = token.role as string;
                 session.user.id = token.id as string;
+                session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
             }
             return session;
         },
         async redirect({ url, baseUrl }) {
-            // Robust Base URL Detection
-            // 1. Use NEXT_PUBLIC_APP_URL (from Amplify/Env) if available
-            // 2. Fallback to NEXTAUTH_URL
-            // 3. Fallback to the 'baseUrl' passed by NextAuth (which might be localhost of current request)
             const effectiveBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || baseUrl;
-
-            // Ensure no trailing slash for consistency
             const cleanBaseUrl = effectiveBaseUrl.endsWith('/') ? effectiveBaseUrl.slice(0, -1) : effectiveBaseUrl;
 
-            // Allows relative callback URLs
             if (url.startsWith("/")) return `${cleanBaseUrl}${url}`
-
-            // Allows callback URLs on the permitted domains (same as cleanBaseUrl)
             if (new URL(url).origin === cleanBaseUrl) return url
-
-            // If the URL is absolute but matches our app domain, allow it
             if (process.env.NEXT_PUBLIC_APP_URL && url.startsWith(process.env.NEXT_PUBLIC_APP_URL)) {
                 return url;
             }
@@ -130,4 +166,3 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         maxAge: 600, // 10 minutes
     },
 });
-

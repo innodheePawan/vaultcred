@@ -12,50 +12,55 @@ export default auth((req) => {
     const path = req.nextUrl.pathname;
     const isLogin = path.startsWith('/login');
     const isSetup = path.startsWith('/setup');
+    const isSetup2fa = path.startsWith('/setup-2fa');
     const isInvite = path.startsWith('/invite');
     const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.includes('.');
+    const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
 
     // Auth Session
     const isLoggedIn = !!req.auth;
     const userRole = req.auth?.user?.role;
+    // @ts-ignore - twoFactorEnabled is added via callbacks
+    const twoFactorEnabled = req.auth?.user?.twoFactorEnabled;
 
     const isRoot = path === '/';
 
     // SCENARIO 1: Database NOT Configured
     if (isUnconfigured) {
-        // Allow API, Static assets, and the Setup page itself
         if (isApi || isSetup) {
             return;
         }
-
-        // Redirect everything else (including /login and /) to /setup
         return NextResponse.redirect(new URL('/setup', req.url));
     }
 
     // SCENARIO 2: Database IS Configured
+
     // If user is logged in and tries to access /login, send to dashboard
     if (isLoggedIn && isLogin) {
-        // Optional: If you want /login to redirect to dashboard when logged in
         return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
-    // Normal protection for other routes is implicit via Matcher + Auth Wrapper?
-    // Actually, `auth()` middleware by default doesn't redirect unless we tell it to or use `authorized` callback in auth.config.
-    // Let's add basic protection here for safety.
-    // Allow root page to be visible to guests? Yes.
-    // Dashboard protection
-    if (!isLoggedIn && !isLogin && !isApi && !isSetup && !isRoot && !isInvite) { // Protect Dashboard, allow Root & Invite
+    // 2FA Enforcement: Logged-in users without 2FA must set it up
+    if (isLoggedIn && !twoFactorEnabled && !isSetup2fa && !isSignout && !isApi && !isSetup) {
+        return NextResponse.redirect(new URL('/setup-2fa', req.url));
+    }
+
+    // If 2FA is already enabled, block access to setup-2fa
+    if (isLoggedIn && twoFactorEnabled && isSetup2fa) {
+        return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+
+    // Normal protection for other routes
+    if (!isLoggedIn && !isLogin && !isApi && !isSetup && !isRoot && !isInvite && !isSetup2fa) {
         return NextResponse.redirect(new URL('/login', req.url));
     }
 
-    // Block /setup if DB is configured? 
-    // Yes, usually.
-    if (isSetup) {
+    // Block /setup if DB is configured
+    if (isSetup && !isSetup2fa) {
         return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 });
 
 export const config = {
-    // https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
     matcher: ['/((?!api|_next/static|_next/image|.*\\.png$).*)'],
 };

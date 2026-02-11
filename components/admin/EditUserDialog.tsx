@@ -133,14 +133,7 @@ export default function EditUserDialog({ user, groups, open, onOpenChange }: Edi
                                     >
                                         <option value="" disabled>Select a Group</option>
                                         {groups
-                                            .filter(g => ['ADMIN', 'USER', 'CONSUMER', 'AUDITOR'].includes(g.name))
-                                            .filter((group, index, self) =>
-                                                index === self.findIndex((t) => (t.name === group.name))
-                                            ) // Deduplicate just in case
-                                            .sort((a, b) => {
-                                                const order = ['ADMIN', 'USER', 'CONSUMER', 'AUDITOR'];
-                                                return order.indexOf(a.name) - order.indexOf(b.name);
-                                            })
+                                            .sort((a, b) => a.name.localeCompare(b.name))
                                             .map((group) => (
                                                 <option key={group.id} value={group.id}>
                                                     {group.name}

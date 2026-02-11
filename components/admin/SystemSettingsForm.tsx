@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { updateSystemSettings } from '@/lib/actions/settings';
-import { Upload, Save, Building, AlertCircle, CheckCircle, Database } from 'lucide-react';
+import { Upload, Save, Building, AlertCircle, CheckCircle, Database, ShieldCheck } from 'lucide-react';
 
 const initialState = {
     message: null,
@@ -15,6 +15,7 @@ export default function SystemSettingsForm({ initialSettings, dbInfo }: { initia
     const [logoPreview, setLogoPreview] = useState<string | null>(initialSettings.logoUrl);
     const [removeLogo, setRemoveLogo] = useState(false);
     const [auditPersonal, setAuditPersonal] = useState(initialSettings.auditPersonalCredentials ?? true);
+    const [twoFactorMandatory, setTwoFactorMandatory] = useState(initialSettings.twoFactorMandatory ?? false);
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -240,6 +241,40 @@ export default function SystemSettingsForm({ initialSettings, dbInfo }: { initia
                             <br />
                             <span className="text-xs text-amber-600 dark:text-amber-400">
                                 Disabling this may reduce visibility into user activities but ensures stricter privacy for personal items.
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Security Settings */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700 mb-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" />
+                    Security
+                </h3>
+                <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                        <input
+                            id="twoFactorMandatory"
+                            name="twoFactorMandatory"
+                            type="checkbox"
+                            value="true"
+                            checked={twoFactorMandatory}
+                            onChange={(e) => setTwoFactorMandatory(e.target.checked)}
+                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        />
+                    </div>
+                    <div className="ml-3 text-sm">
+                        <label htmlFor="twoFactorMandatory" className="font-medium text-gray-700 dark:text-gray-300">
+                            Mandatory Two-Factor Authentication
+                        </label>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            When enabled, all users are required to set up 2FA and cannot disable it.
+                            This is an enterprise-level policy that no user can override.
+                            <br />
+                            <span className="text-xs text-amber-600 dark:text-amber-400">
+                                Enabling this will force users who haven&apos;t set up 2FA to do so on their next login.
                             </span>
                         </p>
                     </div>

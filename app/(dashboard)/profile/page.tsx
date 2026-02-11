@@ -18,6 +18,11 @@ export default async function ProfilePage() {
         redirect('/login');
     }
 
+    // Fetch enterprise mandatory 2FA setting
+    const settings = await prisma.systemSettings.findFirst({
+        select: { twoFactorMandatory: true },
+    }).catch(() => null);
+
     return (
         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
@@ -33,7 +38,9 @@ export default async function ProfilePage() {
                     email: user.email,
                     role: user.role,
                     image: (user as any).profileImage,
+                    twoFactorEnabled: (user as any).twoFactorEnabled ?? false,
                 }}
+                twoFactorMandatory={(settings as any)?.twoFactorMandatory ?? false}
             />
         </div>
     );

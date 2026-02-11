@@ -68,6 +68,7 @@ export async function updateSystemSettings(prevState: any, formData: FormData) {
     // Checkbox: "true" if checked (controlled), or check presence.
     // We will ensure Frontend sends "true" or "false".
     const auditPersonalCredentials = formData.get('auditPersonalCredentials') === 'true';
+    const twoFactorMandatory = formData.get('twoFactorMandatory') === 'true';
 
     if (!applicationName) {
         return { error: 'Application Name is required.' };
@@ -105,6 +106,7 @@ export async function updateSystemSettings(prevState: any, formData: FormData) {
                 companyName: companyName,
                 logoUrl: logoUrl,
                 auditPersonalCredentials: auditPersonalCredentials,
+                twoFactorMandatory: twoFactorMandatory,
                 updatedBy: session.user.id,
             },
             create: {
@@ -113,6 +115,7 @@ export async function updateSystemSettings(prevState: any, formData: FormData) {
                 companyName: companyName,
                 logoUrl: logoUrl,
                 auditPersonalCredentials: auditPersonalCredentials,
+                twoFactorMandatory: twoFactorMandatory,
                 updatedBy: session.user.id,
             }
         });
@@ -130,6 +133,10 @@ export async function updateSystemSettings(prevState: any, formData: FormData) {
             // Check usage of boolean vs update
             if (currentSettings.auditPersonalCredentials !== auditPersonalCredentials) {
                 changes.push(`Audit Policy changed from ${currentSettings.auditPersonalCredentials} to ${auditPersonalCredentials}`);
+            }
+            // @ts-ignore
+            if (currentSettings.twoFactorMandatory !== twoFactorMandatory) {
+                changes.push(`2FA Mandatory changed from ${(currentSettings as any).twoFactorMandatory} to ${twoFactorMandatory}`);
             }
 
             // Logo Logic

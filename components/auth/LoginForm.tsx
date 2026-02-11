@@ -1,100 +1,237 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { authenticate } from '@/lib/actions';
-import { AlertCircle } from 'lucide-react';
+import { preLoginCheck } from '@/lib/actions/auth-check';
+import { AlertCircle, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
 
 export default function LoginForm() {
-    const [state, dispatch, isPending] = useActionState(
-        authenticate,
-        undefined as any,
-    );
     const router = useRouter();
+    const [step, setStep] = useState<'credentials' | '2fa'>('credentials');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [twoFactorCode, setTwoFactorCode] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isPending, startTransition] = useTransition();
 
-    const emailRef = useRef<HTMLInputElement>(null);
+    const codeInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (state?.success) {
-            router.refresh(); // Refresh NextAuth session
+    // Step 1: Validate credentials and check if 2FA is needed
+    const handleCredentialsSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+
+        startTransition(async () => {
+            const formData = new FormData();
+            formData.set('email', email);
+            formData.set('password', password);
+
+            const result = await preLoginCheck(null, formData);
+
+            if (result.error) {
+                setError(result.error);
+                return;
+            }
+
+            if (result.twoFactorRequired) {
+                // Show 2FA code input
+                setStep('2fa');
+                setTimeout(() => codeInputRef.current?.focus(), 100);
+            } else {
+                // No 2FA — complete login directly
+                await completeLogin();
+            }
+        });
+    };
+
+    // Step 2: Complete login (with or without 2FA code)
+    const completeLogin = async (code?: string) => {
+        const formData = new FormData();
+        formData.set('email', email);
+        formData.set('password', password);
+        if (code) {
+            formData.set('code', code);
+        }
+
+        const result = await authenticate(null, formData);
+
+        if (result?.error) {
+            setError(result.error);
+            return;
+        }
+
+        if (result?.success) {
+            router.refresh();
             router.push('/dashboard');
         }
-    }, [state, router]);
+    };
+
+    const handle2FASubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (twoFactorCode.length !== 6) {
+            setError('Please enter a 6-digit code.');
+            return;
+        }
+        setError(null);
+
+        startTransition(async () => {
+            await completeLogin(twoFactorCode);
+        });
+    };
+
+    const handleBackToCredentials = () => {
+        setStep('credentials');
+        setTwoFactorCode('');
+        setError(null);
+    };
 
     return (
-        <form action={dispatch} className="space-y-6">
-            <div>
-                <label
-                    htmlFor="email"
-                    className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200"
-                >
-                    Email address
-                </label>
-                <div className="mt-2">
-                    <input
-                        ref={emailRef}
-                        id="email"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        required
-                        className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
-                    />
-                </div>
-            </div>
-
-            <div>
-                <div className="flex items-center justify-between">
-                    <label
-                        htmlFor="password"
-                        className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200"
-                    >
-                        Password
-                    </label>
-                    <div className="text-sm">
-                        <a
-                            href="#"
-                            className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+        <>
+            {step === 'credentials' && (
+                <form onSubmit={handleCredentialsSubmit} className="space-y-6">
+                    <div>
+                        <label
+                            htmlFor="email"
+                            className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200"
                         >
-                            Forgot password?
-                        </a>
+                            Email address
+                        </label>
+                        <div className="mt-2">
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                autoComplete="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="mt-2">
-                    <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autoComplete="current-password"
-                        required
-                        className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
-                    />
-                </div>
-            </div>
 
-            <div>
-                <button
-                    disabled={isPending}
-                    type="submit"
-                    className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
-                >
-                    {isPending ? 'Signing in...' : 'Sign in'}
-                </button>
-            </div>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <label
+                                htmlFor="password"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200"
+                            >
+                                Password
+                            </label>
+                            <div className="text-sm">
+                                <a
+                                    href="#"
+                                    className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                                >
+                                    Forgot password?
+                                </a>
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autoComplete="current-password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                            />
+                        </div>
+                    </div>
 
-            <div
-                className="flex h-8 items-end space-x-1"
-                aria-live="polite"
-                aria-atomic="true"
-            >
-                {state?.error && (
-                    <>
-                        <AlertCircle className="h-5 w-5 text-red-500" />
-                        <p className="text-sm text-red-500">{state.error}</p>
-                    </>
-                )}
-            </div>
-        </form>
+                    <div>
+                        <button
+                            disabled={isPending}
+                            type="submit"
+                            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-colors"
+                        >
+                            {isPending ? (
+                                <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Signing in...</>
+                            ) : (
+                                'Sign in'
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Error */}
+                    <div className="flex h-8 items-end space-x-1" aria-live="polite" aria-atomic="true">
+                        {error && (
+                            <>
+                                <AlertCircle className="h-5 w-5 text-red-500" />
+                                <p className="text-sm text-red-500">{error}</p>
+                            </>
+                        )}
+                    </div>
+                </form>
+            )}
+
+            {step === '2fa' && (
+                <form onSubmit={handle2FASubmit} className="space-y-6 animate-in fade-in duration-200">
+                    {/* Back Button */}
+                    <button
+                        type="button"
+                        onClick={handleBackToCredentials}
+                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </button>
+
+                    {/* 2FA Header */}
+                    <div className="text-center space-y-2">
+                        <div className="mx-auto w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center">
+                            <ShieldCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Two-Factor Authentication
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Enter the 6-digit code from your authenticator app.
+                        </p>
+                    </div>
+
+                    {/* Code Input */}
+                    <div>
+                        <input
+                            ref={codeInputRef}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={6}
+                            value={twoFactorCode}
+                            onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="000000"
+                            autoFocus
+                            className="block w-full text-center tracking-[0.5em] text-2xl font-bold rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                        />
+                    </div>
+
+                    <button
+                        disabled={isPending || twoFactorCode.length !== 6}
+                        type="submit"
+                        className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-colors"
+                    >
+                        {isPending ? (
+                            <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Verifying...</>
+                        ) : (
+                            'Verify'
+                        )}
+                    </button>
+
+                    {/* Error */}
+                    <div className="flex h-8 items-end space-x-1" aria-live="polite" aria-atomic="true">
+                        {error && (
+                            <>
+                                <AlertCircle className="h-5 w-5 text-red-500" />
+                                <p className="text-sm text-red-500">{error}</p>
+                            </>
+                        )}
+                    </div>
+                </form>
+            )}
+        </>
     );
 }
