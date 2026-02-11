@@ -30,9 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — block ALL variants except the safe template
 .env
-.env*.local
+.env.*
+.env*
+!.env.example
+# database files
+*.db
+*.db-journal
 # vercel
 .vercel
 
