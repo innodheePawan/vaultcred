@@ -1,31 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { seedRoles } from '../scripts/seed-roles';
 
 const prisma = new PrismaClient();
 
 async function main() {
-    const email = 'admin@credentialmanager.com';
-    const password = 'Admin@123';
-    const hashedPassword = await hash(password, 12);
+    console.log('Starting seed process...');
 
-    const existingUser = await prisma.user.findUnique({
-        where: { email },
-    });
+    // Seed Roles and Groups
+    await seedRoles(prisma);
 
-    if (!existingUser) {
-        await prisma.user.create({
-            data: {
-                email,
-                passwordHash: hashedPassword,
-                name: 'System Admin',
-                role: 'ADMIN',
-                status: 'ACTIVE',
-            },
-        });
-        console.log(`Created admin user: ${email}`);
-    } else {
-        console.log(`Admin user already exists: ${email}`);
-    }
+    console.log('Seed process complete.');
 }
 
 main()

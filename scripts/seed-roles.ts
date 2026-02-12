@@ -7,8 +7,8 @@ export async function seedRoles(prismaClient: PrismaClient = prisma) {
 
     const roles = [
         {
-            name: 'Admin',
-            description: 'Scoped Admin Access (No Settings)',
+            name: 'Administrator',
+            description: 'System Administrator with full access',
             permissions: ['ADMIN']
         },
         {

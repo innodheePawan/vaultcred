@@ -117,7 +117,7 @@ export async function configureSystem(formData: FormData) {
             });
 
             if (!existingUser) {
-                await prisma.user.create({
+                const newUser = await prisma.user.create({
                     data: {
                         email: adminEmail,
                         passwordHash: hashedPassword,
@@ -127,6 +127,24 @@ export async function configureSystem(formData: FormData) {
                     },
                 });
                 console.log(`[Setup] Created real admin user: ${adminEmail}`);
+
+                // D. Link Admin User to Administrator Group
+                const adminGroup = await prisma.userGroup.findUnique({
+                    where: { name: 'Administrator' }
+                });
+
+                if (adminGroup) {
+                    await prisma.userGroupMapping.create({
+                        data: {
+                            userId: newUser.id,
+                            groupId: adminGroup.id,
+                            assignedBy: 'SYSTEM'
+                        }
+                    });
+                    console.log(`[Setup] Linked ${adminEmail} to Administrator group.`);
+                } else {
+                    console.warn('[Setup] Administrator group not found. Skipping mapping.');
+                }
             }
 
         } finally {
