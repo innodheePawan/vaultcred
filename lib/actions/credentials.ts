@@ -295,14 +295,18 @@ export async function getCredentials(params?: {
         const orConditions: any[] = [];
         const { permissions } = accessContext;
 
-        if (permissions['*']?.['*']) {
-            // Access to all SHARED
+        const hasSubstantiveAccess = (set?: Set<string>) => {
+            if (!set) return false;
+            return set.has('READ') || set.has('EDIT') || set.has('CREATE') || set.has('ADMIN') || set.has('AUDIT');
+        };
+
+        if (hasSubstantiveAccess(permissions['*']?.['*'])) {
+            // Access to all SHARED (due to global permission)
             where.OR.push({ isPersonal: false });
         } else {
             Object.keys(permissions).forEach(cat => {
                 Object.keys(permissions[cat]).forEach(env => {
-                    const perms = permissions[cat][env];
-                    if (perms.has('READ') || perms.has('EDIT') || perms.has('CREATE') || perms.has('ADMIN')) {
+                    if (hasSubstantiveAccess(permissions[cat][env])) {
                         const condition: any = {};
                         if (cat !== '*') condition.category = cat;
                         if (env !== '*') condition.environment = env;

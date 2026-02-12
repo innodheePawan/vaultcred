@@ -20,14 +20,7 @@ async function getTransporter() {
 
     const smtpFromEmail = (settings as any)?.smtpFromEmail;
 
-    console.log('[Email] Loading configuration:', {
-        smtpHost,
-        smtpPort,
-        smtpUser,
-        hasPassword: !!smtpPassEncrypted,
-        smtpSecure,
-        smtpFromEmail // Added for debug
-    });
+    // smtpFromEmail value is fetched for use in sendEmail
 
     if (smtpHost && smtpUser && smtpPassEncrypted) {
         // Production SMTP from SystemSettings
@@ -48,7 +41,7 @@ async function getTransporter() {
             },
             // tls: { ciphers: 'SSLv3' }, // Removed: AWS/Modern SMTP req TLS 1.2+
             family: 4, // Force IPv4 to avoid ENETUNREACH errors
-        });
+        } as any);
 
         return { transporter, type: 'SMTP' };
     }
@@ -91,7 +84,7 @@ export async function verifyConnection(config: {
             },
             // tls: { ciphers: 'SSLv3' }, // Removed: AWS/Modern SMTP req TLS 1.2+
             family: 4, // Force IPv4
-        });
+        } as any);
 
         await transporter.verify();
 
@@ -149,23 +142,12 @@ export async function sendEmail(to: string, subject: string, html: string) {
         html,
     });
 
-    console.log('[Email] Sent:', {
-        messageId: info.messageId,
-        response: info.response,
-        accepted: info.accepted,
-        rejected: info.rejected,
-        from
-    });
+    // Email sent successfully
 
-    // Log Ethereal preview URL in dev
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
-        console.log('[Email] Preview URL:', previewUrl);
-    }
 
     return {
         messageId: info.messageId,
-        previewUrl: previewUrl || null,
+        previewUrl: null,
         provider: type
     };
 }

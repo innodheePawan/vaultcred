@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, User, LogOut, Settings } from 'lucide-react';
+import { Search, Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
+import { clsx } from 'clsx';
 
 export function Header({ settings, user }: { settings?: any, user?: any }) {
     const { data: session } = useSession();
@@ -18,8 +19,8 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
         ? displayUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
         : displayUser?.email?.substring(0, 2).toUpperCase() || 'U';
 
-    const userName = session?.user?.name || 'User';
-    const userEmail = session?.user?.email || '';
+    const userName = displayUser?.name || 'User';
+    const userEmail = displayUser?.email || '';
 
     const applicationName = settings?.applicationName || 'VaultSecure';
     const logoUrl = settings?.logoUrl;
@@ -91,8 +92,8 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
                                     userInitials
                                 )}
                             </div>
-                            <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</span>
-                            <User className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</span>
+                            <ChevronDown className={clsx("h-4 w-4 text-gray-400 transition-transform duration-200", isProfileOpen && "rotate-180")} />
                         </button>
 
                         {/* Dropdown Menu */}

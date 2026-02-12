@@ -5,6 +5,9 @@ import { Plus, Folder, Key, Lock, Terminal, FileText, ArrowUp, ArrowDown } from 
 import { formatDate } from '@/lib/utils';
 import { Suspense } from 'react';
 import CredentialFilters from '@/components/credentials/CredentialFilters';
+import { auth } from '@/lib/auth';
+import { getUserAccessContext, canAccess } from '@/lib/iam/permissions';
+import { redirect } from 'next/navigation';
 
 function getIconForType(type: string) {
     switch (type) {
@@ -67,8 +70,13 @@ export default async function CredentialsPage(props: {
         order?: 'asc' | 'desc'
     }>
 }) {
+    const session = await auth();
+    if (!session?.user) redirect('/login');
+
     const searchParams = await props.searchParams;
     const { q, type, category, environment, sort, order } = searchParams;
+
+    const accessContext = await getUserAccessContext(session.user.id!);
 
     const credentials = await getCredentials({
         query: q,
@@ -82,6 +90,7 @@ export default async function CredentialsPage(props: {
     });
 
     const createLink = type ? `/credentials/create?type=${type}` : '/credentials/create';
+    const canCreate = accessContext.isAdmin || canAccess(accessContext, category || null, environment || null, 'CREATE');
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4">
@@ -94,12 +103,14 @@ export default async function CredentialsPage(props: {
                         Manage your secure passwords, keys, and tokens.
                     </p>
                 </div>
-                <Link href={createLink}>
-                    <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add New
-                    </Button>
-                </Link>
+                {canCreate && (
+                    <Link href={createLink}>
+                        <Button>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add New
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <Suspense fallback={<div>Loading filters...</div>}>
@@ -136,65 +147,79 @@ export default async function CredentialsPage(props: {
                                     <SortableHeader column="lastModifiedOn" label="Last Modified" currentSort={sort} currentOrder={order} searchParams={searchParams} />
                                 </th>
                                 <th scope="col" className="relative px-6 py-3">
-                                    <span className="sr-only">Access</span>
+                                    <span className="sr-only">Actions</span>
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {credentials.map((cred: any) => (
-                                <tr key={cred.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300">
-                                                {getIconForType(cred.type)}
-                                            </div>
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    <Link href={`/credentials/${cred.id}`} className="hover:underline">
-                                                        {cred.name}
-                                                    </Link>
+                            {credentials.map((cred: any) => {
+                                const hasReadPerm = accessContext.isAdmin || cred.createdById === session.user?.id || canAccess(accessContext, cred.category, cred.environment, 'READ');
+
+                                return (
+                                    <tr key={cred.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300">
+                                                    {getIconForType(cred.type)}
                                                 </div>
-                                                <div className="flex gap-1 mt-1">
-                                                    {cred.isPersonal && (
-                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
-                                                            Personal
-                                                        </span>
-                                                    )}
-                                                    {cred.expiryDate && new Date(cred.expiryDate) < new Date() && (
-                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-200 dark:border-red-800">
-                                                            Expired
-                                                        </span>
-                                                    )}
+                                                <div className="ml-4">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {hasReadPerm ? (
+                                                            <Link href={`/credentials/${cred.id}`} className="hover:underline">
+                                                                {cred.name}
+                                                            </Link>
+                                                        ) : (
+                                                            <span className="text-gray-500 cursor-not-allowed" title="Auditor view (No detail access)">
+                                                                {cred.name}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-1 mt-1">
+                                                        {cred.isPersonal && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
+                                                                Personal
+                                                            </span>
+                                                        )}
+                                                        {cred.expiryDate && new Date(cred.expiryDate) < new Date() && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-200 dark:border-red-800">
+                                                                Expired
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                            {cred.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {cred.category || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cred.environment === 'Prod' ? 'bg-red-100 text-red-800' :
-                                            cred.environment === 'QA' ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-gray-100 text-gray-800'
-                                            }`}>
-                                            {cred.environment || '-'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {cred.lastModifiedOn ? formatDate(cred.lastModifiedOn) : '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Link href={`/credentials/${cred.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                            View
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                {cred.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {cred.category || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cred.environment === 'Prod' ? 'bg-red-100 text-red-800' :
+                                                cred.environment === 'QA' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {cred.environment || '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {cred.lastModifiedOn ? formatDate(cred.lastModifiedOn) : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            {hasReadPerm ? (
+                                                <Link href={`/credentials/${cred.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                                    View
+                                                </Link>
+                                            ) : (
+                                                <span className="text-gray-400 italic">Audit only</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 )}

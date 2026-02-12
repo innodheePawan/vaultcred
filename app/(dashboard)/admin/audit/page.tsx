@@ -2,7 +2,8 @@ import { getAuditLogs } from '@/lib/actions/audit';
 import AuditLogTable from '@/components/admin/audit/AuditLogTable';
 import AuditLogFilters from '@/components/admin/audit/AuditLogFilters';
 
-export default async function AuditLogPage({ searchParams }: { searchParams: any }) {
+export default async function AuditLogPage(props: { searchParams: Promise<any> }) {
+    const searchParams = await props.searchParams;
     const page = Number(searchParams?.page) || 1;
     const limit = 20;
     const search = searchParams?.search || '';

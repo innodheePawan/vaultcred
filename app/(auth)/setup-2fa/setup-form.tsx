@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { generateTwoFactorSetup, enableTwoFactor } from '@/lib/actions/two-factor';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { ShieldCheck, CheckCircle, AlertCircle, Copy, Loader2 } from 'lucide-react';
 
 interface SetupTwoFactorFormProps {
@@ -11,13 +12,20 @@ interface SetupTwoFactorFormProps {
 
 export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
     const router = useRouter();
-    const [step, setStep] = useState<'generate' | 'verify' | 'done'>('generate');
+    const { update } = useSession();
+    const [step, setStep] = useState<'install' | 'generate' | 'verify' | 'done'>('install');
+    const [platform, setPlatform] = useState<'ios' | 'android'>('ios');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [secret, setSecret] = useState<string | null>(null);
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const [isPending, startTransition] = useTransition();
+
+    const appStoreLinks = {
+        ios: 'https://apps.apple.com/us/app/google-authenticator/id388497605',
+        android: 'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2'
+    };
 
     const handleGenerate = () => {
         setError(null);
@@ -45,10 +53,14 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                 setError(result.error);
                 return;
             }
+
+            // Critical: Update the session so middleware sees the new 2FA status
+            await update();
+
             setStep('done');
             setTimeout(() => {
                 window.location.href = '/dashboard';
-            }, 2000);
+            }, 1500);
         });
     };
 
@@ -62,15 +74,83 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
 
     return (
         <div className="space-y-6">
-            {step === 'generate' && (
-                <div className="text-center space-y-4">
+            {step === 'install' && (
+                <div className="text-center space-y-6 animate-in fade-in duration-300">
                     <div className="mx-auto w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
                         <ShieldCheck className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Two-Factor Authentication adds an extra layer of security to your account.
-                        You&apos;ll need an authenticator app like Google Authenticator or Authy.
-                    </p>
+
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            Step 1: Install Authenticator
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Select your device type to download Google Authenticator.
+                        </p>
+                    </div>
+
+                    <div className="flex justify-center gap-4">
+                        <button
+                            onClick={() => setPlatform('ios')}
+                            className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${platform === 'ios'
+                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400'
+                                }`}
+                        >
+                            <svg className="w-8 h-8 mb-1" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.1 2.48-1.34.03-1.77-.79-3.29-.79-1.53 0-1.99.77-3.29.82-1.35.05-2.33-1.32-3.18-2.55C3.93 16.6 2.46 11.12 4.38 7.8c.95-1.65 2.65-2.69 4.5-2.72 1.4-.02 2.73.96 3.59.96.86 0 2.48-1.17 4.15-.99 1.44.13 2.58.62 3.34 1.73-3.12 1.84-2.62 5.67.43 6.94-.7 1.78-1.59 3.56-2.68 5.7zM15.47 2c.73 0 2.06.49 2.5 1.5.06.12-.13.3-.25.3-.44 0-2.06-.49-2.5-1.5-.06-.12.13-.3.25-.3z" /></svg>
+                            <span className="text-xs font-bold uppercase tracking-wider">iOS</span>
+                        </button>
+                        <button
+                            onClick={() => setPlatform('android')}
+                            className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${platform === 'android'
+                                ? 'border-green-600 bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-300'
+                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400'
+                                }`}
+                        >
+                            <svg className="w-8 h-8 mb-1" fill="currentColor" viewBox="0 0 24 24"><path d="M17.523 15.3414C17.0709 15.3414 16.6993 14.9698 16.6993 14.5177C16.6993 14.0656 17.0709 13.694 17.523 13.694C17.9751 13.694 18.3467 14.0656 18.3467 14.5177C18.3467 14.9698 17.9751 15.3414 17.523 15.3414ZM6.47702 15.3414C6.02492 15.3414 5.65332 14.9698 5.65332 14.5177C5.65332 14.0656 6.02492 13.694 6.47702 13.694C6.92912 13.694 7.30072 14.0656 7.30072 14.5177C7.30072 14.9698 6.92912 15.3414 6.47702 15.3414ZM17.8465 10.3877L19.5781 7.38734C19.6896 7.1942 19.6234 6.94723 19.4303 6.8357C19.2371 6.72418 18.9902 6.79038 18.8787 6.98352L17.1197 10.0306C15.6888 9.381 14.0955 9.01953 12.4 9.01953C10.7045 9.01953 9.3112 9.381 7.68028 10.0306L5.92128 6.98352C5.80975 6.79038 5.56279 6.72418 5.36965 6.8357C5.17651 6.94723 5.11031 7.1942 5.22183 7.38734L6.9535 10.3877C4.16273 11.8906 2.25391 14.7431 2.25391 18.0645H22.5461C22.5461 14.7431 20.6373 11.8906 17.8465 10.3877Z" /></svg>
+                            <span className="text-xs font-bold uppercase tracking-wider">Android</span>
+                        </button>
+                    </div>
+
+                    <div className="inline-block p-4 bg-white rounded-xl shadow-md border border-gray-100 ring-4 ring-gray-50 dark:ring-gray-900/50">
+                        <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(appStoreLinks[platform as keyof typeof appStoreLinks])}`}
+                            alt={`Download for ${platform}`}
+                            className="w-40 h-40"
+                        />
+                        <div className="mt-3 flex items-center justify-center gap-2">
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${platform === 'ios' ? 'bg-indigo-500' : 'bg-green-500'}`}></div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">
+                                Scan for {platform === 'ios' ? 'App Store' : 'Play Store'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <button
+                            onClick={() => setStep('generate')}
+                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            I have the app, let&apos;s continue
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {step === 'generate' && (
+                <div className="text-center space-y-4 animate-in fade-in duration-300">
+                    <div className="mx-auto w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+                        <ShieldCheck className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            Step 2: Secure Your Account
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Click below to generate your unique security code.
+                            You will need to scan it with your authenticator app in the next step.
+                        </p>
+                    </div>
                     <button
                         onClick={handleGenerate}
                         disabled={isPending}
@@ -79,8 +159,14 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                         {isPending ? (
                             <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating...</>
                         ) : (
-                            'Generate QR Code'
+                            'Generate My Secret QR'
                         )}
+                    </button>
+                    <button
+                        onClick={() => setStep('install')}
+                        className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 font-medium"
+                    >
+                        Go back
                     </button>
                 </div>
             )}

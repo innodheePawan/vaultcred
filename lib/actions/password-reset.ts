@@ -142,9 +142,6 @@ export async function verifyResetTwoFactor(token: string, code: string) {
             secret,
         });
 
-        console.log('[2FA] Verification result:', { isValid, codeLen: code.length, secretLen: secret.length });
-
-
         if (!isValid) {
             return { verified: false, error: 'Invalid 2FA code. Please try again.' };
         }
