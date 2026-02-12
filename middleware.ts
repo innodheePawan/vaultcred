@@ -14,8 +14,11 @@ export default auth((req) => {
     const isSetup = path.startsWith('/setup');
     const isSetup2fa = path.startsWith('/setup-2fa');
     const isInvite = path.startsWith('/invite');
+    const isForgotPassword = path.startsWith('/forgot-password');
+    const isResetPassword = path.startsWith('/reset-password');
     const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.includes('.');
     const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
+    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword;
 
     // Auth Session
     const isLoggedIn = !!req.auth;
@@ -51,7 +54,7 @@ export default auth((req) => {
     }
 
     // Normal protection for other routes
-    if (!isLoggedIn && !isLogin && !isApi && !isSetup && !isRoot && !isInvite && !isSetup2fa) {
+    if (!isLoggedIn && !isPublicAuth && !isApi && !isSetup && !isRoot && !isSetup2fa) {
         return NextResponse.redirect(new URL('/login', req.url));
     }
 

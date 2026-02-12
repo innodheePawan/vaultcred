@@ -3,7 +3,8 @@
 import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { updateSystemSettings } from '@/lib/actions/settings';
-import { Upload, Save, Building, AlertCircle, CheckCircle, Database, ShieldCheck } from 'lucide-react';
+import { sendTestEmail } from '@/lib/email';
+import { Upload, Save, Building, AlertCircle, CheckCircle, Database, ShieldCheck, Mail, Send } from 'lucide-react';
 
 const initialState = {
     message: null,
@@ -16,6 +17,37 @@ export default function SystemSettingsForm({ initialSettings, dbInfo }: { initia
     const [removeLogo, setRemoveLogo] = useState(false);
     const [auditPersonal, setAuditPersonal] = useState(initialSettings.auditPersonalCredentials ?? true);
     const [twoFactorMandatory, setTwoFactorMandatory] = useState(initialSettings.twoFactorMandatory ?? false);
+
+    // SMTP State
+    const [smtpSecure, setSmtpSecure] = useState(initialSettings.smtpSecure ?? true);
+    const [testEmail, setTestEmail] = useState('');
+    const [sendingTest, setSendingTest] = useState(false);
+    const [testResult, setTestResult] = useState<{ success?: boolean; message?: string } | null>(null);
+
+    const handleSendTestEmail = async () => {
+        if (!testEmail) return;
+        setSendingTest(true);
+        setTestResult(null);
+        try {
+            const result: any = await sendTestEmail(testEmail);
+            if (result && result.messageId) {
+                if (result.provider === 'Ethereal (Fake)') {
+                    setTestResult({
+                        success: true, // It did "send", but to fake
+                        message: 'Test email generated via Fake SMTP (Ethereal). Real emails are NOT sending. Ensure you ran "npx prisma db push" and restarted the server.'
+                    });
+                } else {
+                    setTestResult({ success: true, message: 'Test email sent successfully via SMTP!' });
+                }
+            } else {
+                setTestResult({ success: false, message: 'Failed to send test email. Check server logs.' });
+            }
+        } catch (error: any) {
+            setTestResult({ success: false, message: error.message || 'Error sending test email.' });
+        } finally {
+            setSendingTest(false);
+        }
+    };
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -242,6 +274,167 @@ export default function SystemSettingsForm({ initialSettings, dbInfo }: { initia
                             <span className="text-xs text-amber-600 dark:text-amber-400">
                                 Disabling this may reduce visibility into user activities but ensures stricter privacy for personal items.
                             </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Email Configuration */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700 mb-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    Email Configuration (SMTP)
+                </h3>
+                <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 mb-6">
+                    <div className="sm:col-span-4">
+                        <label htmlFor="smtpHost" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            SMTP Host
+                        </label>
+                        <div className="mt-1">
+                            <input
+                                type="text"
+                                name="smtpHost"
+                                id="smtpHost"
+                                defaultValue={initialSettings.smtpHost || ''}
+                                placeholder="smtp.example.com"
+                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                        <label htmlFor="smtpPort" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            SMTP Port
+                        </label>
+                        <div className="mt-1">
+                            <input
+                                type="number"
+                                name="smtpPort"
+                                id="smtpPort"
+                                defaultValue={initialSettings.smtpPort || '587'}
+                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm:col-span-3">
+                        <label htmlFor="smtpUser" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            SMTP Username
+                        </label>
+                        <div className="mt-1">
+                            <input
+                                type="text"
+                                name="smtpUser"
+                                id="smtpUser"
+                                defaultValue={initialSettings.smtpUser || ''}
+                                autoComplete="off"
+                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm:col-span-3">
+                        <label htmlFor="smtpPass" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            SMTP Password
+                        </label>
+                        <div className="mt-1">
+                            <input
+                                type="password"
+                                name="smtpPass"
+                                id="smtpPass"
+                                defaultValue={initialSettings.smtpPass || ''} // Will be ****** if exists
+                                autoComplete="new-password"
+                                placeholder={initialSettings.smtpPass ? '******' : ''}
+                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm:col-span-6">
+                        <label htmlFor="smtpFromEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            From Email Address
+                        </label>
+                        <div className="mt-1">
+                            <input
+                                type="email"
+                                name="smtpFromEmail"
+                                id="smtpFromEmail"
+                                defaultValue={initialSettings.smtpFromEmail || ''}
+                                placeholder="noreply@yourcompany.com"
+                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-start mb-6">
+                    <div className="flex items-center h-5">
+                        <input
+                            id="smtpSecure"
+                            name="smtpSecure"
+                            type="checkbox"
+                            value="true"
+                            checked={smtpSecure}
+                            onChange={(e) => setSmtpSecure(e.target.checked)}
+                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        />
+                    </div>
+                    <div className="ml-3 text-sm">
+                        <label htmlFor="smtpSecure" className="font-medium text-gray-700 dark:text-gray-300">
+                            Use Secure Connection (TLS/SSL)
+                        </label>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            Recommended for most modern SMTP servers.
+                            <br />
+                            <span className="text-xs text-amber-600 dark:text-amber-400">
+                                Note: Usually <strong>checked</strong> for Port 465 (SSL), and <strong>unchecked</strong> for Port 587 (STARTTLS).
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Test Email Section */}
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-md border border-gray-200 dark:border-gray-600">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Test Configuration</h4>
+
+                    <div className="space-y-3">
+                        <div>
+                            <label htmlFor="testEmailInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Send Test Email To
+                            </label>
+                            <div className="mt-1 flex gap-2">
+                                <input
+                                    id="testEmailInput"
+                                    type="email"
+                                    placeholder="Enter recipient email address..."
+                                    value={testEmail}
+                                    onChange={(e) => setTestEmail(e.target.value)}
+                                    className="flex-1 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={handleSendTestEmail}
+                                    disabled={sendingTest || !testEmail}
+                                >
+                                    {sendingTest ? 'Sending...' : (
+                                        <>
+                                            <Send className="w-4 h-4 mr-2" />
+                                            Send Test
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+
+                        {testResult && (
+                            <div className={`p-3 rounded-md text-sm ${testResult.success ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'}`}>
+                                {testResult.message}
+                            </div>
+                        )}
+
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Note: Save your settings before testing to ensure the latest configuration is used.
                         </p>
                     </div>
                 </div>

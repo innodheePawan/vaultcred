@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/utils/password';
+import { sendInviteEmail } from '@/lib/email';
 
 /**
  * Creates a new invite for a user.
@@ -53,8 +54,19 @@ export async function createInvite(
         }
     });
 
-    // In a real app, send email here.
-    // For now, we return the token to be displayed to the admin.
+    // Send invitation email
+    try {
+        const inviter = await prisma.user.findUnique({
+            where: { id: invitedByUserId },
+            select: { name: true, email: true },
+        });
+        const inviterName = inviter?.name || inviter?.email || 'An administrator';
+        await sendInviteEmail(email, token, inviterName);
+    } catch (emailError) {
+        console.error('[Invite] Failed to send invite email:', emailError);
+        // Don't throw — the invite is created, email failure is non-fatal
+    }
+
     return invite;
 }
 

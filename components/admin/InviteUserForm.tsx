@@ -171,11 +171,7 @@ export default function InviteUserForm({ groups, action }: { groups: any[], acti
                             <div className="ml-3">
                                 <p className="text-sm font-medium text-green-800">{state.message}</p>
                                 {/* Dev helper to show token immediately since we don't have email sender */}
-                                {state.token && (
-                                    <p className="text-xs font-mono text-green-700 mt-1 select-all">
-                                        Token: {state.token}
-                                    </p>
-                                )}
+                                {/* Token display removed as per request */}
                             </div>
                         </div>
                     </div>

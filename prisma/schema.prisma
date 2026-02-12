@@ -325,8 +325,27 @@ model SystemSettings {
   auditPersonalCredentials Boolean @default(true) @map("audit_personal_credentials")
   twoFactorMandatory      Boolean @default(false) @map("two_factor_mandatory")
   
+  // SMTP Email Configuration
+  smtpHost      String?  @map("smtp_host")
+  smtpPort      Int?     @map("smtp_port")
+  smtpUser      String?  @map("smtp_user")
+  smtpPass      String?  @map("smtp_pass") @db.Text
+  smtpFromEmail String?  @map("smtp_from_email")
+  smtpSecure    Boolean  @default(true) @map("smtp_secure")
+  
   updatedAt   DateTime @updatedAt @map("updated_on")
   updatedBy   String?  @map("updated_by")
 
   @@map("system_settings")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_on")
+
+  @@map("password_reset_tokens")
 }

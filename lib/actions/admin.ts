@@ -108,6 +108,36 @@ export async function inviteUser(prevState: any, formData: FormData) {
     }
 }
 
+export async function resendInvite(inviteId: string) {
+    const session = await auth();
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    const ctx = await getUserAccessContext(session.user.id);
+    const hasAdminPermission = canAccess(ctx, null, null, 'ADMIN');
+
+    if (session.user.role !== 'ADMIN' && !hasAdminPermission) {
+        return { error: 'Unauthorized' };
+    }
+
+    try {
+        const invite = await prisma.invite.findUnique({
+            where: { id: inviteId }
+        });
+
+        if (!invite) return { error: 'Invite not found' };
+        if (invite.accepted) return { error: 'Invite already accepted' };
+
+        // Send Email
+        await import('@/lib/email').then(mod =>
+            mod.sendInviteEmail(invite.email, invite.token, session.user.name || 'Admin')
+        );
+
+        return { success: true, message: `Invite resent to ${invite.email}` };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
 export async function updateUser(userId: string, formData: FormData) {
     const session = await auth();
     if (session?.user?.role !== 'ADMIN') {

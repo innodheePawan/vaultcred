@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { inviteUser } from '@/lib/actions/admin';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Mail } from 'lucide-react';
 
 const initialState = {
     message: null,
@@ -15,7 +15,7 @@ export default function InvitePage() {
     const [state, formAction, isPending] = useActionState(async (prev: any, formData: FormData) => {
         const result = await inviteUser(prev, formData);
         if (result.error) return { ...prev, error: result.error, message: null, token: null };
-        if (result.success) return { ...prev, message: 'Invite created successfully!', token: result.token, error: null };
+        if (result.success) return { ...prev, message: 'Invitation email sent successfully!', token: result.token, error: null };
         return prev;
     }, initialState);
 
@@ -66,31 +66,31 @@ export default function InvitePage() {
 
                     <div className="pt-4">
                         <Button type="submit" disabled={isPending}>
-                            {isPending ? 'Sending Invite...' : 'Create Invite Link'}
+                            {isPending ? 'Sending Invite...' : (
+                                <>
+                                    <Mail className="w-4 h-4 mr-2" />
+                                    Send Invitation Email
+                                </>
+                            )}
                         </Button>
                     </div>
 
                     {state.error && (
-                        <div className="p-4 bg-red-50 text-red-700 rounded-md flex items-center gap-2">
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md flex items-center gap-2">
                             <AlertCircle className="w-5 h-5" />
                             {state.error}
                         </div>
                     )}
 
                     {state.message && (
-                        <div className="p-4 bg-green-50 text-green-700 rounded-md">
-                            <div className="flex items-center gap-2 mb-2">
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md">
+                            <div className="flex items-center gap-2">
                                 <CheckCircle className="w-5 h-5" />
                                 {state.message}
                             </div>
-                            {state.token && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                    <p className="font-medium">Share this link:</p>
-                                    <code className="block bg-gray-100 p-2 rounded mt-1 select-all break-all">
-                                        {`${typeof window !== 'undefined' ? window.location.origin : ''}/register?token=${state.token}`}
-                                    </code>
-                                </div>
-                            )}
+                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                The user will receive an email with an activation link to set up their account.
+                            </p>
                         </div>
                     )}
                 </form>

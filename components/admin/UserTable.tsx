@@ -11,21 +11,62 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MoreVertical, Edit, Shield, Copy, Ban, CheckCircle } from 'lucide-react';
+import { Search, Edit, Shield, Ban, CheckCircle, RefreshCw, Loader2, Copy } from 'lucide-react';
 import InviteUserDialog from './InviteUserDialog';
 import EditUserDialog from './EditUserDialog';
 import StatusConfirmationDialog from './StatusConfirmationDialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { resendInvite } from '@/lib/actions/admin';
+
+const GROUP_COLORS = [
+    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-800',
+    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-800',
+    // 'bg-purple-100' ... Removed to reserve purple for Super Admin or re-added if needed but careful
+    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800',
+    'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200 border-pink-200 dark:border-pink-800',
+    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-200 dark:border-indigo-800',
+    'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-200 dark:border-orange-800',
+    'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 border-cyan-200 dark:border-cyan-800',
+    'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 border-teal-200 dark:border-teal-800',
+];
+
+const getGroupColor = (name: string) => {
+    // Specific Overrides
+    if (name.toLowerCase().includes('auditor')) {
+        return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600';
+    }
+    if (name.toLowerCase().includes('super admin')) {
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-800';
+    }
+
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % GROUP_COLORS.length;
+    return GROUP_COLORS[index];
+};
 
 export default function UserTable({ users, invites, groups, inviteUserAction, isSystemAdmin, canInvite }: any) {
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<any>(null);
     const [statusUser, setStatusUser] = useState<any>(null);
+    const [resendingId, setResendingId] = useState<string | null>(null);
+
+    const handleResend = async (inviteId: string) => {
+        setResendingId(inviteId);
+        try {
+            const result = await resendInvite(inviteId);
+            if (result.success) {
+                alert(result.message);
+            } else {
+                alert(result.error || 'Failed to resend');
+            }
+        } catch (e) {
+            alert('An error occurred');
+        } finally {
+            setResendingId(null);
+        }
+    };
 
     // Filter Users
     const filteredUsers = users.filter((u: any) =>
@@ -112,12 +153,12 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                                                 By Role: SUPER ADMIN
                                             </span>
                                         ) : (
-                                            <div className="flex flex-col gap-1">
+                                            <div className="flex flex-col gap-1 items-start">
                                                 {user.userGroups.length > 0 ? user.userGroups.map((ug: any) => (
-                                                    <div key={ug.groupId} className="flex flex-col items-start bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1">
-                                                        <span className="font-medium text-gray-900 dark:text-gray-200">{ug.group.name}</span>
+                                                    <div key={ug.groupId} className={`flex flex-col items-start rounded-full px-3 py-1 border ${getGroupColor(ug.group.name)}`}>
+                                                        <span className="font-bold text-xs">{ug.group.name}</span>
                                                         {(ug.scopedCategories || ug.scopedEnvironments) && (
-                                                            <span className="text-xs text-gray-500">
+                                                            <span className="text-[10px] opacity-80 mt-0.5">
                                                                 {[
                                                                     ug.scopedCategories ? `Cat: ${ug.scopedCategories}` : null,
                                                                     ug.scopedEnvironments ? `Env: ${ug.scopedEnvironments}` : null
@@ -161,14 +202,21 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                                     </TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex justify-end gap-2 items-center">
-                                            <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded select-all max-w-[100px] truncate">
-                                                {invite.token}
+                                            <span className="text-xs text-gray-500 italic mr-2">
+                                                Email Sent
                                             </span>
-                                            <Button variant="ghost" size="icon" onClick={() => {
-                                                navigator.clipboard.writeText(`${window.location.origin}/invite/${invite.token}`);
-                                                // Ideally show toast
-                                            }}>
-                                                <Copy className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleResend(invite.id)}
+                                                disabled={resendingId === invite.id}
+                                                title="Resend Invitation Email"
+                                            >
+                                                {resendingId === invite.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                                                ) : (
+                                                    <RefreshCw className="w-4 h-4 text-gray-500 hover:text-indigo-600" />
+                                                )}
                                             </Button>
                                         </div>
                                     </TableCell>
