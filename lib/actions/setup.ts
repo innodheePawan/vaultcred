@@ -17,7 +17,7 @@ export async function configureSystem(formData: FormData) {
     const dbName = formData.get('dbName') as string;
     const dbPort = formData.get('dbPort') as string || '3306';
 
-    // Admin account fields (from setup wizard form)
+    // Admin account fields
     const adminEmail = formData.get('adminEmail') as string;
     const adminPassword = formData.get('adminPassword') as string;
 
@@ -29,23 +29,17 @@ export async function configureSystem(formData: FormData) {
         return { error: 'Admin email and password are required' };
     }
 
-    if (adminPassword.length < 12) {
-        return { error: 'Admin password must be at least 12 characters' };
-    }
-
-    if (!/[A-Z]/.test(adminPassword) || !/[a-z]/.test(adminPassword) ||
-        !/[0-9]/.test(adminPassword) || !/[^A-Za-z0-9]/.test(adminPassword)) {
-        return { error: 'Password must include uppercase, lowercase, number, and special character' };
-    }
-
     // 1. Construct DATABASE_URL
     const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+    let envUpdateSuccess = true;
+    let masterKey = '';
+    let authSecret = '';
 
     try {
         // 2. Write to .env file
         const envPath = path.resolve(process.cwd(), '.env');
 
-        // Read existing .env to preserve other keys (like NEXTAUTH_SECRET)
+        // Read existing .env
         let envContent = '';
         try {
             envContent = await fs.readFile(envPath, 'utf8');
@@ -54,8 +48,6 @@ export async function configureSystem(formData: FormData) {
         }
 
         const newEnvLine = `DATABASE_URL="${dbUrl}"`;
-
-        // Regex to match DATABASE_URL=... or # DATABASE_URL=... (with optional whitespace)
         const dbUrlRegex = /^#?\s*DATABASE_URL=.*/m;
 
         if (dbUrlRegex.test(envContent)) {
@@ -68,22 +60,30 @@ export async function configureSystem(formData: FormData) {
         const { randomBytes } = await import('crypto');
 
         if (!envContent.includes('MASTER_KEY=')) {
-            const masterKey = randomBytes(32).toString('hex'); // 64 chars
+            masterKey = randomBytes(32).toString('hex');
             envContent += `\nMASTER_KEY="${masterKey}"\n`;
-            console.log('[Setup] Generated new MASTER_KEY');
+        } else {
+            const match = envContent.match(/MASTER_KEY="?([^"\n]*)"?/);
+            if (match) masterKey = match[1];
         }
 
         if (!envContent.includes('NEXTAUTH_SECRET=') && !envContent.includes('AUTH_SECRET=')) {
-            const authSecret = randomBytes(32).toString('hex');
+            authSecret = randomBytes(32).toString('hex');
             envContent += `\nNEXTAUTH_SECRET="${authSecret}"\n`;
-            console.log('[Setup] Generated new NEXTAUTH_SECRET');
+        } else {
+            const match = envContent.match(/(?:NEXTAUTH_SECRET|AUTH_SECRET)="?([^"\n]*)"?/);
+            if (match) authSecret = match[1];
         }
 
-        await fs.writeFile(envPath, envContent, 'utf8');
-        console.log('[Setup] Updated .env file');
+        try {
+            await fs.writeFile(envPath, envContent, 'utf8');
+            console.log('[Setup] Updated .env file');
+        } catch (fsError: any) {
+            console.warn('[Setup] Failed to write .env file (Read-only filesystem?):', fsError.code);
+            envUpdateSuccess = false;
+        }
 
         // 3. Run Prisma Push (Schema Init)
-        // We set the env var for this process specifically to ensure it uses the new URL immediately
         console.log('[Setup] Running DB Push...');
         await execPromise(`npx prisma db push`, {
             env: { ...process.env, DATABASE_URL: dbUrl }
@@ -91,8 +91,6 @@ export async function configureSystem(formData: FormData) {
 
         // 4. Seed Data
         console.log('[Setup] Seeding Initial Data...');
-
-        // We need a fresh Prisma Client instance with the new URL
         const prisma = new PrismaClient({
             datasources: {
                 db: {
@@ -102,16 +100,14 @@ export async function configureSystem(formData: FormData) {
         });
 
         try {
-            // A. Existing Data Cleanup (Requested: Clear all credentials)
-            console.log('[Setup] Clearing any existing credentials...');
+            // A. Existing Data Cleanup
             await prisma.credentialMaster.deleteMany({});
 
             // B. Seed Roles & Groups
             await seedRoles(prisma);
 
-            // C. Seed System Admin (credentials from setup wizard form — validated above)
+            // C. Seed System Admin
             const hashedPassword = await hash(adminPassword, 12);
-
             const existingUser = await prisma.user.findUnique({
                 where: { email: adminEmail },
             });
@@ -126,9 +122,7 @@ export async function configureSystem(formData: FormData) {
                         status: 'ACTIVE',
                     },
                 });
-                console.log(`[Setup] Created real admin user: ${adminEmail}`);
 
-                // D. Link Admin User to Administrator Group
                 const adminGroup = await prisma.userGroup.findUnique({
                     where: { name: 'Administrator' }
                 });
@@ -141,9 +135,6 @@ export async function configureSystem(formData: FormData) {
                             assignedBy: 'SYSTEM'
                         }
                     });
-                    console.log(`[Setup] Linked ${adminEmail} to Administrator group.`);
-                } else {
-                    console.warn('[Setup] Administrator group not found. Skipping mapping.');
                 }
             }
 
@@ -151,7 +142,18 @@ export async function configureSystem(formData: FormData) {
             await prisma.$disconnect();
         }
 
-        return { success: true, message: 'System Configured Successfully! Please restart the server.' };
+        return {
+            success: true,
+            message: envUpdateSuccess
+                ? 'System Configured Successfully! Please restart the server.'
+                : 'Database Initialized! Manual configuration required.',
+            manualConfigRequired: !envUpdateSuccess,
+            envVars: !envUpdateSuccess ? {
+                DATABASE_URL: dbUrl,
+                MASTER_KEY: masterKey,
+                NEXTAUTH_SECRET: authSecret || process.env.NEXTAUTH_SECRET
+            } : null
+        };
 
     } catch (error: any) {
         console.error('[Setup] Configuration Failed:', error);
