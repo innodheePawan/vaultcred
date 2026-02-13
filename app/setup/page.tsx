@@ -49,16 +49,18 @@ export default function SetupPage() {
             setStatus({
                 envVars: envResult.envVars,
                 manualConfigRequired: manualRequired,
-                steps: { envUpdate: envResult.envUpdateSuccess, dbPush: false, seed: false }
+                steps: { envUpdate: !!envResult.envUpdateSuccess, dbPush: false, seed: false }
             });
 
             // PHASE 2: Sync DB
             setCurrentStep('SYNCING_DB');
             const syncResult = await syncDatabase(dbUrl!);
             let dbPushSuccess = false;
+            let syncError = '';
 
             if (syncResult.error) {
                 console.warn('[Setup] Async Sync Failed:', syncResult.error);
+                syncError = syncResult.error;
                 // We continue to seeding if possible, but mark step as manual
             } else {
                 dbPushSuccess = true;
@@ -88,6 +90,7 @@ export default function SetupPage() {
                     dbPush: dbPushSuccess,
                     seed: seedSuccess
                 },
+                error: syncError || seedResult.error,
                 success: finalManual
                     ? 'Initialization completed with manual steps needed.'
                     : 'System Configured Successfully!'
@@ -265,8 +268,8 @@ export default function SetupPage() {
 
                     {/* Progress States */}
                     {(currentStep !== 'IDLE' && currentStep !== 'FAILED' && currentStep !== 'COMPLETE') && (
-                        <div className="py-12 flex flex-col items-center justify-center space-y-6">
-                            <Loader2 className="h-12 w-12 text-indigo-500 animate-spin" />
+                        <div className="py-8 flex flex-col items-center justify-center space-y-6">
+                            <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
                             <div className="text-center space-y-2">
                                 <h3 className="text-xl font-bold text-white uppercase tracking-wider">
                                     {currentStep === 'PREPARING_ENV' && 'Preparing Infrastructure...'}
@@ -276,7 +279,31 @@ export default function SetupPage() {
                                 <p className="text-gray-400 text-sm italic">Please do not refresh the page.</p>
                             </div>
 
-                            <div className="w-full max-w-xs bg-gray-700 rounded-full h-1.5 mt-8 overflow-hidden">
+                            {status?.manualConfigRequired && (
+                                <div className="w-full max-w-md bg-gray-900/80 p-6 rounded-lg border border-amber-600/50 space-y-4 animate-in fade-in zoom-in duration-300">
+                                    <h4 className="text-amber-400 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                        <AlertTriangle className="h-3 w-3" /> Action Needed: Set Cloud Variables
+                                    </h4>
+                                    <p className="text-gray-400 text-xs">
+                                        Serverless environment detected. You must set these variables in your hosting console (Amplify/Vercel) to persist settings.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {status.envVars && Object.entries(status.envVars).map(([key, value]) => (
+                                            <div key={key} className="bg-black/60 rounded border border-gray-800 p-2 flex justify-between items-center">
+                                                <div className="flex flex-col min-w-0 pr-4">
+                                                    <span className="text-indigo-400 font-mono text-[9px] font-bold">{key}</span>
+                                                    <span className="text-gray-400 font-mono text-[10px] truncate">{value}</span>
+                                                </div>
+                                                <button onClick={() => copyToClipboard(value || '', key)} className="p-1.5 text-gray-500 hover:text-white">
+                                                    {copiedField === key ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="w-full max-w-xs bg-gray-700 rounded-full h-1 mt-4 overflow-hidden">
                                 <div className={`bg-indigo-500 h-full transition-all duration-700 ${currentStep === 'PREPARING_ENV' ? 'w-1/3' : currentStep === 'SYNCING_DB' ? 'w-2/3' : 'w-full'}`}></div>
                             </div>
                         </div>
