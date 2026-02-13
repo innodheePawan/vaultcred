@@ -89,13 +89,13 @@ export async function verifyConnection(config: {
         await transporter.verify();
 
         if (testEmail) {
-            const senderName = "VaultSecure Test";
+            const senderName = "CredSecure Test";
             const senderEmail = fromEmail || config.user;
             await transporter.sendMail({
                 from: `"${senderName}" <${senderEmail}>`, // Format as "Name <email>"
                 to: testEmail,
                 replyTo: senderEmail,
-                subject: 'VaultSecure - SMTP Test',
+                subject: 'CredSecure - SMTP Test',
                 html: '<h1>SMTP Configuration Status</h1><p>Your SMTP settings are valid. This is a test email.</p>',
             });
         }
@@ -112,12 +112,12 @@ export async function verifyConnection(config: {
 async function getFromAddress(): Promise<string> {
     const settings = await prisma.systemSettings.findFirst();
     const fromEmail = (settings as any)?.smtpFromEmail;
-    const appName = settings?.applicationName || 'VaultSecure';
+    const appName = settings?.applicationName || 'CredSecure';
 
     if (fromEmail) {
         return `"${appName}" <${fromEmail}>`;
     }
-    return `"${appName}" <noreply@vaultsecure.local>`;
+    return `"${appName}" <noreply@credsecure.local>`;
 }
 
 /**
@@ -164,7 +164,7 @@ export async function sendInviteEmail(
     const activationLink = `${baseUrl}/invite/${token}`;
 
     const settings = await prisma.systemSettings.findFirst();
-    const appName = settings?.applicationName || 'VaultSecure';
+    const appName = settings?.applicationName || 'CredSecure';
     const logoUrl = settings?.logoUrl || null;
 
     const html = getInviteEmailTemplate({
@@ -186,7 +186,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     const resetLink = `${baseUrl}/reset-password/${token}`;
 
     const settings = await prisma.systemSettings.findFirst();
-    const appName = settings?.applicationName || 'VaultSecure';
+    const appName = settings?.applicationName || 'CredSecure';
     const logoUrl = settings?.logoUrl || null;
 
     const html = getPasswordResetEmailTemplate({
@@ -204,7 +204,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
  */
 export async function sendTestEmail(toEmail: string) {
     const settings = await prisma.systemSettings.findFirst();
-    const appName = settings?.applicationName || 'VaultSecure';
+    const appName = settings?.applicationName || 'CredSecure';
 
     const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

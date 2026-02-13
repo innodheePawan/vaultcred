@@ -16,8 +16,8 @@ function AnimatedStat({ value, label, sub }: { value: number; label: string; sub
     return (
         <div>
             <p className="text-3xl font-extrabold tracking-tight">{value}</p>
-            <p className="text-sm font-medium opacity-80 mt-0.5">{label}</p>
-            {sub && <p className="text-xs opacity-60 mt-0.5">{sub}</p>}
+            <p className="text-sm font-semibold opacity-80 mt-0.5">{label}</p>
+            {sub && <p className="text-xs opacity-60 mt-0.5 leading-tight">{sub}</p>}
         </div>
     );
 }
@@ -52,14 +52,14 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
     })();
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-4 h-full flex flex-col pb-2">
             {/* Greeting + Toggle row */}
             <div className="flex items-end justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                         {greeting}, {userName || 'there'} 👋
                     </h1>
-                    <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                         Here&apos;s your credential vault overview
                     </p>
                 </div>
@@ -81,7 +81,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Credentials */}
                 <Link href="/credentials" className="group">
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 text-white shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 h-[144px] flex flex-col justify-between">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 text-white shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                         <div className="relative flex items-start justify-between">
                             <AnimatedStat value={totalCredentials} label="Total Credentials" />
@@ -99,7 +99,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                 {/* My Credentials - toggleable */}
                 {showPersonal && (
                     <Link href="/credentials?scope=personal" className="group">
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 p-5 text-white shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:-translate-y-0.5">
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 p-5 text-white shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                             <div className="relative flex items-start justify-between">
                                 <AnimatedStat value={stats.personal.total} label="My Credentials" sub={`${stats.personal.expiringSoon} expiring soon`} />
@@ -117,7 +117,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
 
                 {/* Shared / Accessible */}
                 <Link href="/credentials?scope=shared" className="group">
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-5 text-white shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-5 text-white shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                         <div className="relative flex items-start justify-between">
                             <AnimatedStat value={stats.shared.total} label="Accessible" sub={`${stats.shared.expiringSoon} expiring soon`} />
@@ -133,7 +133,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                 </Link>
 
                 {/* Vault Health */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800 to-gray-950 p-5 text-white shadow-lg">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800 to-gray-950 p-5 text-white shadow-lg h-36 flex flex-col justify-between">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-12 translate-x-12" />
                     <div className="relative flex items-start justify-between">
                         <div>
@@ -163,7 +163,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Expired - RED gradient */}
                 <Link href="/credentials?expiry=expired" className="group">
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 p-5 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:-translate-y-0.5">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 p-5 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                         <div className="relative flex items-start justify-between">
                             <AnimatedStat value={stats.risk.totalExpired} label="Expired" sub="Immediate action needed" />
@@ -180,7 +180,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
 
                 {/* Expiring Soon - AMBER gradient */}
                 <Link href="/credentials?expiry=near_expiry" className="group">
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:-translate-y-0.5">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                         <div className="relative flex items-start justify-between">
                             <AnimatedStat value={stats.risk.totalNearExpiry} label="Expiring Soon" sub="Within next 60 days" />
@@ -198,7 +198,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                 {/* My Expiring - toggleable */}
                 {showPersonal && (
                     <Link href="/credentials?expiry=near_expiry&scope=personal" className="group">
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-700 p-5 text-white shadow-lg shadow-fuchsia-500/20 hover:shadow-xl hover:shadow-fuchsia-500/30 transition-all duration-300 hover:-translate-y-0.5">
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-700 p-5 text-white shadow-lg shadow-fuchsia-500/20 hover:shadow-xl hover:shadow-fuchsia-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                             <div className="relative flex items-start justify-between">
                                 <AnimatedStat value={stats.personal.expiringSoon} label="My Expiring" sub="Personal credentials" />
@@ -215,26 +215,26 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                 )}
             </div>
 
-            {/* ── Row 3: Charts with explicit heights ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* ── Row 3: Charts with dynamic heights ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-[180px]">
                 {/* Category Donut Chart */}
-                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Credentials by Category</h3>
                         <span className="text-xs text-gray-400 dark:text-gray-500">Click to filter</span>
                     </div>
-                    <div style={{ height: '280px' }}>
+                    <div className="flex-1 relative overflow-hidden">
                         <CategoryPieChart data={stats.shared.byCategory} />
                     </div>
                 </div>
 
                 {/* Environment Bar Chart */}
-                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Credentials by Environment</h3>
                         <span className="text-xs text-gray-400 dark:text-gray-500">Click to filter</span>
                     </div>
-                    <div style={{ height: '280px' }}>
+                    <div className="flex-1 relative overflow-hidden">
                         <EnvironmentBarChart data={stats.shared.byEnvironment} />
                     </div>
                 </div>

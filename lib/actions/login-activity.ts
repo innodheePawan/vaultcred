@@ -173,7 +173,7 @@ export async function archiveLoginLogs() {
                 },
                 create: {
                     id: 1,
-                    applicationName: 'VaultSecure',
+                    applicationName: 'CredSecure',
                     lastLoginArchivedAt: new Date(),
                     lastArchiveBatchId: batchId
                 }

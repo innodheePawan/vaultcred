@@ -7,7 +7,7 @@ import { ShieldAlert, Info, History, Shield } from 'lucide-react';
 import TabSwitcher from './TabSwitcher';
 
 export const metadata = {
-    title: 'Security Events | VaultSecure Admin',
+    title: 'Security Events | CredSecure Admin',
     description: 'Monitor and manage security events and IP-level blocks.',
 };
 

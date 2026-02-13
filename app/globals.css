@@ -10,6 +10,25 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  @keyframes float {
+    0% { transform: translateY(0px) rotate3d(1, 1, 0, 0deg); }
+    50% { transform: translateY(-20px) rotate3d(1, 1, 0, 2deg); }
+    100% { transform: translateY(0px) rotate3d(1, 1, 0, 0deg); }
+  }
+  @keyframes gradient-x {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  --animate-float: float 8s ease-in-out infinite;
+  --animate-gradient-x: gradient-x 15s linear infinite;
+  --animate-fade-in: fadeIn 1s ease-out forwards;
 }
 
 @media (prefers-color-scheme: dark) {

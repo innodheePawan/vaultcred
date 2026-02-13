@@ -42,7 +42,7 @@ export default async function InvitePage(props: { params: Promise<{ token: strin
                         <Shield className="h-6 w-6 text-indigo-600" />
                     </div>
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-                        Join Credential Vault
+                        Join CredSecure
                     </h2>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         You have been invited by <span className="font-medium text-gray-900 dark:text-white">{invite.createdBy.name || invite.createdBy.email}</span>

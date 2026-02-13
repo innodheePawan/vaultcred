@@ -52,7 +52,7 @@ export async function generateTwoFactorSetup() {
         // Generate otpauth URI
         const otpauthUri = otp.generateURI({
             secret,
-            issuer: 'VaultSecure',
+            issuer: 'CredSecure',
             label: session.user.email,
         });
 

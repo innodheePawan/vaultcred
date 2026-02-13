@@ -21,7 +21,7 @@ export default async function DashboardLayout({
     try {
         settings = await getSystemSettings();
     } catch (e) {
-        settings = { applicationName: 'VaultSecure', logoUrl: null };
+        settings = { applicationName: 'CredSecure', logoUrl: null };
     }
     const session = await auth();
 
@@ -53,7 +53,7 @@ export default async function DashboardLayout({
     }
 
     return (
-        <>
+        <div className="h-screen flex flex-col overflow-hidden">
             <SessionTimeout timeoutMs={600000} />
             {/* Pass currentUser which contains profileImage */}
             <Header settings={settings} user={currentUser} />
@@ -67,13 +67,11 @@ export default async function DashboardLayout({
                 </Suspense>
                 <div className="flex flex-1 flex-col overflow-hidden relative z-0">
                     <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                        <div className="min-h-full">
-                            {children}
-                        </div>
+                        {children}
                     </main>
                     <Footer />
                 </div>
             </div>
-        </>
+        </div>
     );
 }

@@ -73,7 +73,7 @@ export function CategoryPieChart({ data }: { data: ChartData[] }) {
     };
 
     return (
-        <div className="h-full w-full min-h-[220px]">
+        <div className="h-full w-full relative">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 0, bottom: 0, left: 0, right: 0 }}>
                     <Pie
@@ -122,7 +122,7 @@ export function EnvironmentBarChart({ data }: { data: ChartData[] }) {
     };
 
     return (
-        <div className="h-full w-full min-h-[180px]">
+        <div className="h-full w-full relative">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={data}

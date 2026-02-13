@@ -10,12 +10,12 @@ import { verifyConnection } from '@/lib/email';
 export async function getSystemSettings() {
     try {
         // Safe check for prisma instance
-        if (!prisma) return { applicationName: 'VaultSecure', logoUrl: null };
+        if (!prisma) return { applicationName: 'CredSecure', companyName: 'CredSecure Inc.', logoUrl: null };
 
         let settings = await prisma.systemSettings.findFirst();
         if (!settings) {
             settings = await prisma.systemSettings.create({
-                data: { applicationName: 'VaultSecure' }
+                data: { applicationName: 'CredSecure', companyName: 'CredSecure Inc.' }
             });
         }
 
@@ -28,7 +28,7 @@ export async function getSystemSettings() {
     } catch (error) {
         // Log the specific error to help with debugging (e.g. 500 error cause)
         console.error("Failed to fetch system settings (DB Error):", error);
-        return { applicationName: 'VaultSecure', logoUrl: null };
+        return { applicationName: 'CredSecure', companyName: 'CredSecure Inc.', logoUrl: null };
     }
 }
 
