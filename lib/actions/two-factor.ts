@@ -53,7 +53,7 @@ export async function generateTwoFactorSetup() {
         // Generate otpauth URI
         const otpauthUri = otp.generateURI({
             secret,
-            issuer: 'CredSecure',
+            issuer: 'CRED Secure',
             label: session.user.email,
         });
 

@@ -30,7 +30,7 @@ export default async function LandingPage() {
                                 <Shield className="w-6 h-6 text-white" />
                             </div>
                             <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-indigo-600 to-gray-900 dark:from-white dark:via-indigo-400 dark:to-white">
-                                CredSecure
+                                CRED Secure
                             </span>
                         </div>
                         <div className="flex items-center gap-4">
@@ -205,10 +205,10 @@ export default async function LandingPage() {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex items-center gap-2">
                             <Shield className="w-5 h-5 text-indigo-600" />
-                            <span className="text-lg font-bold tracking-tight">CredSecure</span>
+                            <span className="text-lg font-bold tracking-tight">CRED Secure</span>
                         </div>
                         <p className="text-sm text-gray-500">
-                            &copy; {new Date().getFullYear()} CredSecure. Developed with &hearts; for Enterprise Security.
+                            &copy; {new Date().getFullYear()} Innodhee Services Pvt Ltd. Developed with &hearts; for Enterprise Security.
                         </p>
                         <div className="flex items-center gap-6 text-sm font-medium text-gray-500">
                             <a href="#" className="hover:text-indigo-600 transition-colors">Documentation</a>

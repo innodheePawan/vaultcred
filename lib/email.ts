@@ -89,13 +89,13 @@ export async function verifyConnection(config: {
         await transporter.verify();
 
         if (testEmail) {
-            const senderName = "CredSecure Test";
+            const senderName = "CRED Secure Test";
             const senderEmail = fromEmail || config.user;
             await transporter.sendMail({
                 from: `"${senderName}" <${senderEmail}>`, // Format as "Name <email>"
                 to: testEmail,
                 replyTo: senderEmail,
-                subject: 'CredSecure - SMTP Test',
+                subject: 'CRED Secure - SMTP Test',
                 html: '<h1>SMTP Configuration Status</h1><p>Your SMTP settings are valid. This is a test email.</p>',
             });
         }
@@ -112,7 +112,7 @@ export async function verifyConnection(config: {
 async function getFromAddress(): Promise<string> {
     const settings = await prisma.systemSettings.findFirst();
     const fromEmail = (settings as any)?.smtpFromEmail;
-    const appName = settings?.applicationName || 'CredSecure';
+    const appName = settings?.applicationName || 'CRED Secure';
 
     if (fromEmail) {
         return `"${appName}" <${fromEmail}>`;
@@ -164,7 +164,7 @@ export async function sendInviteEmail(
     const activationLink = `${baseUrl}/invite/${token}`;
 
     const settings = await prisma.systemSettings.findFirst();
-    const appName = settings?.applicationName || 'CredSecure';
+    const appName = settings?.applicationName || 'CRED Secure';
     const logoUrl = settings?.logoUrl || null;
 
     const html = getInviteEmailTemplate({
@@ -186,7 +186,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     const resetLink = `${baseUrl}/reset-password/${token}`;
 
     const settings = await prisma.systemSettings.findFirst();
-    const appName = settings?.applicationName || 'CredSecure';
+    const appName = settings?.applicationName || 'CRED Secure';
     const logoUrl = settings?.logoUrl || null;
 
     const html = getPasswordResetEmailTemplate({
@@ -204,7 +204,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
  */
 export async function sendTestEmail(toEmail: string) {
     const settings = await prisma.systemSettings.findFirst();
-    const appName = settings?.applicationName || 'CredSecure';
+    const appName = settings?.applicationName || 'CRED Secure';
 
     const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

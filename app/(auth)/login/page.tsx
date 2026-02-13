@@ -5,7 +5,7 @@ import LoginForm from '@/components/auth/LoginForm';
 export default async function LoginPage() {
     const settings = await getSystemSettings();
     const logoUrl = settings?.logoUrl;
-    const applicationName = settings?.applicationName || 'CredSecure';
+    const applicationName = settings?.applicationName || 'CRED Secure';
 
     return (
         <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8 bg-gray-50 dark:bg-gray-900">

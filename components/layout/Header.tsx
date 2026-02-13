@@ -22,7 +22,7 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
     const userName = displayUser?.name || 'User';
     const userEmail = displayUser?.email || '';
 
-    const applicationName = settings?.applicationName || 'CredSecure';
+    const applicationName = settings?.applicationName || 'CRED Secure';
     const logoUrl = settings?.logoUrl;
 
     return (

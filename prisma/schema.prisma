@@ -338,8 +338,8 @@ model ExpiryNotification {
 
 model SystemSettings {
   id              Int      @id @default(1)
-  applicationName String   @default("CredSecure") @map("application_name")
-  companyName     String   @default("My Company") @map("company_name")
+  applicationName String   @default("CRED Secure") @map("application_name")
+  companyName     String   @default("Innodhee Services Pvt Ltd") @map("company_name")
   logoUrl         String?  @map("logo_url") @db.LongText
   themeColor      String?  @map("theme_color")
   auditPersonalCredentials Boolean @default(true) @map("audit_personal_credentials")

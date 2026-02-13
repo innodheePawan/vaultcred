@@ -195,7 +195,7 @@ export async function archiveLoginLogs() {
                 },
                 create: {
                     id: 1,
-                    applicationName: 'CredSecure',
+                    applicationName: 'CRED Secure',
                     lastLoginArchivedAt: new Date(),
                     lastArchiveBatchId: batchId
                 }
