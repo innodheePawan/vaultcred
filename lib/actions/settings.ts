@@ -138,6 +138,13 @@ export async function updateGeneralSettings(prevState: any, formData: FormData) 
         });
 
         revalidatePath('/settings');
+
+        await logAudit({
+            action: 'UPDATE_SETTINGS',
+            details: `General Settings updated: App Name=${applicationName}, Company=${companyName}${removeLogo ? ', Logo removed' : logoFile && logoFile.size > 0 ? ', New Logo uploaded' : ''}`,
+            userId: session.user.id
+        });
+
         return { message: 'General settings updated successfully.' };
     } catch (error: any) {
         console.error('Update General Failed:', error);
@@ -186,6 +193,13 @@ export async function updateSmtpSettings(prevState: any, formData: FormData) {
         });
 
         revalidatePath('/settings');
+
+        await logAudit({
+            action: 'UPDATE_SETTINGS',
+            details: `SMTP Settings updated: Host=${smtpHost}, User=${smtpUser}${smtpPassEncrypted ? ', Password updated' : ''}`,
+            userId: session.user.id
+        });
+
         return { message: 'SMTP settings updated successfully.' };
     } catch (error) {
         return { error: 'Failed to update SMTP settings.' };
@@ -216,6 +230,13 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
         });
 
         revalidatePath('/settings');
+
+        await logAudit({
+            action: 'UPDATE_SETTINGS',
+            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}`,
+            userId: session.user.id
+        });
+
         return { message: 'Security settings updated successfully.' };
     } catch (error) {
         return { error: 'Failed to update Security settings.' };

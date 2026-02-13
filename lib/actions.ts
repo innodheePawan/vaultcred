@@ -58,20 +58,11 @@ export async function authenticate(
         // Successful login — reset failure state
         await recordSuccess(email, ip);
 
-        await logAudit({
-            action: 'LOGIN',
-            details: `Login successful for ${email}`
-        });
-
         return { success: true, role: session?.user?.role, userId: session?.user?.id };
 
     } catch (error) {
         if (error instanceof AuthError) {
             await recordFailure(email, ip);
-            await logAudit({
-                action: 'LOGIN_FAILED',
-                details: `Failed login attempt for ${email}`
-            });
             switch (error.type) {
                 case 'CredentialsSignin':
                     return { error: 'Invalid credentials.' };
@@ -109,10 +100,6 @@ export async function authenticate(
         if (isRedirect) {
             // Successful login that triggered redirect
             await recordSuccess(email, ip);
-            await logAudit({
-                action: 'LOGIN',
-                details: `Login successful for ${email}`
-            });
             return { success: true };
         }
 

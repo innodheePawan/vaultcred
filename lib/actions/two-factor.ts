@@ -122,6 +122,12 @@ export async function enableTwoFactor(code: string) {
             data: { twoFactorEnabled: true },
         });
 
+        await logAudit({
+            action: 'SETUP_2FA',
+            details: 'Two-Factor Authentication enabled successfully',
+            userId: session.user.id
+        });
+
         return { success: true, message: 'Two-Factor Authentication enabled successfully!' };
     } catch (error) {
         console.error('[2FA] Enable error:', error);
@@ -139,6 +145,15 @@ export async function disableTwoFactor(code: string) {
     }
 
     try {
+        // 1. Check IP Security
+        const headersList = await headers();
+        const ip = headersList.get('x-forwarded-for') || 'unknown';
+        const security = await getSecurityState(null, ip);
+
+        if (security.isIpPermanentBlocked || security.isIpBlocked) {
+            return { error: 'Too many requests from this IP. Please try again later.' };
+        }
+
         // Check enterprise-level mandatory 2FA policy
         const settings = await prisma.systemSettings.findFirst({
             select: { twoFactorMandatory: true },
@@ -167,10 +182,12 @@ export async function disableTwoFactor(code: string) {
         const isValid = result && result.valid;
 
         if (!isValid) {
+            await recordFailure(session.user.email, ip);
             return { error: 'Invalid verification code.' };
         }
 
         // Disable 2FA and clear secret
+        await recordSuccess(session.user.email, ip);
         await prisma.user.update({
             where: { id: session.user.id },
             // @ts-ignore
@@ -178,6 +195,12 @@ export async function disableTwoFactor(code: string) {
                 twoFactorEnabled: false,
                 twoFactorSecret: null,
             },
+        });
+
+        await logAudit({
+            action: 'DISABLE_2FA',
+            details: 'Two-Factor Authentication was disabled',
+            userId: session.user.id
         });
 
         return { success: true, message: 'Two-Factor Authentication disabled.' };

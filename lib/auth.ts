@@ -7,6 +7,7 @@ import { verifyPassword } from "@/lib/utils/password"
 import { User } from "@prisma/client"
 import { OTP } from 'otplib';
 import { decrypt } from '@/lib/crypto';
+import { logLoginActivity } from "@/lib/actions/login-activity";
 
 // OTP instance for verification
 const otp = new OTP();
@@ -61,11 +62,27 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                     if (!user) {
                         console.log('[Auth] No user found');
+                        await logLoginActivity({
+                            email,
+                            outcome: 'FAILURE',
+                            category: 'AUTHENTICATION',
+                            reasonCode: 'AUTH_USER_NOT_FOUND',
+                            reasonMessage: 'Authentication failed: No user found with this email.',
+                            authMethod: 'CREDENTIALS'
+                        });
                         return null;
                     }
 
                     if (user.status !== 'ACTIVE') {
                         console.log(`[Auth] Blocked login for inactive user: ${email}`);
+                        await logLoginActivity({
+                            email,
+                            outcome: 'BLOCKED',
+                            category: 'ACCOUNT_STATUS',
+                            reasonCode: 'AUTH_USER_INACTIVE',
+                            reasonMessage: 'Access denied: User account is inactive.',
+                            authMethod: 'CREDENTIALS'
+                        });
                         return null;
                     }
 
@@ -75,6 +92,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                     const passwordsMatch = await verifyPassword(password, user.passwordHash);
                     if (!passwordsMatch) {
+                        await logLoginActivity({
+                            email,
+                            outcome: 'FAILURE',
+                            category: 'AUTHENTICATION',
+                            reasonCode: 'AUTH_INVALID_PASSWORD',
+                            reasonMessage: 'Authentication failed: Invalid password.',
+                            authMethod: 'CREDENTIALS'
+                        });
                         return null;
                     }
 
@@ -85,6 +110,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                         if (!twoFactorCode) {
                             // No code provided — reject (frontend should have prompted)
+                            await logLoginActivity({
+                                email,
+                                outcome: 'FAILURE',
+                                category: 'MFA',
+                                reasonCode: 'AUTH_MFA_REQUIRED',
+                                reasonMessage: 'MFA required but not provided.',
+                                authMethod: '2FA_TOTP'
+                            });
                             return null;
                         }
 
@@ -99,12 +132,31 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                                 secret,
                             });
                             const isValid = result && result.valid;
-                            if (!isValid) return null;
+                            if (!isValid) {
+                                await logLoginActivity({
+                                    email,
+                                    outcome: 'FAILURE',
+                                    category: 'MFA',
+                                    reasonCode: 'AUTH_INVALID_MFA',
+                                    reasonMessage: 'MFA verification failed: Invalid code.',
+                                    authMethod: '2FA_TOTP'
+                                });
+                                return null;
+                            }
                         } catch (error) {
                             console.error('[Auth] 2FA Verify Error:', error);
                             return null;
                         }
                     }
+
+                    await logLoginActivity({
+                        email,
+                        outcome: 'SUCCESS',
+                        category: 'AUTHENTICATION',
+                        reasonCode: 'AUTH_SUCCESS',
+                        reasonMessage: 'Login successful.',
+                        authMethod: user.twoFactorEnabled ? '2FA_TOTP' : 'CREDENTIALS'
+                    });
 
                     return {
                         ...user,

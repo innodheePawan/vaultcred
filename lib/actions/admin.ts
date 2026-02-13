@@ -18,7 +18,16 @@ export async function getUsersAndInvites() {
 
     const users = await prisma.user.findMany({
         where: { status: { not: 'INVITED' } },
-        include: {
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            status: true,
+            profileImage: true,
+            createdAt: true,
+            lastLogin: true,
+            twoFactorEnabled: true,
             userGroups: {
                 include: { group: true }
             }
@@ -33,7 +42,13 @@ export async function getUsersAndInvites() {
 
     const currentUser = await prisma.user.findUnique({
         where: { id: session!.user!.id },
-        include: { userGroups: { include: { group: true } } }
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            userGroups: { include: { group: true } }
+        }
     });
 
     // System Admin = Full Global Admin (Role=ADMIN implies Super Admin currently, or specific Group)

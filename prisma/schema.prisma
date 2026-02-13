@@ -356,6 +356,9 @@ model SystemSettings {
   updatedAt   DateTime @updatedAt @map("updated_on")
   updatedBy   String?  @map("updated_by")
 
+  lastLoginArchivedAt DateTime? @map("last_login_archived_at")
+  lastArchiveBatchId  String?   @map("last_archive_batch_id")
+
   @@map("system_settings")
 }
 
@@ -368,4 +371,53 @@ model PasswordResetToken {
   createdAt DateTime @default(now()) @map("created_on")
 
   @@map("password_reset_tokens")
+}
+
+model LoginLog {
+  id                String   @id @default(uuid()) @map("log_id")
+  email             String
+  outcome           String   // SUCCESS, FAILURE, BLOCKED
+  category          String   // AUTHENTICATION, MFA, ACCOUNT_STATUS
+  reasonCode        String   @map("reason_code")
+  reasonMessage     String?  @map("reason_message") @db.Text
+  authMethod        String   @map("auth_method")
+  ipAddress         String   @map("ip_address")
+  userAgent         String?  @map("user_agent") @db.Text
+  deviceFingerprint String?  @map("device_fingerprint")
+  geoCountry        String?  @map("geo_country")
+  riskLevel         String   @map("risk_level") // LOW, MEDIUM, HIGH
+  
+  timestamp         DateTime @default(now())
+
+  @@index([email])
+  @@index([ipAddress])
+  @@index([outcome])
+  @@map("security_login_logs")
+}
+
+model LoginLogArchive {
+  id                String   @id @default(uuid()) @map("archive_id")
+  originalLogId     String   @map("original_log_id")
+  email             String
+  outcome           String
+  category          String
+  reasonCode        String   @map("reason_code")
+  reasonMessage     String?  @map("reason_message") @db.Text
+  authMethod        String   @map("auth_method")
+  ipAddress         String   @map("ip_address")
+  userAgent         String?  @map("user_agent") @db.Text
+  deviceFingerprint String?  @map("device_fingerprint")
+  geoCountry        String?  @map("geo_country")
+  riskLevel         String   @map("risk_level")
+  
+  timestamp         DateTime // Original timestamp
+  
+  // Archival metadata
+  archiveBatchId    String   @map("archive_batch_id")
+  archivedAt        DateTime @default(now()) @map("archived_at")
+  archivedBy        String   @default("SYSTEM") @map("archived_by")
+
+  @@index([archiveBatchId])
+  @@index([email])
+  @@map("security_login_logs_archive")
 }
