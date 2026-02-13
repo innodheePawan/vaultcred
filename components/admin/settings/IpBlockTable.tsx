@@ -154,9 +154,9 @@ export default function IpBlockTable({ initialRecords }: { initialRecords: IpRec
                                             <button
                                                 onClick={() => handleUnblock(record.ipAddress)}
                                                 disabled={isPending}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all disabled:opacity-50"
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95 transition-all disabled:opacity-50"
                                             >
-                                                {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3" />}
+                                                {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3 pointer-events-none" />}
                                                 Unblock
                                             </button>
                                         </td>

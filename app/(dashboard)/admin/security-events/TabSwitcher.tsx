@@ -19,25 +19,27 @@ export default function TabSwitcher({
                     <button
                         onClick={() => setActiveTab('ip-blocks')}
                         className={`
-                            whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+                            whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm flex items-center gap-2
+                            transition-all duration-200 active:scale-95
                             ${activeTab === 'ip-blocks'
                                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}
                         `}
                     >
-                        <Shield className="w-4 h-4" />
+                        <Shield className="w-4 h-4 pointer-events-none" />
                         IP Security Blocks
                     </button>
                     <button
                         onClick={() => setActiveTab('login-activity')}
                         className={`
-                            whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+                            whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm flex items-center gap-2
+                            transition-all duration-200 active:scale-95
                             ${activeTab === 'login-activity'
                                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}
                         `}
                     >
-                        <ListTree className="w-4 h-4" />
+                        <ListTree className="w-4 h-4 pointer-events-none" />
                         Login Activity Logs
                     </button>
                 </nav>

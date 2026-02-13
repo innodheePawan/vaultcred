@@ -48,10 +48,21 @@ export default function LoginActivityTable() {
         setArchivalStatus(status);
     };
 
+    // For debounced search
+    const [searchTerm, setSearchTerm] = useState(filters.email);
+    const [ipSearchTerm, setIpSearchTerm] = useState(filters.ipAddress);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setFilters(f => ({ ...f, email: searchTerm, ipAddress: ipSearchTerm }));
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchTerm, ipSearchTerm]);
+
     useEffect(() => {
         loadLogs();
         loadArchivalStatus();
-    }, [page, filters]);
+    }, [page, filters.outcome, filters.category, filters.email, filters.ipAddress]);
 
     const handleArchive = async () => {
         if (!confirm('Are you sure you want to move successful logins older than 7 days to cold storage? This helps keep the active management console fast.')) return;
@@ -103,9 +114,9 @@ export default function LoginActivityTable() {
                 <button
                     onClick={handleArchive}
                     disabled={isPending}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-md text-sm font-semibold transition-all disabled:opacity-50"
                 >
-                    {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Archive className="w-3 h-3" />}
+                    {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4 pointer-events-none" />}
                     Archive Successful Logins
                 </button>
             </div>
@@ -117,9 +128,9 @@ export default function LoginActivityTable() {
                     <input
                         type="text"
                         placeholder="Email..."
-                        value={filters.email}
-                        onChange={(e) => setFilters(f => ({ ...f, email: e.target.value }))}
-                        className="pl-9 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-9 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs transition-shadow focus:ring-1 focus:ring-indigo-500"
                     />
                 </div>
                 <div className="relative">
@@ -127,9 +138,9 @@ export default function LoginActivityTable() {
                     <input
                         type="text"
                         placeholder="IP Address..."
-                        value={filters.ipAddress}
-                        onChange={(e) => setFilters(f => ({ ...f, ipAddress: e.target.value }))}
-                        className="pl-9 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs"
+                        value={ipSearchTerm}
+                        onChange={(e) => setIpSearchTerm(e.target.value)}
+                        className="pl-9 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs transition-shadow focus:ring-1 focus:ring-indigo-500"
                     />
                 </div>
                 <select
@@ -238,16 +249,16 @@ export default function LoginActivityTable() {
                     <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1 || isPending}
-                        className="p-1.5 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-50"
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
                     >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-5 h-5 pointer-events-none" />
                     </button>
                     <button
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         disabled={page === totalPages || isPending}
-                        className="p-1.5 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-50"
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
                     >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-5 h-5 pointer-events-none" />
                     </button>
                 </div>
             </div>
