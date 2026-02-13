@@ -5,20 +5,66 @@ import { randomBytes, timingSafeEqual } from 'crypto';
 import { hashPassword } from '@/lib/utils/password';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { decrypt } from '@/lib/crypto';
+import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
+import { headers } from 'next/headers';
+import { logAudit } from '@/lib/actions/audit';
 
 /**
  * Request a password reset email.
  * Always returns a success message to prevent user enumeration.
  */
-export async function requestPasswordReset(email: string) {
+export async function requestPasswordReset(emailRaw: string, formData?: FormData) {
+    const email = emailRaw ? emailRaw.trim().toLowerCase() : '';
     try {
+        const headersList = await headers();
+        const ip = headersList.get('x-forwarded-for') || 'unknown';
+
+        // 1. Check Security State (IP Blocks, User Locks)
+        const security = await getSecurityState(email, ip);
+
+        if (security.isIpPermanentBlocked) {
+            return { error: 'This IP address is permanently blocked due to repeated security violations.' };
+        }
+
+        if (security.isIpBlocked) {
+            const retryMinutes = security.blockedUntil ? Math.ceil((security.blockedUntil.getTime() - Date.now()) / 60000) : 4 * 60;
+            return { error: `Too many requests from this IP. Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.` };
+        }
+
+        if (security.isUserLocked) {
+            const retryMinutes = security.lockExpiresAt ? Math.ceil((security.lockExpiresAt.getTime() - Date.now()) / 60000) : 30;
+            return { error: `This account is temporarily locked. Please try again in ${retryMinutes} minutes.` };
+        }
+
+        const isCaptchaVerified = (typeof formData === 'object' && formData instanceof FormData)
+            ? formData.get('captcha_verified') === 'true'
+            : false;
+
+        if (security.requiresCaptcha && !isCaptchaVerified) {
+            return { error: 'Security challenge required.', requiresCaptcha: true };
+        }
+
+        // 2. Email-Based Rate Limiting (Legacy fallback or integrated)
+        // We'll use our new recordFailure for tracking.
+
         // Always respond with the same message regardless of whether the user exists
         const genericMessage = 'If an account with that email exists, we\'ve sent a password reset link.';
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
+
+
+        // For security tracking, we treat "email not found" or "rate limited" as potential failure? 
+        // But to prevent enumeration, we always return success.
+        // We only record failure if we REALLY want to stop brute-forcing the password reset endpoint itself.
+        if (security.isIpBlocked || security.isUserLocked) {
             return { success: true, message: genericMessage };
         }
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            await recordFailure(email, ip);
+            return { success: true, message: genericMessage };
+        }
+
 
         // Rate limit: max 3 reset requests per email per hour
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -108,6 +154,8 @@ export async function validateResetToken(token: string) {
  * Verify 2FA code during password reset flow.
  */
 export async function verifyResetTwoFactor(token: string, code: string) {
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
     try {
         // Validate token first
         const tokenResult = await validateResetToken(token);
@@ -143,6 +191,7 @@ export async function verifyResetTwoFactor(token: string, code: string) {
         });
 
         if (!isValid) {
+            await recordFailure(tokenResult.email!, ip);
             return { verified: false, error: 'Invalid 2FA code. Please try again.' };
         }
 
@@ -161,6 +210,8 @@ export async function resetPassword(
     newPassword: string,
     twoFactorCode?: string
 ) {
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
     try {
         // Validate token
         const tokenResult = await validateResetToken(token);
@@ -201,6 +252,8 @@ export async function resetPassword(
                 data: { used: true },
             });
         });
+
+        await recordSuccess(tokenResult.email!, ip);
 
         return { success: true, message: 'Password reset successfully. You can now log in with your new password.' };
     } catch (error) {

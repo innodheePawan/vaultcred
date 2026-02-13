@@ -21,6 +21,11 @@ model User {
   status        String    @default("ACTIVE") // ACTIVE, INACTIVE, INVITED
   profileImage  String?   @map("profile_image") @db.LongText
   
+  // Security fields
+  failedAttempts    Int       @default(0) @map("failed_attempts")
+  lockExpiresAt     DateTime? @map("lock_expires_at")
+  requiresCaptcha   Boolean   @default(false) @map("requires_captcha")
+  
   // Invite & Auth fields
   inviteToken   String?   @map("invite_token")
   inviteExpires DateTime? @map("invite_expires")
@@ -36,7 +41,6 @@ model User {
   // Relations
   createdCredentials      CredentialMaster[] @relation("CreatedBy")
   modifiedCredentials     CredentialMaster[] @relation("ModifiedBy")
-  // sharedWithMe            CredentialAccess[] // DEPRECATED: Replaced by Group Access
   auditLogs               AuditLog[]         @relation("PerformedBy")
   invitesSent             Invite[]           @relation("InvitedBy")
   
@@ -45,6 +49,22 @@ model User {
 
   @@map("users")
 }
+
+model IpSecurity {
+  id                String    @id @default(uuid()) @map("ip_security_id")
+  ipAddress         String    @unique @map("ip_address")
+  failedAttempts    Int       @default(0) @map("failed_attempts")
+  blockedUntil      DateTime? @map("blocked_until")
+  blockCount24h     Int       @default(0) @map("block_count_24h")
+  totalBlockCount   Int       @default(0) @map("total_block_count")
+  lastBlockAt       DateTime? @map("last_block_at")
+  isPermanentBlock  Boolean   @default(false) @map("is_permanent_block")
+  
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("security_ip_blocks")
+}
+
 
 model Invite {
   id            String    @id @default(uuid()) @map("invite_id")

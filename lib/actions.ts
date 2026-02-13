@@ -4,27 +4,44 @@ import { signIn, auth } from '@/lib/auth';
 import { AuthError } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/utils/password';
-// import { crypto } from 'next/dist/server/server-utils'; // Removed invalid import
 import { randomBytes } from 'crypto';
 import { logAudit } from '@/lib/actions/audit';
-import { rateLimit } from '@/lib/rate-limit';
+import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
+import { headers } from 'next/headers';
 
 export async function authenticate(
     prevState: any,
     formData: FormData,
 ) {
-    const email = formData.get('email') as string;
+    const emailRaw = formData.get('email') as string;
+    const email = emailRaw ? emailRaw.trim().toLowerCase() : '';
 
-    // Rate limiting: 5 attempts per 15 minutes per email
-    const { allowed, retryAfterMs } = rateLimit(`login:${email}`, 5, 15 * 60 * 1000);
-    if (!allowed) {
-        const retryMinutes = Math.ceil(retryAfterMs / 60000);
-        await logAudit({
-            action: 'LOGIN_RATE_LIMITED',
-            details: `Rate limited login attempt for ${email}. Retry after ${retryMinutes} min.`
-        });
-        return { error: `Too many login attempts. Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.` };
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
+
+    // 1. Check Security State (IP Blocks, User Locks)
+    const security = await getSecurityState(email, ip);
+
+    if (security.isIpPermanentBlocked) {
+        return { error: 'This IP address is permanently blocked due to repeated security violations.' };
     }
+
+    if (security.isIpBlocked) {
+        const retryMinutes = security.blockedUntil ? Math.ceil((security.blockedUntil.getTime() - Date.now()) / 60000) : 4 * 60;
+        return { error: `Too many requests from this IP. Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.` };
+    }
+
+    if (security.isUserLocked) {
+        const retryMinutes = security.lockExpiresAt ? Math.ceil((security.lockExpiresAt.getTime() - Date.now()) / 60000) : 30;
+        return { error: `This account is temporarily locked due to multiple failed login attempts. Please try again in ${retryMinutes} minutes.` };
+    }
+
+    const isCaptchaVerified = formData.get('captcha_verified') === 'true';
+
+    if (security.requiresCaptcha && !isCaptchaVerified) {
+        return { error: 'Security challenge required. Please refresh and complete the verification.', requiresCaptcha: true };
+    }
+
 
     try {
         await signIn('credentials', {
@@ -38,6 +55,9 @@ export async function authenticate(
         // Fetch session to determine role for redirection
         const session = await auth();
 
+        // Successful login — reset failure state
+        await recordSuccess(email, ip);
+
         await logAudit({
             action: 'LOGIN',
             details: `Login successful for ${email}`
@@ -47,6 +67,7 @@ export async function authenticate(
 
     } catch (error) {
         if (error instanceof AuthError) {
+            await recordFailure(email, ip);
             await logAudit({
                 action: 'LOGIN_FAILED',
                 details: `Failed login attempt for ${email}`
@@ -86,9 +107,11 @@ export async function authenticate(
             (error as any).message === 'NEXT_REDIRECT';
 
         if (isRedirect) {
+            // Successful login that triggered redirect
+            await recordSuccess(email, ip);
             await logAudit({
                 action: 'LOGIN',
-                details: `Login successful for ${formData.get('email')}`
+                details: `Login successful for ${email}`
             });
             return { success: true };
         }
@@ -105,7 +128,28 @@ export async function registerUser(token: string, formData: FormData) {
     const name = formData.get('name') as string;
     const password = formData.get('password') as string;
 
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
+
+    // 1. Check Security State (IP Blocks)
+    const security = await getSecurityState(null, ip);
+
+    if (security.isIpPermanentBlocked) {
+        return { error: 'This IP address is permanently blocked.' };
+    }
+
+    if (security.isIpBlocked) {
+        const retryMinutes = security.blockedUntil ? Math.ceil((security.blockedUntil.getTime() - Date.now()) / 60000) : 4 * 60;
+        return { error: `Too many attempts from this IP. Please try again in ${retryMinutes} minutes.` };
+    }
+
+    const isCaptchaVerified = formData.get('captcha_verified') === 'true';
+    if (security.requiresCaptcha && !isCaptchaVerified) {
+        return { error: 'Security challenge required.', requiresCaptcha: true };
+    }
+
     if (!name || !password || password.length < 6) {
+        await recordFailure(null, ip);
         return { error: 'Invalid name or password (min 6 chars)' };
     }
 
@@ -117,8 +161,10 @@ export async function registerUser(token: string, formData: FormData) {
             details: `User registered via invite token`
         });
 
+        await recordSuccess(null, ip);
         return { success: true };
     } catch (error: any) {
+        await recordFailure(null, ip);
         console.error("Registration failed:", error);
         return { error: error.message || 'Registration failed' };
     }

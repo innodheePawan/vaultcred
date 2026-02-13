@@ -40,6 +40,7 @@ const MENU_ITEMS: MenuItem[] = [
         children: [
             { title: 'Users & Groups', href: '/admin/users' },
             { title: 'Audit Logs', href: '/admin/audit' },
+            { title: 'Security Events', href: '/admin/security-events' },
             { title: 'Bulk Import', href: '/credentials/bulk-import' },
         ],
     },
@@ -126,20 +127,25 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
                                     </button>
                                     {expandedItems.includes(item.title) && (
                                         <div className="mt-1 ml-9 space-y-1 border-l-2 border-gray-100 dark:border-gray-700 pl-2">
-                                            {item.children.map((child) => (
-                                                <Link
-                                                    key={child.title}
-                                                    href={child.href || '#'}
-                                                    className={clsx(
-                                                        "block px-3 py-2 text-sm rounded-md transition-colors",
-                                                        isActive(child)
-                                                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold"
-                                                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"
-                                                    )}
-                                                >
-                                                    {child.title}
-                                                </Link>
-                                            ))}
+                                            {item.children.map((child) => {
+                                                // Role-based visibility for specific child items
+                                                if (child.title === 'Security Events' && userRole !== 'ADMIN') return null;
+
+                                                return (
+                                                    <Link
+                                                        key={child.title}
+                                                        href={child.href || '#'}
+                                                        className={clsx(
+                                                            "block px-3 py-2 text-sm rounded-md transition-colors",
+                                                            isActive(child)
+                                                                ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold"
+                                                                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"
+                                                        )}
+                                                    >
+                                                        {child.title}
+                                                    </Link>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>

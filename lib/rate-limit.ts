@@ -11,18 +11,25 @@ type RateLimitEntry = {
     resetAt: number;
 };
 
-const store = new Map<string, RateLimitEntry>();
+const globalForRateLimit = global as unknown as { rateLimitStore: Map<string, RateLimitEntry> };
+
+const store = globalForRateLimit.rateLimitStore || new Map<string, RateLimitEntry>();
+
+if (process.env.NODE_ENV !== 'production') globalForRateLimit.rateLimitStore = store;
 
 // Clean up expired entries periodically (every 5 minutes)
+// Ensure we don't set multiple intervals on hot reload
 const CLEANUP_INTERVAL = 5 * 60 * 1000;
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of store) {
-        if (now > entry.resetAt) {
-            store.delete(key);
+if (!(global as any).rateLimitCleanupInterval) {
+    (global as any).rateLimitCleanupInterval = setInterval(() => {
+        const now = Date.now();
+        for (const [key, entry] of store) {
+            if (now > entry.resetAt) {
+                store.delete(key);
+            }
         }
-    }
-}, CLEANUP_INTERVAL);
+    }, CLEANUP_INTERVAL);
+}
 
 /**
  * Check if a key has exceeded the rate limit.
@@ -42,14 +49,18 @@ export function rateLimit(
     // No entry or expired — create new
     if (!entry || now > entry.resetAt) {
         store.set(key, { count: 1, resetAt: now + windowMs });
+        console.log(`[RateLimit] New entry for ${key}. Count: 1/${limit}`);
         return { allowed: true, retryAfterMs: 0, remaining: limit - 1 };
     }
 
     // Under the limit
     if (entry.count < limit) {
         entry.count++;
+        console.log(`[RateLimit] Update for ${key}. Count: ${entry.count}/${limit}`);
         return { allowed: true, retryAfterMs: 0, remaining: limit - entry.count };
     }
+
+    console.log(`[RateLimit] BLOCKED for ${key}. Count: ${entry.count}/${limit}`);
 
     // Over the limit
     const retryAfterMs = entry.resetAt - now;

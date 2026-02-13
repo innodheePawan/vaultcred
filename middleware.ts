@@ -16,7 +16,7 @@ export default auth((req) => {
     const isInvite = path.startsWith('/invite');
     const isForgotPassword = path.startsWith('/forgot-password');
     const isResetPassword = path.startsWith('/reset-password');
-    const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.includes('.');
+    const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
     const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
     const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword;
 

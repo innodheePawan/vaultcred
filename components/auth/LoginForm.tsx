@@ -13,6 +13,8 @@ export default function LoginForm() {
     const [password, setPassword] = useState('');
     const [twoFactorCode, setTwoFactorCode] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [showCaptcha, setShowCaptcha] = useState(false);
+    const [captchaVerified, setCaptchaVerified] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const codeInputRef = useRef<HTMLInputElement>(null);
@@ -26,8 +28,17 @@ export default function LoginForm() {
             const formData = new FormData();
             formData.set('email', email);
             formData.set('password', password);
+            if (captchaVerified) {
+                formData.set('captcha_verified', 'true');
+            }
 
             const result = await preLoginCheck(null, formData);
+
+            if (result.requiresCaptcha) {
+                setShowCaptcha(true);
+                setError(null); // Clear error since we are showing challenge
+                return;
+            }
 
             if (result.error) {
                 setError(result.error);
@@ -53,8 +64,17 @@ export default function LoginForm() {
         if (code) {
             formData.set('code', code);
         }
+        if (captchaVerified) {
+            formData.set('captcha_verified', 'true');
+        }
 
         const result = await authenticate(null, formData);
+
+        if (result?.requiresCaptcha) {
+            setShowCaptcha(true);
+            setError(null);
+            return;
+        }
 
         if (result?.error) {
             setError(result.error);
@@ -142,11 +162,44 @@ export default function LoginForm() {
                         </div>
                     </div>
 
+                    {showCaptcha && (
+                        <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                            <label className="block text-sm font-medium text-gray-900 dark:text-gray-200">
+                                Security Challenge
+                            </label>
+                            <div
+                                onClick={() => setCaptchaVerified(true)}
+                                className={`flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer transition-all ${captchaVerified
+                                    ? 'bg-green-50 border-green-500 dark:bg-green-900/20'
+                                    : 'bg-gray-50 border-gray-200 hover:border-indigo-400 dark:bg-gray-800 dark:border-gray-700'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${captchaVerified ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                                        }`}>
+                                        {captchaVerified && (
+                                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        I am not a robot
+                                    </span>
+                                </div>
+                                <div className="text-xs text-gray-400 font-mono tracking-tight">CAPTCHA</div>
+                            </div>
+                            {captchaVerified && (
+                                <p className="text-[10px] text-green-600 dark:text-green-400 mt-1">✓ Verification successful</p>
+                            )}
+                        </div>
+                    )}
+
                     <div>
                         <button
-                            disabled={isPending}
+                            disabled={isPending || (showCaptcha && !captchaVerified)}
                             type="submit"
-                            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-colors"
+                            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-all active:scale-[0.98]"
                         >
                             {isPending ? (
                                 <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Signing in...</>

@@ -5,6 +5,10 @@ import { prisma } from '@/lib/prisma';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { OTP } from 'otplib';
 import QRCode from 'qrcode';
+import { headers } from 'next/headers';
+import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
+import { logAudit } from '@/lib/actions/audit';
+
 
 // Create OTP instance (TOTP is the default strategy)
 const otp = new OTP();
@@ -18,6 +22,21 @@ export async function generateTwoFactorSetup() {
     if (!session?.user?.id) {
         return { error: 'Not authenticated' };
     }
+
+    // 1. Check IP Security
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const security = await getSecurityState(null, ip);
+
+    if (security.isIpPermanentBlocked) {
+        return { error: 'This IP address is permanently blocked.' };
+    }
+
+    if (security.isIpBlocked) {
+        const retryMinutes = security.blockedUntil ? Math.ceil((security.blockedUntil.getTime() - Date.now()) / 60000) : 4 * 60;
+        return { error: `Too many requests from this IP. Please try again in ${retryMinutes} minutes.` };
+    }
+
 
     try {
         // Generate a new secret
@@ -59,6 +78,16 @@ export async function enableTwoFactor(code: string) {
         return { error: 'Not authenticated' };
     }
 
+    // 1. Check IP Security
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const security = await getSecurityState(null, ip);
+
+    if (security.isIpPermanentBlocked || security.isIpBlocked) {
+        return { error: 'Too many requests from this IP. Please try again later.' };
+    }
+
+
     try {
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
@@ -81,10 +110,12 @@ export async function enableTwoFactor(code: string) {
         const isValid = result && result.valid;
 
         if (!isValid) {
+            await recordFailure(session.user.email, ip);
             return { error: 'Invalid verification code. Please try again.' };
         }
 
-        // Enable 2FA
+        // Enable 2FA — and reset failure state
+        await recordSuccess(session.user.email, ip);
         await prisma.user.update({
             where: { id: session.user.id },
             // @ts-ignore
