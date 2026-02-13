@@ -10,6 +10,38 @@ import { hash } from 'bcryptjs';
 
 const execPromise = util.promisify(exec);
 
+/**
+ * Tests the database connection without modifying any state.
+ */
+export async function testDbConnection(formData: FormData) {
+    const dbHost = formData.get('dbHost') as string;
+    const dbUser = formData.get('dbUser') as string;
+    const dbPassword = formData.get('dbPassword') as string;
+    const dbName = formData.get('dbName') as string;
+    const dbPort = formData.get('dbPort') as string || '3306';
+
+    const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+
+    const prisma = new PrismaClient({
+        datasources: { db: { url: dbUrl } },
+    });
+
+    try {
+        // Try to query something simple
+        await prisma.$connect();
+        await prisma.$queryRaw`SELECT 1`;
+        return { success: 'Connection established successfully!' };
+    } catch (error: any) {
+        console.error('[Setup] DB Connection Test Failed:', error);
+        return { error: 'Connection Failed: ' + (error.message || 'Check your credentials and network access.') };
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+/**
+ * Configures the system, handles cloud environments with read-only filesystems.
+ */
 export async function configureSystem(formData: FormData) {
     const dbHost = formData.get('dbHost') as string;
     const dbUser = formData.get('dbUser') as string;
@@ -32,6 +64,7 @@ export async function configureSystem(formData: FormData) {
     // 1. Construct DATABASE_URL
     const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
     let envUpdateSuccess = true;
+    let dbPushSuccess = true;
     let masterKey = '';
     let authSecret = '';
 
@@ -85,20 +118,23 @@ export async function configureSystem(formData: FormData) {
 
         // 3. Run Prisma Push (Schema Init)
         console.log('[Setup] Running DB Push...');
-        await execPromise(`npx prisma db push`, {
-            env: { ...process.env, DATABASE_URL: dbUrl }
-        });
+        try {
+            await execPromise(`npx prisma db push --accept-data-loss`, {
+                env: { ...process.env, DATABASE_URL: dbUrl }
+            });
+            console.log('[Setup] DB Push Success');
+        } catch (execError: any) {
+            console.warn('[Setup] DB Push Failed (Common in serverless/readonly home):', execError.message);
+            dbPushSuccess = false;
+        }
 
         // 4. Seed Data
         console.log('[Setup] Seeding Initial Data...');
         const prisma = new PrismaClient({
-            datasources: {
-                db: {
-                    url: dbUrl,
-                },
-            },
+            datasources: { db: { url: dbUrl } },
         });
 
+        let seedSuccess = true;
         try {
             // A. Existing Data Cleanup
             await prisma.credentialMaster.deleteMany({});
@@ -137,22 +173,30 @@ export async function configureSystem(formData: FormData) {
                     });
                 }
             }
-
+        } catch (seedError: any) {
+            console.warn('[Setup] Seeding failed (Likely due to missing tables):', seedError.message);
+            seedSuccess = false;
         } finally {
             await prisma.$disconnect();
         }
 
+        const manualConfigRequired = !envUpdateSuccess || !dbPushSuccess || !seedSuccess;
+
         return {
-            success: true,
-            message: envUpdateSuccess
-                ? 'System Configured Successfully! Please restart the server.'
-                : 'Database Initialized! Manual configuration required.',
-            manualConfigRequired: !envUpdateSuccess,
-            envVars: !envUpdateSuccess ? {
+            success: manualConfigRequired
+                ? 'Initialization partially succeeded with manual steps.'
+                : 'System Configured Successfully! Please restart the server.',
+            manualConfigRequired,
+            steps: {
+                envUpdate: envUpdateSuccess,
+                dbPush: dbPushSuccess,
+                seed: seedSuccess
+            },
+            envVars: {
                 DATABASE_URL: dbUrl,
                 MASTER_KEY: masterKey,
                 NEXTAUTH_SECRET: authSecret || process.env.NEXTAUTH_SECRET
-            } : null
+            }
         };
 
     } catch (error: any) {
