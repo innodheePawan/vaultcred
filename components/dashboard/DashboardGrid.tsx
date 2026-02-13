@@ -240,6 +240,5 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                 </div>
             </div>
         </div>
-
     );
 }
