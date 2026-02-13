@@ -8,6 +8,7 @@ import QRCode from 'qrcode';
 import { headers } from 'next/headers';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
 import { logAudit } from '@/lib/actions/audit';
+import { logLoginActivity } from '@/lib/actions/login-activity';
 
 
 // Create OTP instance (TOTP is the default strategy)
@@ -45,7 +46,7 @@ export async function generateTwoFactorSetup() {
         // Store encrypted secret (not yet enabled)
         await prisma.user.update({
             where: { id: session.user.id },
-            // @ts-ignore - Prisma types may be stale until regenerated
+            // @ts-ignore
             data: { twoFactorSecret: encrypt(secret) },
         });
 
@@ -61,7 +62,7 @@ export async function generateTwoFactorSetup() {
         return {
             success: true,
             qrCode: qrCodeDataUrl,
-            secret, // Show to user for manual entry
+            secret,
         };
     } catch (error) {
         console.error('[2FA] Generate setup error:', error);
@@ -78,7 +79,6 @@ export async function enableTwoFactor(code: string) {
         return { error: 'Not authenticated' };
     }
 
-    // 1. Check IP Security
     const headersList = await headers();
     const ip = headersList.get('x-forwarded-for') || 'unknown';
     const security = await getSecurityState(null, ip);
@@ -93,7 +93,7 @@ export async function enableTwoFactor(code: string) {
             where: { id: session.user.id },
         });
 
-        // @ts-ignore - Prisma types may be stale
+        // @ts-ignore
         if (!user?.twoFactorSecret) {
             return { error: 'No 2FA secret found. Please generate setup first.' };
         }
@@ -101,7 +101,6 @@ export async function enableTwoFactor(code: string) {
         // @ts-ignore
         const secret = decrypt(user.twoFactorSecret);
 
-        // Use class verify method
         const result = await otp.verify({
             token: code,
             secret,
@@ -111,6 +110,15 @@ export async function enableTwoFactor(code: string) {
 
         if (!isValid) {
             await recordFailure(session.user.email, ip);
+            await logLoginActivity({
+                email: session.user.email,
+                outcome: 'FAILURE',
+                category: 'MFA',
+                reasonCode: 'MFA_ENABLE_INVALID_CODE',
+                reasonMessage: '2FA Enrichment failed: Invalid verification code.',
+                authMethod: '2FA_TOTP',
+                ipAddress: ip
+            });
             return { error: 'Invalid verification code. Please try again.' };
         }
 
@@ -126,6 +134,16 @@ export async function enableTwoFactor(code: string) {
             action: 'SETUP_2FA',
             details: 'Two-Factor Authentication enabled successfully',
             userId: session.user.id
+        });
+
+        await logLoginActivity({
+            email: session.user.email,
+            outcome: 'SUCCESS',
+            category: 'MFA',
+            reasonCode: 'MFA_ENABLED',
+            reasonMessage: 'Two-Factor Authentication enabled successfully.',
+            authMethod: '2FA_TOTP',
+            ipAddress: ip
         });
 
         return { success: true, message: 'Two-Factor Authentication enabled successfully!' };
@@ -144,16 +162,15 @@ export async function disableTwoFactor(code: string) {
         return { error: 'Not authenticated' };
     }
 
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const security = await getSecurityState(null, ip);
+
+    if (security.isIpPermanentBlocked || security.isIpBlocked) {
+        return { error: 'Too many requests from this IP. Please try again later.' };
+    }
+
     try {
-        // 1. Check IP Security
-        const headersList = await headers();
-        const ip = headersList.get('x-forwarded-for') || 'unknown';
-        const security = await getSecurityState(null, ip);
-
-        if (security.isIpPermanentBlocked || security.isIpBlocked) {
-            return { error: 'Too many requests from this IP. Please try again later.' };
-        }
-
         // Check enterprise-level mandatory 2FA policy
         const settings = await prisma.systemSettings.findFirst({
             select: { twoFactorMandatory: true },
@@ -183,6 +200,15 @@ export async function disableTwoFactor(code: string) {
 
         if (!isValid) {
             await recordFailure(session.user.email, ip);
+            await logLoginActivity({
+                email: session.user.email,
+                outcome: 'FAILURE',
+                category: 'MFA',
+                reasonCode: 'MFA_DISABLE_INVALID_CODE',
+                reasonMessage: '2FA Disable failed: Invalid verification code.',
+                authMethod: '2FA_TOTP',
+                ipAddress: ip
+            });
             return { error: 'Invalid verification code.' };
         }
 
@@ -201,6 +227,16 @@ export async function disableTwoFactor(code: string) {
             action: 'DISABLE_2FA',
             details: 'Two-Factor Authentication was disabled',
             userId: session.user.id
+        });
+
+        await logLoginActivity({
+            email: session.user.email,
+            outcome: 'SUCCESS',
+            category: 'MFA',
+            reasonCode: 'MFA_DISABLED',
+            reasonMessage: 'Two-Factor Authentication disabled.',
+            authMethod: '2FA_TOTP',
+            ipAddress: ip
         });
 
         return { success: true, message: 'Two-Factor Authentication disabled.' };

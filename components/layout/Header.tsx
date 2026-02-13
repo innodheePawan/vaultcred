@@ -110,11 +110,16 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
                                     <Settings className="h-4 w-4" /> Settings
                                 </Link>
                                 <button
-                                    onClick={() => signOut({ callbackUrl: '/login' })}
+                                    onClick={async () => {
+                                        const { logUserLogout } = await import('@/lib/actions/login-activity');
+                                        await logUserLogout();
+                                        signOut({ callbackUrl: '/login' });
+                                    }}
                                     className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2"
                                 >
                                     <LogOut className="h-4 w-4" /> Sign out
                                 </button>
+
                             </div>
                         )}
                     </div>

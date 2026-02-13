@@ -17,10 +17,13 @@ export function SessionTimeout({ timeoutMs = 600000 }: SessionTimeoutProps) {
             if (timerRef.current) {
                 clearTimeout(timerRef.current);
             }
-            timerRef.current = setTimeout(() => {
+            timerRef.current = setTimeout(async () => {
                 // Determine if we need to warn first? For now, just logout as requested.
+                const { logUserLogout } = await import('@/lib/actions/login-activity');
+                await logUserLogout();
                 signOut({ callbackUrl: '/login' });
             }, timeoutMs);
+
         };
 
         // Initialize timer

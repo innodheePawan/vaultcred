@@ -1,13 +1,14 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { randomBytes, timingSafeEqual } from 'crypto';
+import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/utils/password';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { decrypt } from '@/lib/crypto';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
 import { headers } from 'next/headers';
 import { logAudit } from '@/lib/actions/audit';
+import { logLoginActivity } from '@/lib/actions/login-activity';
 
 /**
  * Request a password reset email.
@@ -23,15 +24,42 @@ export async function requestPasswordReset(emailRaw: string, formData?: FormData
         const security = await getSecurityState(email, ip);
 
         if (security.isIpPermanentBlocked) {
+            await logLoginActivity({
+                email,
+                outcome: 'BLOCKED',
+                category: 'AUTHENTICATION',
+                reasonCode: 'PWD_RESET_IP_PERMANENT_BLOCKED',
+                reasonMessage: 'Password reset blocked: IP is permanently blacklisted.',
+                authMethod: 'PASSWORD_RESET',
+                ipAddress: ip
+            });
             return { error: 'This IP address is permanently blocked due to repeated security violations.' };
         }
 
         if (security.isIpBlocked) {
+            await logLoginActivity({
+                email,
+                outcome: 'BLOCKED',
+                category: 'AUTHENTICATION',
+                reasonCode: 'PWD_RESET_IP_TEMPORARY_BLOCKED',
+                reasonMessage: 'Password reset blocked: IP is temporarily throttled.',
+                authMethod: 'PASSWORD_RESET',
+                ipAddress: ip
+            });
             const retryMinutes = security.blockedUntil ? Math.ceil((security.blockedUntil.getTime() - Date.now()) / 60000) : 4 * 60;
             return { error: `Too many requests from this IP. Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.` };
         }
 
         if (security.isUserLocked) {
+            await logLoginActivity({
+                email,
+                outcome: 'BLOCKED',
+                category: 'ACCOUNT_STATUS',
+                reasonCode: 'PWD_RESET_USER_LOCKED',
+                reasonMessage: 'Access denied: User account is temporarily locked.',
+                authMethod: 'PASSWORD_RESET',
+                ipAddress: ip
+            });
             const retryMinutes = security.lockExpiresAt ? Math.ceil((security.lockExpiresAt.getTime() - Date.now()) / 60000) : 30;
             return { error: `This account is temporarily locked. Please try again in ${retryMinutes} minutes.` };
         }
@@ -44,17 +72,8 @@ export async function requestPasswordReset(emailRaw: string, formData?: FormData
             return { error: 'Security challenge required.', requiresCaptcha: true };
         }
 
-        // 2. Email-Based Rate Limiting (Legacy fallback or integrated)
-        // We'll use our new recordFailure for tracking.
-
-        // Always respond with the same message regardless of whether the user exists
         const genericMessage = 'If an account with that email exists, we\'ve sent a password reset link.';
 
-
-
-        // For security tracking, we treat "email not found" or "rate limited" as potential failure? 
-        // But to prevent enumeration, we always return success.
-        // We only record failure if we REALLY want to stop brute-forcing the password reset endpoint itself.
         if (security.isIpBlocked || security.isUserLocked) {
             return { success: true, message: genericMessage };
         }
@@ -62,6 +81,15 @@ export async function requestPasswordReset(emailRaw: string, formData?: FormData
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             await recordFailure(email, ip);
+            await logLoginActivity({
+                email,
+                outcome: 'FAILURE',
+                category: 'AUTHENTICATION',
+                reasonCode: 'PWD_RESET_USER_NOT_FOUND',
+                reasonMessage: 'Password reset failed: No user found with this email.',
+                authMethod: 'PASSWORD_RESET',
+                ipAddress: ip
+            });
             return { success: true, message: genericMessage };
         }
 
@@ -76,6 +104,15 @@ export async function requestPasswordReset(emailRaw: string, formData?: FormData
         });
 
         if (recentRequests >= 3) {
+            await logLoginActivity({
+                email,
+                outcome: 'BLOCKED',
+                category: 'AUTHENTICATION',
+                reasonCode: 'PWD_RESET_RATE_LIMITED',
+                reasonMessage: 'Password reset blocked: Too many requests for this email.',
+                authMethod: 'PASSWORD_RESET',
+                ipAddress: ip
+            });
             return { success: true, message: genericMessage }; // Silent rate limit
         }
 
@@ -99,6 +136,16 @@ export async function requestPasswordReset(emailRaw: string, formData?: FormData
 
         // Send email
         await sendPasswordResetEmail(email, token);
+
+        await logLoginActivity({
+            email,
+            outcome: 'SUCCESS',
+            category: 'AUTHENTICATION',
+            reasonCode: 'PWD_RESET_REQUESTED',
+            reasonMessage: 'Password reset link sent.',
+            authMethod: 'PASSWORD_RESET',
+            ipAddress: ip
+        });
 
         return { success: true, message: genericMessage };
     } catch (error) {
@@ -131,7 +178,7 @@ export async function validateResetToken(token: string) {
         // Check if user has 2FA enabled
         const user = await prisma.user.findUnique({
             where: { email: resetToken.email },
-            // @ts-ignore - twoFactorEnabled field
+            // @ts-ignore
             select: { id: true, email: true, twoFactorEnabled: true },
         });
 
@@ -192,6 +239,15 @@ export async function verifyResetTwoFactor(token: string, code: string) {
 
         if (!isValid) {
             await recordFailure(tokenResult.email!, ip);
+            await logLoginActivity({
+                email: tokenResult.email!,
+                outcome: 'FAILURE',
+                category: 'MFA',
+                reasonCode: 'PWD_RESET_INVALID_MFA',
+                reasonMessage: 'Password reset MFA failed: Invalid code.',
+                authMethod: '2FA_TOTP',
+                ipAddress: ip
+            });
             return { verified: false, error: 'Invalid 2FA code. Please try again.' };
         }
 
@@ -254,6 +310,16 @@ export async function resetPassword(
         });
 
         await recordSuccess(tokenResult.email!, ip);
+
+        await logLoginActivity({
+            email: tokenResult.email!,
+            outcome: 'SUCCESS',
+            category: 'AUTHENTICATION',
+            reasonCode: 'PWD_RESET_COMPLETE',
+            reasonMessage: 'Password reset successful.',
+            authMethod: tokenResult.twoFactorRequired ? '2FA_TOTP' : 'PASSWORD_RESET',
+            ipAddress: ip
+        });
 
         return { success: true, message: 'Password reset successfully. You can now log in with your new password.' };
     } catch (error) {

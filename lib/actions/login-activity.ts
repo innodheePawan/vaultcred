@@ -6,7 +6,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 
-export type LoginOutcome = 'SUCCESS' | 'FAILURE' | 'BLOCKED';
+export type LoginOutcome = 'SUCCESS' | 'FAILURE' | 'BLOCKED' | 'LOGOUT';
 export type LoginCategory = 'AUTHENTICATION' | 'MFA' | 'ACCOUNT_STATUS';
 
 export type LogActivityParams = {
@@ -34,6 +34,7 @@ export async function logLoginActivity(params: LogActivityParams) {
         let riskLevel = params.riskLevel;
         if (!riskLevel) {
             if (params.outcome === 'BLOCKED') riskLevel = 'HIGH';
+            else if (params.outcome === 'LOGOUT') riskLevel = 'LOW';
             else if (params.outcome === 'FAILURE' && params.category === 'MFA') riskLevel = 'MEDIUM';
             else if (params.outcome === 'FAILURE') riskLevel = 'LOW';
             else riskLevel = 'LOW';
@@ -56,6 +57,27 @@ export async function logLoginActivity(params: LogActivityParams) {
         });
     } catch (error) {
         console.error('[Login History] Failed to log activity:', error);
+    }
+}
+
+/**
+ * Specifically logs user logout.
+ */
+export async function logUserLogout() {
+    try {
+        const session = await auth();
+        if (!session?.user?.email) return;
+
+        await logLoginActivity({
+            email: session.user.email,
+            outcome: 'LOGOUT',
+            category: 'AUTHENTICATION',
+            reasonCode: 'AUTH_LOGOUT',
+            reasonMessage: 'User signed out successfully.',
+            authMethod: 'SESSION'
+        });
+    } catch (error) {
+        console.error('[Logout] Failed to log logout:', error);
     }
 }
 
@@ -138,7 +160,7 @@ export async function archiveLoginLogs() {
         await prisma.$transaction(async (tx) => {
             // 1. Bulk insert into Archive
             await tx.loginLogArchive.createMany({
-                data: logsToArchive.map(log => ({
+                data: logsToArchive.map((log: any) => ({
                     originalLogId: log.id,
                     email: log.email,
                     outcome: log.outcome,
@@ -160,7 +182,7 @@ export async function archiveLoginLogs() {
             // 2. Delete from Active
             await tx.loginLog.deleteMany({
                 where: {
-                    id: { in: logsToArchive.map(l => l.id) }
+                    id: { in: logsToArchive.map((l: any) => l.id) }
                 }
             });
 
