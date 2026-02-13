@@ -84,28 +84,14 @@ export async function prepareEnvironment(formData: FormData) {
  */
 export async function syncDatabase(dbUrl: string) {
     try {
-        // 35s timeout - enough for slow DBs, but short enough to avoid some 504s
-        // HOME: '/tmp' helps npm in some serverless environments
         await execPromise(`npx prisma db push --accept-data-loss`, {
-            env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
-            timeout: 35000
+            env: { ...process.env, DATABASE_URL: dbUrl },
+            timeout: 45000 // 45 seconds to avoid early timeout
         });
         return { success: true };
     } catch (error: any) {
-        console.error('[Setup] DB Sync Failed:', error.message);
-
-        // Detect serverless/restriction errors
-        const isServerlessError = error.message.includes('ENOENT') ||
-            error.message.includes('EADDRINUSE') ||
-            error.message.includes('permission denied') ||
-            error.code === 'ETIMEDOUT';
-
-        return {
-            error: isServerlessError
-                ? 'Environment Restriction: Automatic database sync is not possible or timed out in this hosting environment.'
-                : error.message,
-            manualStep: true
-        };
+        console.error('[Setup] DB Sync Failed:', error);
+        return { error: error.message };
     }
 }
 

@@ -5,12 +5,15 @@ import { requestPasswordReset } from '@/lib/actions/password-reset';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, ArrowLeft, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { SecurityChallenge } from '@/components/auth/SecurityChallenge';
 
 export default function ForgotPasswordForm() {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sent, setSent] = useState(false);
+    const [showCaptcha, setShowCaptcha] = useState(false);
+    const [captchaVerified, setCaptchaVerified] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -19,7 +22,19 @@ export default function ForgotPasswordForm() {
         setMessage(null);
 
         startTransition(async () => {
-            const result = await requestPasswordReset(email);
+            const formData = new FormData();
+            formData.set('email', email);
+            if (captchaVerified) {
+                formData.set('captcha_verified', 'true');
+            }
+
+            const result = await requestPasswordReset(email, formData);
+            if (result.requiresCaptcha) {
+                setShowCaptcha(true);
+                setError(null);
+                return;
+            }
+
             if (result.error) {
                 setError(result.error);
             } else if (result.success) {
@@ -69,7 +84,14 @@ export default function ForgotPasswordForm() {
                         </div>
                     </div>
 
-                    <Button type="submit" disabled={isPending} className="w-full">
+                    {showCaptcha && (
+                        <SecurityChallenge
+                            verified={captchaVerified}
+                            onVerify={setCaptchaVerified}
+                        />
+                    )}
+
+                    <Button type="submit" disabled={isPending || (showCaptcha && !captchaVerified)} className="w-full">
                         {isPending ? 'Sending...' : 'Send Reset Link'}
                     </Button>
                 </form>
