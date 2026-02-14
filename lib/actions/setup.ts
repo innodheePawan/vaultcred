@@ -129,8 +129,7 @@ export async function syncDatabase() {
         // HOME: '/tmp' is often required in serverless environments (like AWS Amplify)
         // to give npm/npx a writable directory for its cache.
         const { stdout, stderr } = await execPromise(`npx prisma db push --accept-data-loss`, {
-            env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
-            timeout: 300000 // Increased to 300 seconds (5 minutes)
+            env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' }
         });
 
         if (stderr && !stderr.includes('The database is already in sync')) {
