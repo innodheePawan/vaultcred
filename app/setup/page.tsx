@@ -24,6 +24,7 @@ export default function SetupPage() {
     const [copiedField, setCopiedField] = useState<string | null>(null);
 
     const router = useRouter();
+    const isCloudEnv = typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
 
     const passwordsMatch = adminPassword !== '' && adminPassword === adminPasswordConfirm;
     const isFormValid = passwordsMatch && adminPassword.length >= 12 && !!testResult?.success;
@@ -202,6 +203,13 @@ export default function SetupPage() {
 
                                     {testResult?.success && <p className="text-xs text-green-400 font-medium flex items-center gap-1"><CheckCircle className="h-3 w-3" /> {testResult.success}</p>}
                                     {testResult?.error && <p className="text-xs text-red-400 font-medium flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {testResult.error}</p>}
+
+                                    {isCloudEnv && (testResult?.success?.includes('localhost') || testResult?.error?.includes('localhost')) && (
+                                        <div className="mt-2 p-2 bg-amber-900/30 border border-amber-700 rounded text-[10px] text-amber-200 flex gap-2">
+                                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                                            <span><strong>Cloud Detected:</strong> You are using &quot;localhost&quot;. For AWS/Amplify, enter your remote database IP or Host instead.</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Admin Section */}
@@ -332,6 +340,12 @@ export default function SetupPage() {
                                                     {copiedField === 'db' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                                                 </button>
                                             </div>
+                                            {isCloudEnv && status.envVars?.DATABASE_URL?.includes('localhost') && (
+                                                <p className="text-[10px] text-amber-400 mt-2 flex gap-1 items-start bg-amber-900/10 p-2 rounded">
+                                                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                                                    <span><strong>Attention:</strong> You are using &quot;localhost&quot;. For AWS deployments, you must replace &quot;localhost&quot; in the command above with your remote database IP (e.g., 43.225.xx.xx) before running it in your terminal.</span>
+                                                </p>
+                                            )}
                                         </section>
                                     )}
 

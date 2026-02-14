@@ -23,50 +23,59 @@ export async function prepareEnvironment(formData: FormData) {
 
     const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
     let envUpdateSuccess = true;
-    let masterKey = '';
-    let authSecret = '';
 
     try {
+        const { randomBytes } = await import('crypto');
         const envPath = path.resolve(process.cwd(), '.env');
         let envContent = '';
+
         try {
             envContent = await fs.readFile(envPath, 'utf8');
-        } catch (e) { }
+        } catch (e) {
+            // File doesn't exist or isn't readable, which is fine for cloud
+        }
 
-        // Add/Update DATABASE_URL
+        // 1. Determine/Generate MASTER_KEY
+        let masterKey = '';
+        const mkMatch = envContent.match(/MASTER_KEY="?([^"\n]*)"?/);
+        if (mkMatch && mkMatch[1]) {
+            masterKey = mkMatch[1];
+        } else {
+            masterKey = process.env.MASTER_KEY || randomBytes(32).toString('hex');
+        }
+
+        // 2. Determine/Generate NEXTAUTH_SECRET (or AUTH_SECRET)
+        let authSecret = '';
+        const asMatch = envContent.match(/(?:NEXTAUTH_SECRET|AUTH_SECRET)="?([^"\n]*)"?/);
+        if (asMatch && asMatch[1]) {
+            authSecret = asMatch[1];
+        } else {
+            authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || randomBytes(32).toString('hex');
+        }
+
+        // 3. Construct new content
         const dbUrlLine = `DATABASE_URL="${dbUrl}"`;
-        if (envContent.includes('DATABASE_URL=')) {
-            envContent = envContent.replace(/^#?\s*DATABASE_URL=.*/m, dbUrlLine);
-        } else {
-            envContent += `\n${dbUrlLine}\n`;
-        }
+        const mkLine = `MASTER_KEY="${masterKey}"`;
+        const asLine = `NEXTAUTH_SECRET="${authSecret}"`;
 
-        // Generate Secrets if missing
-        const { randomBytes } = await import('crypto');
-        if (!envContent.includes('MASTER_KEY=')) {
-            masterKey = randomBytes(32).toString('hex');
-            envContent += `MASTER_KEY="${masterKey}"\n`;
-        } else {
-            const match = envContent.match(/MASTER_KEY="?([^"\n]*)"?/);
-            if (match) masterKey = match[1];
-        }
-
-        if (!envContent.includes('NEXTAUTH_SECRET=') && !envContent.includes('AUTH_SECRET=')) {
-            authSecret = randomBytes(32).toString('hex');
-            envContent += `NEXTAUTH_SECRET="${authSecret}"\n`;
-        } else {
-            const match = envContent.match(/(?:NEXTAUTH_SECRET|AUTH_SECRET)="?([^"\n]*)"?/);
-            if (match) {
-                authSecret = match[1];
-            } else {
-                // If it's in the environment but not the file
-                authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || randomBytes(32).toString('hex');
+        // Update or add lines
+        const updateLine = (content: string, key: string, newLine: string) => {
+            const regex = new RegExp(`^#?\\s*${key}=.*`, 'm');
+            if (content.match(regex)) {
+                return content.replace(regex, newLine);
             }
-        }
+            return content + (content.length > 0 && !content.endsWith('\n') ? '\n' : '') + newLine + '\n';
+        };
 
+        envContent = updateLine(envContent, 'DATABASE_URL', dbUrlLine);
+        envContent = updateLine(envContent, 'MASTER_KEY', mkLine);
+        envContent = updateLine(envContent, 'NEXTAUTH_SECRET', asLine);
+
+        // 4. Attempt to write
         try {
             await fs.writeFile(envPath, envContent, 'utf8');
         } catch (fsError) {
+            console.warn('[Setup] Could not write .env file (likely read-only FS).');
             envUpdateSuccess = false;
         }
 
@@ -76,7 +85,7 @@ export async function prepareEnvironment(formData: FormData) {
             envVars: {
                 DATABASE_URL: dbUrl,
                 MASTER_KEY: masterKey,
-                NEXTAUTH_SECRET: authSecret || process.env.NEXTAUTH_SECRET
+                NEXTAUTH_SECRET: authSecret
             }
         };
     } catch (error: any) {
