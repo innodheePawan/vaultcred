@@ -50,16 +50,18 @@ export default function SetupPage() {
             const dbPassword = formData.get('dbPassword') as string;
             const dbName = formData.get('dbName') as string;
             const dbPort = formData.get('dbPort') as string || '3306';
-            const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+            const dbUrl = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
 
             addLog('Initializing system setup sequence...');
             addLog(`Setting up with Host: ${dbHost}:${dbPort}, DB: ${dbName}, Admin: ${adminEmail}`);
 
             // Generate a masked URL for logging
-            const maskedUrl = `mysql://${dbUser}:****@${dbHost}:${dbPort}/${dbName}`;
+            const maskedUrl = `mysql://${encodeURIComponent(dbUser)}:****@${dbHost}:${dbPort}/${dbName}`;
             addLog(`Target Connection: ${maskedUrl}`);
+            addLog(`Platform: ${typeof window !== 'undefined' ? window.navigator.userAgent : 'Server'}`);
 
-            // PHASE 1: Purge existing records (for a clean slate)
+            // PHASE 1: Purge existing records (SKIPPED per user request)
+            /*
             setCurrentStep('PURGING_DB');
             addLog('Phase 1: Purging all existing database records to ensure a fresh state...');
             const purgeResult = await purgeDatabase(dbUrl);
@@ -68,15 +70,19 @@ export default function SetupPage() {
                 throw new Error(`[Purge Error] ${purgeResult.error}`);
             }
             addLog('SUCCESS: Database purged.');
+            */
+            addLog('Phase 1 (Purge) skipped by policy.');
 
             // PHASE 2: Sync Database Schema
             setCurrentStep('SYNCING_DB');
-            addLog('Phase 2: Synchronizing schema. Running "npx prisma db push"...');
+            addLog('Phase 2: Synchronizing schema. Running "npx prisma db push --skip-generate"...');
+            addLog('Note: --skip-generate is used to bypass port 9898 restrictions on AWS.');
             const syncResult = await syncDatabase(dbUrl);
             if (syncResult.error) {
                 addLog(`CRITICAL SYNC ERROR: ${syncResult.error}`);
                 if (syncResult.stderr) addLog(`OS STDERR: ${syncResult.stderr}`);
                 if (syncResult.stdout) addLog(`OS STDOUT: ${syncResult.stdout}`);
+                addLog('HINT: If this persists, verify your database allows remote connections from the AWS Amplify IP range.');
                 throw new Error(`[Database Sync Error] ${syncResult.error}`);
             }
             addLog('SUCCESS: Schema synchronized.');
