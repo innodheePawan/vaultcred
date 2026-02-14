@@ -17,8 +17,15 @@ export async function prepareEnvironment(formData: FormData) {
     const dbName = formData.get('dbName') as string;
     const dbPort = formData.get('dbPort') as string || '3306';
 
-    const dbUrl = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
-    console.log(`[Setup] Preparing environment for: ${dbHost}:${dbPort}/${dbName} (User: ${dbUser})`);
+    // Only construct new dbUrl if credentials are provided in formData
+    // Otherwise, we preserve the existing DATABASE_URL from process.env
+    let dbUrl = process.env.DATABASE_URL || '';
+    if (dbHost && dbUser && dbName) {
+        dbUrl = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
+        console.log(`[Setup] Updating Database URL to: ${dbHost}:${dbPort}/${dbName}`);
+    } else {
+        console.log(`[Setup] Preserving existing DATABASE_URL from environment.`);
+    }
     let envUpdateSuccess = true;
 
     try {
@@ -32,7 +39,25 @@ export async function prepareEnvironment(formData: FormData) {
             // File doesn't exist or isn't readable, which is fine for cloud
         }
 
-        // 1. Determine/Generate MASTER_KEY
+        // 1. Determine DATABASE_URL
+        // Priority: formData (explicit update) > process.env (runtime) > .env file (saved)
+        let dbUrlForUpdate = '';
+        if (dbHost && dbUser && dbName) {
+            dbUrlForUpdate = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
+            console.log(`[Setup] Updating DATABASE_URL to new value from parameters.`);
+        } else {
+            // Preservation logic
+            const dbMatch = envContent.match(/DATABASE_URL="?([^"\n]*)"?/);
+            if (dbMatch && dbMatch[1]) {
+                dbUrlForUpdate = dbMatch[1];
+                console.log('[Setup] Preserving DATABASE_URL from .env file.');
+            } else {
+                dbUrlForUpdate = process.env.DATABASE_URL || '';
+                if (dbUrlForUpdate) console.log('[Setup] Preserving DATABASE_URL from system environment.');
+            }
+        }
+
+        // 2. Determine/Generate MASTER_KEY
         let masterKey = '';
         const mkMatch = envContent.match(/MASTER_KEY="?([^"\n]*)"?/);
         if (mkMatch && mkMatch[1]) {
@@ -41,7 +66,7 @@ export async function prepareEnvironment(formData: FormData) {
             masterKey = process.env.MASTER_KEY || randomBytes(32).toString('hex');
         }
 
-        // 2. Determine/Generate NEXTAUTH_SECRET (or AUTH_SECRET)
+        // 3. Determine/Generate NEXTAUTH_SECRET (or AUTH_SECRET)
         let authSecret = '';
         const asMatch = envContent.match(/(?:NEXTAUTH_SECRET|AUTH_SECRET)="?([^"\n]*)"?/);
         if (asMatch && asMatch[1]) {
@@ -50,8 +75,8 @@ export async function prepareEnvironment(formData: FormData) {
             authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || randomBytes(32).toString('hex');
         }
 
-        // 3. Construct new content
-        const dbUrlLine = `DATABASE_URL="${dbUrl}"`;
+        // 4. Construct new content
+        const dbUrlLine = `DATABASE_URL="${dbUrlForUpdate}"`;
         const mkLine = `MASTER_KEY="${masterKey}"`;
         const asLine = `NEXTAUTH_SECRET="${authSecret}"`;
 
@@ -64,11 +89,11 @@ export async function prepareEnvironment(formData: FormData) {
             return content + (content.length > 0 && !content.endsWith('\n') ? '\n' : '') + newLine + '\n';
         };
 
-        envContent = updateLine(envContent, 'DATABASE_URL', dbUrlLine);
+        if (dbUrlForUpdate) envContent = updateLine(envContent, 'DATABASE_URL', dbUrlLine);
         envContent = updateLine(envContent, 'MASTER_KEY', mkLine);
         envContent = updateLine(envContent, 'NEXTAUTH_SECRET', asLine);
 
-        // 4. Attempt to write
+        // 5. Attempt to write
         try {
             await fs.writeFile(envPath, envContent, 'utf8');
         } catch (fsError) {
@@ -82,9 +107,9 @@ export async function prepareEnvironment(formData: FormData) {
         return {
             success: true,
             envUpdateSuccess,
-            envVars: {
-                DATABASE_URL: dbUrl,
+            secrets: {
                 MASTER_KEY: masterKey,
+                AUTH_SECRET: authSecret,
                 NEXTAUTH_SECRET: authSecret
             }
         };
@@ -96,14 +121,16 @@ export async function prepareEnvironment(formData: FormData) {
 /**
  * PHASE 2: Sync Database Schema
  */
-export async function syncDatabase(dbUrl: string) {
+export async function syncDatabase() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     console.log(`[Setup] Starting Database Sync at ${new Date().toISOString()}`);
     try {
-        // --skip-generate prevents Prisma from running generators (which can trigger 
-        // interactive tools or port-binding telemetry like Studio on port 9898).
-        const { stdout, stderr } = await execPromise(`npx prisma db push --accept-data-loss --skip-generate`, {
+        // HOME: '/tmp' is often required in serverless environments (like AWS Amplify)
+        // to give npm/npx a writable directory for its cache.
+        const { stdout, stderr } = await execPromise(`npx prisma db push --accept-data-loss`, {
             env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
-            timeout: 300000 // 5 minutes
+            timeout: 300000 // Increased to 300 seconds (5 minutes)
         });
 
         if (stderr && !stderr.includes('The database is already in sync')) {
@@ -127,7 +154,9 @@ export async function syncDatabase(dbUrl: string) {
 /**
  * PHASE 3: Seed Initial Data
  */
-export async function seedDatabase(dbUrl: string, adminEmail: string, adminPasswordRaw: string) {
+export async function seedDatabase(adminEmail: string, adminPasswordRaw: string) {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
         // Purge is now handled in a separate Phase 1
@@ -143,7 +172,7 @@ export async function seedDatabase(dbUrl: string, adminEmail: string, adminPassw
             create: {
                 email: adminEmail,
                 passwordHash: hashedPassword,
-                name: 'System Admin',
+                name: 'Super Administrator',
                 role: 'ADMIN',
                 status: 'ACTIVE',
             },
@@ -161,11 +190,14 @@ export async function seedDatabase(dbUrl: string, adminEmail: string, adminPassw
         // C. System Branding
         await prisma.systemSettings.upsert({
             where: { id: 1 },
-            update: {},
+            update: {
+                logoUrl: '/logo.png'
+            },
             create: {
                 id: 1,
                 applicationName: 'CRED Secure',
-                companyName: 'Innodhee Services Pvt Ltd'
+                companyName: 'Innodhee Services Pvt Ltd',
+                logoUrl: '/logo.png'
             }
         });
 
@@ -183,18 +215,61 @@ export async function seedDatabase(dbUrl: string, adminEmail: string, adminPassw
  * Purges all data from the database to ensure a clean start.
  * Order respects foreign key constraints.
  */
-export async function purgeDatabase(dbUrl: string) {
+export async function purgeDatabase() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
         console.log('[Setup] Purging existing data...');
 
-        console.log('[Setup] Purging process is currently DISABLED via code to focus on clean sync/seed.');
-        /*
+        // Resilient deletion: wrap each in try/catch in case tables don't exist yet
+        const safeDelete = async (model: any) => {
+            try { await model.deleteMany({}); } catch (e) { /* console.warn(`Failed to delete from ${model.name}:`, e.message); */ }
+        };
+
         // Type-specific credential details
         await safeDelete(prisma.credPassword);
-        ...
-        */
-        return { success: true, message: 'Purge phase skipped (disabled by policy).' };
+        await safeDelete(prisma.credApiOAuth);
+        await safeDelete(prisma.credKeyCert);
+        await safeDelete(prisma.credToken);
+        await safeDelete(prisma.credFile);
+        await safeDelete(prisma.credSecureNote);
+
+        // Audit and Notifications
+        await safeDelete(prisma.auditLog);
+        await safeDelete(prisma.expiryNotification);
+
+        // Master Credentials
+        await safeDelete(prisma.credentialMaster);
+
+        // Invite and Tokens
+        await safeDelete(prisma.invite);
+        await safeDelete(prisma.passwordResetToken);
+
+        // IAM Mapping
+        await safeDelete(prisma.userGroupMapping);
+        await safeDelete(prisma.userGroupAccess);
+        await safeDelete(prisma.accessGroupPolicy);
+
+        // IAM Groups
+        await safeDelete(prisma.userGroup);
+        await safeDelete(prisma.accessGroup);
+
+        // Logs
+        await safeDelete(prisma.loginLog);
+        await safeDelete(prisma.loginLogArchive);
+
+        // Security
+        await safeDelete(prisma.ipSecurity);
+
+        // Users
+        await safeDelete(prisma.user);
+
+        // Settings
+        await safeDelete(prisma.systemSettings);
+
+        console.log('[Setup] Purge complete.');
+        return { success: true };
     } catch (error: any) {
         console.error('[Setup] Purge Failed:', error);
         return { error: error.message };
@@ -213,15 +288,10 @@ export async function configureSystem(formData: FormData) {
 /**
  * Tests connection
  */
-export async function testDbConnection(formData: FormData) {
-    const dbHost = formData.get('dbHost') as string;
-    const dbUser = formData.get('dbUser') as string;
-    const dbPassword = formData.get('dbPassword') as string;
-    const dbName = formData.get('dbName') as string;
-    const dbPort = formData.get('dbPort') as string || '3306';
-
-    const dbUrl = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
-    console.log(`[Setup] Testing connection to: ${dbHost}:${dbPort}/${dbName}`);
+export async function testDbConnection() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return { error: 'DATABASE_URL not configured' };
+    console.log(`[Setup] Testing connection to configured DATABASE_URL`);
 
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {

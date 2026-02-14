@@ -5,18 +5,41 @@ import { NextResponse } from "next/server";
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-    // 1. Check for Database Configuration
+    // 1. Check for Setup Mode
+    const isSetupMode = process.env.SETUP_MODE === 'true';
+    const path = req.nextUrl.pathname;
+    const isSetup = path.startsWith('/setup');
+    const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
+
+    if (isSetupMode) {
+        // Allow static assets, images, and the setup page itself
+        const isAsset = path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
+        const isNextInternal = path.startsWith('/_next');
+
+        if (isSetup || isNextInternal || isAsset) {
+            return;
+        }
+
+        // For API calls or other routes, return a restricted access message
+        if (path.startsWith('/api')) {
+            return new NextResponse(
+                JSON.stringify({ error: 'System in Setup Mode. Access restricted.' }),
+                { status: 403, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        return NextResponse.redirect(new URL('/setup', req.url));
+    }
+
+    // 2. Check for Database Configuration
     const dbUrl = process.env.DATABASE_URL;
     const isUnconfigured = !dbUrl || dbUrl.trim() === '';
 
-    const path = req.nextUrl.pathname;
     const isLogin = path.startsWith('/login');
-    const isSetup = path.startsWith('/setup');
     const isSetup2fa = path.startsWith('/setup-2fa');
     const isInvite = path.startsWith('/invite');
     const isForgotPassword = path.startsWith('/forgot-password');
     const isResetPassword = path.startsWith('/reset-password');
-    const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
     const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
     const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword;
 
