@@ -51,7 +51,9 @@ const authHandler = auth((req) => {
 });
 
 export default async function middleware(req: any) {
-    const isSetupMode = String(process.env.SETUP_MODE).trim().toLowerCase() === "true";
+    const rawSetupMode = process.env.SETUP_MODE || process.env.NEXT_PUBLIC_SETUP_MODE || "false";
+    const isSetupMode = String(rawSetupMode).trim().toLowerCase() === "true";
+
     const dbUrl = process.env.DATABASE_URL;
     const isUnconfigured = !dbUrl || dbUrl.trim() === '';
     const path = req.nextUrl.pathname;
@@ -64,13 +66,22 @@ export default async function middleware(req: any) {
 
     // A. SETUP_MODE BYPASS (Highest Priority)
     if (isSetupMode) {
+        // If we're at root, force to /setup
+        if (path === '/') {
+            const url = req.nextUrl.clone();
+            url.pathname = '/setup';
+            return NextResponse.redirect(url);
+        }
+
         if (isSetup || isEnvValue || isNextInternal || isAsset) return;
+
         if (isApi) {
             return new NextResponse(
                 JSON.stringify({ error: 'System in Setup Mode. Access restricted.' }),
                 { status: 403, headers: { 'Content-Type': 'application/json' } }
             );
         }
+
         const url = req.nextUrl.clone();
         url.pathname = '/setup';
         return NextResponse.redirect(url);
