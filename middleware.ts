@@ -16,7 +16,8 @@ const authHandler = auth((req) => {
     const isForgotPassword = path.startsWith('/forgot-password');
     const isResetPassword = path.startsWith('/reset-password');
     const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
-    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword;
+    const isEnvValue_auth = path.startsWith('/env-value');
+    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth;
 
     // Auth Session
     const isLoggedIn = !!req.auth;
@@ -56,13 +57,14 @@ export default async function middleware(req: any) {
     const path = req.nextUrl.pathname;
 
     const isSetup = path.startsWith('/setup');
+    const isEnvValue = path.startsWith('/env-value');
     const isAsset = path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
     const isNextInternal = path.startsWith('/_next');
     const isApi = path.startsWith('/api');
 
     // A. SETUP_MODE BYPASS (Highest Priority)
     if (isSetupMode) {
-        if (isSetup || isNextInternal || isAsset) return;
+        if (isSetup || isEnvValue || isNextInternal || isAsset) return;
         if (isApi) {
             return new NextResponse(
                 JSON.stringify({ error: 'System in Setup Mode. Access restricted.' }),
@@ -76,7 +78,7 @@ export default async function middleware(req: any) {
 
     // B. UNCONFIGURED BYPASS
     if (isUnconfigured) {
-        if (isSetup || isNextInternal || isAsset || isApi) return;
+        if (isSetup || isEnvValue || isNextInternal || isAsset || isApi) return;
         const url = req.nextUrl.clone();
         url.pathname = '/setup';
         return NextResponse.redirect(url);
