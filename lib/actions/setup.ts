@@ -10,10 +10,6 @@ import { hash } from 'bcryptjs';
 
 const execPromise = util.promisify(exec);
 
-/**
- * PHASE 1: Prepare Environment
- * Generates secrets and attempts to write to .env
- */
 export async function prepareEnvironment(formData: FormData) {
     const dbHost = formData.get('dbHost') as string;
     const dbUser = formData.get('dbUser') as string;
@@ -21,7 +17,8 @@ export async function prepareEnvironment(formData: FormData) {
     const dbName = formData.get('dbName') as string;
     const dbPort = formData.get('dbPort') as string || '3306';
 
-    const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+    const dbUrl = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
+    console.log(`[Setup] Preparing environment for: ${dbHost}:${dbPort}/${dbName} (User: ${dbUser})`);
     let envUpdateSuccess = true;
 
     try {
@@ -78,6 +75,9 @@ export async function prepareEnvironment(formData: FormData) {
             console.warn('[Setup] Could not write .env file (likely read-only FS).');
             envUpdateSuccess = false;
         }
+
+        const mask = (s: string) => s ? `${s.substring(0, 4)}...${s.substring(s.length - 4)}` : 'MISSING';
+        console.log(`[Setup] Generated Secrets - MASTER_KEY: ${mask(masterKey)}, AUTH_SECRET: ${mask(authSecret)}`);
 
         return {
             success: true,
@@ -260,7 +260,9 @@ export async function testDbConnection(formData: FormData) {
     const dbPassword = formData.get('dbPassword') as string;
     const dbName = formData.get('dbName') as string;
     const dbPort = formData.get('dbPort') as string || '3306';
-    const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+
+    const dbUrl = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
+    console.log(`[Setup] Testing connection to: ${dbHost}:${dbPort}/${dbName}`);
 
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {

@@ -53,47 +53,53 @@ export default function SetupPage() {
             const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
 
             addLog('Initializing system setup sequence...');
+            addLog(`Setting up with Host: ${dbHost}:${dbPort}, DB: ${dbName}, Admin: ${adminEmail}`);
+
+            // Generate a masked URL for logging
+            const maskedUrl = `mysql://${dbUser}:****@${dbHost}:${dbPort}/${dbName}`;
+            addLog(`Target Connection: ${maskedUrl}`);
 
             // PHASE 1: Purge existing records (for a clean slate)
             setCurrentStep('PURGING_DB');
-            addLog('Phase 1: Purging database records...');
+            addLog('Phase 1: Purging all existing database records to ensure a fresh state...');
             const purgeResult = await purgeDatabase(dbUrl);
             if (purgeResult.error) {
-                addLog(`Purge Error: ${purgeResult.error}`);
+                addLog(`CRITICAL PURGE ERROR: ${purgeResult.error}`);
                 throw new Error(`[Purge Error] ${purgeResult.error}`);
             }
-            addLog('Purge completed successfully.');
+            addLog('SUCCESS: Database purged.');
 
             // PHASE 2: Sync Database Schema
             setCurrentStep('SYNCING_DB');
-            addLog('Phase 2: Synchronizing database schema with Prisma...');
+            addLog('Phase 2: Synchronizing schema. Running "npx prisma db push"...');
             const syncResult = await syncDatabase(dbUrl);
             if (syncResult.error) {
-                addLog(`Sync Error: ${syncResult.error}`);
-                if (syncResult.stderr) addLog(`STDERR: ${syncResult.stderr}`);
+                addLog(`CRITICAL SYNC ERROR: ${syncResult.error}`);
+                if (syncResult.stderr) addLog(`OS STDERR: ${syncResult.stderr}`);
+                if (syncResult.stdout) addLog(`OS STDOUT: ${syncResult.stdout}`);
                 throw new Error(`[Database Sync Error] ${syncResult.error}`);
             }
-            addLog('Schema synchronized successfully.');
+            addLog('SUCCESS: Schema synchronized.');
 
             // PHASE 3: Seed Initial Records
             setCurrentStep('SEEDING_DATA');
-            addLog('Phase 3: Seeding initial administrative data...');
+            addLog(`Phase 3: Seeding initial administrative account (${adminEmail}) and system settings...`);
             const seedResult = await seedDatabase(dbUrl, adminEmail, adminPassword);
             if (seedResult.error) {
-                addLog(`Seeding Error: ${seedResult.error}`);
+                addLog(`CRITICAL SEEDING ERROR: ${seedResult.error}`);
                 throw new Error(`[Seeding Error] ${seedResult.error}`);
             }
-            addLog('Initial data seeded successfully.');
+            addLog('SUCCESS: Admin user and system defaults seeded.');
 
             // PHASE 4: Infrastructure Preparation (Last)
             setCurrentStep('PREPARING_ENV');
-            addLog('Phase 4: Finalizing infrastructure and secrets...');
+            addLog('Phase 4: Finalizing server environment and encryption keys...');
             const envResult = await prepareEnvironment(formData);
             if (envResult.error) {
-                addLog(`Infra Error: ${envResult.error}`);
+                addLog(`CRITICAL INFRA ERROR: ${envResult.error}`);
                 throw new Error(`[Infrastructure Error] ${envResult.error}`);
             }
-            addLog('Infrastructure preparation complete.');
+            addLog('SUCCESS: MASTER_KEY and AUTH_SECRET finalized.');
 
             const manualRequired = !envResult.envUpdateSuccess;
 
