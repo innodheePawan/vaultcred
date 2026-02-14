@@ -114,7 +114,8 @@ export async function prepareEnvironment(formData: FormData) {
             }
         };
     } catch (error: any) {
-        return { error: error.message };
+        console.error('[Setup] Prepare Env Failed:', error);
+        return { error: String(error.message || error) };
     }
 }
 
@@ -140,12 +141,12 @@ export async function syncDatabase() {
         return { success: true, log: stdout };
     } catch (error: any) {
         console.error('[Setup] DB Sync CRITICAL FAILURE:', error);
-        // Include as much info as possible in the return
+        // Ensure everything is a plain primitive for serialization
         return {
-            error: error.message || 'Unknown shell error',
-            stderr: error.stderr || '',
-            stdout: error.stdout || '',
-            code: error.code
+            error: String(error.message || 'Unknown shell error'),
+            stderr: String(error.stderr || ''),
+            stdout: String(error.stdout || ''),
+            code: typeof error.code === 'number' || typeof error.code === 'string' ? error.code : undefined
         };
     }
 }
@@ -203,7 +204,7 @@ export async function seedDatabase(adminEmail: string, adminPasswordRaw: string)
         return { success: true };
     } catch (error: any) {
         console.error('[Setup] Seed Failed:', error);
-        return { error: error.message };
+        return { error: String(error.message || error) };
     } finally {
         await prisma.$disconnect();
     }
@@ -271,7 +272,7 @@ export async function purgeDatabase() {
         return { success: true };
     } catch (error: any) {
         console.error('[Setup] Purge Failed:', error);
-        return { error: error.message };
+        return { error: String(error.message || error) };
     } finally {
         await prisma.$disconnect();
     }
@@ -299,7 +300,7 @@ export async function testDbConnection() {
         return { success: 'Connection established successfully!' };
     } catch (error: any) {
         console.error('[Setup] DB Connection Test Failed:', error);
-        return { error: 'Connection Failed: ' + (error.message || error) };
+        return { error: 'Connection Failed: ' + String(error.message || error) };
     } finally {
         await prisma.$disconnect();
     }
@@ -330,7 +331,13 @@ export async function performDiagnostics() {
         await fs.access(testPath);
         results.fs.envAccess = 'READABLE';
         const stats = await fs.stat(testPath);
-        results.fs.envStats = stats;
+        results.fs.envStats = {
+            size: stats.size,
+            mtime: stats.mtime.toISOString(),
+            atime: stats.atime.toISOString(),
+            ctime: stats.ctime.toISOString(),
+            mode: stats.mode
+        };
     } catch (e: any) {
         results.fs.envAccess = `ERROR: ${e.message}`;
     }
