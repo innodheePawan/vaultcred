@@ -50,7 +50,7 @@ const authHandler = auth((req) => {
 });
 
 export default async function middleware(req: any) {
-    const isSetupMode = process.env.SETUP_MODE === 'true';
+    const isSetupMode = String(process.env.SETUP_MODE).trim().toLowerCase() === 'true';
     const dbUrl = process.env.DATABASE_URL;
     const isUnconfigured = !dbUrl || dbUrl.trim() === '';
     const path = req.nextUrl.pathname;
@@ -69,21 +69,23 @@ export default async function middleware(req: any) {
                 { status: 403, headers: { 'Content-Type': 'application/json' } }
             );
         }
-        return NextResponse.redirect(new URL('/setup', req.url));
+        const url = req.nextUrl.clone();
+        url.pathname = '/setup';
+        return NextResponse.redirect(url);
     }
 
     // B. UNCONFIGURED BYPASS
     if (isUnconfigured) {
         if (isSetup || isNextInternal || isAsset || isApi) return;
-        return NextResponse.redirect(new URL('/setup', req.url));
+        const url = req.nextUrl.clone();
+        url.pathname = '/setup';
+        return NextResponse.redirect(url);
     }
 
     // C. NORMAL AUTH FLOW
-    // We only execute NextAuth logic if the system is configured and NOT in setup mode.
-    // This prevents cookie/secret errors in Amplify during initial deployment.
     return (authHandler as any)(req);
 }
 
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|.*\\.png$).*)'],
+    matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
