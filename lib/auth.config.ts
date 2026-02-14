@@ -17,7 +17,7 @@ export const authConfig = {
 
             // SAFEGUARD: If SETUP_MODE is active, refuse authorization for all protected pages
             // This forces the middleware to handle the redirection to /setup.
-            const isSetupMode = String(process.env.SETUP_MODE).trim().toLowerCase() === 'true';
+            const isSetupMode = String(process.env.SETUP_MODE).trim().toLowerCase() === "true";
             if (isSetupMode && isProtected) {
                 console.log('[AuthGuard] System in Setup Mode. Blocking protected access.');
                 return false;

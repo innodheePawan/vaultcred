@@ -50,7 +50,7 @@ const authHandler = auth((req) => {
 });
 
 export default async function middleware(req: any) {
-    const isSetupMode = String(process.env.SETUP_MODE).trim().toLowerCase() === 'true';
+    const isSetupMode = String(process.env.SETUP_MODE).trim().toLowerCase() === "true";
     const dbUrl = process.env.DATABASE_URL;
     const isUnconfigured = !dbUrl || dbUrl.trim() === '';
     const path = req.nextUrl.pathname;
