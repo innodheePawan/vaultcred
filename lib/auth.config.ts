@@ -13,26 +13,7 @@ export const authConfig = {
                 nextUrl.pathname.startsWith('/credentials') ||
                 nextUrl.pathname.startsWith('/admin') ||
                 nextUrl.pathname.startsWith('/profile') ||
-                nextUrl.pathname.startsWith('/admin') ||
-                nextUrl.pathname.startsWith('/profile') ||
                 nextUrl.pathname.startsWith('/settings');
-
-            // Setup User Handling OR Missing Database Configuration
-            const isDbMissing = !process.env.DATABASE_URL;
-
-            // 1. If DB is missing, allow setup and essential routes without auth
-            if (isDbMissing) {
-                const isLogin = nextUrl.pathname.startsWith('/login');
-                const isApi = nextUrl.pathname.startsWith('/api') || nextUrl.pathname.startsWith('/_next') || nextUrl.pathname.includes('.');
-                const isSetup = nextUrl.pathname.startsWith('/setup');
-                const isInvite = nextUrl.pathname.startsWith('/invite');
-                const isRoot = nextUrl.pathname === '/';
-
-                if (isLogin || isApi || isSetup || isRoot || isInvite) return true;
-
-                // Redirect to /setup instead of /login when DB is not configured
-                return Response.redirect(new URL('/setup', nextUrl));
-            }
 
             if (isProtected) {
                 if (isLoggedIn) {
@@ -74,6 +55,6 @@ export const authConfig = {
         }
     },
     providers: [], // Configured in auth.ts
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'initial-setup-secret-placeholder-change-this-later',
     trustHost: true,
 } satisfies NextAuthConfig;

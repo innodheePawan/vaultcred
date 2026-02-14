@@ -4,37 +4,12 @@ import { NextResponse } from "next/server";
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
-    // 1. Check for Setup Mode
-    const isSetupMode = process.env.SETUP_MODE === 'true';
+const authHandler = auth((req) => {
     const path = req.nextUrl.pathname;
-    const isSetup = path.startsWith('/setup');
     const isApi = path.startsWith('/api') || path.startsWith('/_next') || path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
+    const isSetup = path.startsWith('/setup');
 
-    if (isSetupMode) {
-        // Allow static assets, images, and the setup page itself
-        const isAsset = path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
-        const isNextInternal = path.startsWith('/_next');
-
-        if (isSetup || isNextInternal || isAsset) {
-            return;
-        }
-
-        // For API calls or other routes, return a restricted access message
-        if (path.startsWith('/api')) {
-            return new NextResponse(
-                JSON.stringify({ error: 'System in Setup Mode. Access restricted.' }),
-                { status: 403, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        return NextResponse.redirect(new URL('/setup', req.url));
-    }
-
-    // 2. Check for Database Configuration
-    const dbUrl = process.env.DATABASE_URL;
-    const isUnconfigured = !dbUrl || dbUrl.trim() === '';
-
+    // SCENARIO: Normal Configured Flow
     const isLogin = path.startsWith('/login');
     const isSetup2fa = path.startsWith('/setup-2fa');
     const isInvite = path.startsWith('/invite');
@@ -45,47 +20,69 @@ export default auth((req) => {
 
     // Auth Session
     const isLoggedIn = !!req.auth;
-    const userRole = req.auth?.user?.role;
-    // @ts-ignore - twoFactorEnabled is added via callbacks
-    const twoFactorEnabled = req.auth?.user?.twoFactorEnabled;
-
+    const twoFactorEnabled = (req.auth?.user as any)?.twoFactorEnabled;
     const isRoot = path === '/';
 
-    // SCENARIO 1: Database NOT Configured
-    if (isUnconfigured) {
-        if (isApi || isSetup) {
-            return;
-        }
-        return NextResponse.redirect(new URL('/setup', req.url));
-    }
-
-    // SCENARIO 2: Database IS Configured
-
-    // If user is logged in and tries to access /login, send to dashboard
+    // 1. Logged in user accessing login page
     if (isLoggedIn && isLogin) {
         return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
-    // 2FA Enforcement: Logged-in users without 2FA must set it up
+    // 2. 2FA Enforcement
     if (isLoggedIn && !twoFactorEnabled && !isSetup2fa && !isSignout && !isApi && !isSetup) {
         return NextResponse.redirect(new URL('/setup-2fa', req.url));
     }
 
-    // If 2FA is already enabled, block access to setup-2fa
+    // 3. Prevent access to setup-2fa if already enabled
     if (isLoggedIn && twoFactorEnabled && isSetup2fa) {
         return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
-    // Normal protection for other routes
+    // 4. Protect private routes
     if (!isLoggedIn && !isPublicAuth && !isApi && !isSetup && !isRoot && !isSetup2fa) {
         return NextResponse.redirect(new URL('/login', req.url));
     }
 
-    // Block /setup if DB is configured
+    // 5. Block /setup if system is already configured (since we passed the pre-auth checks)
     if (isSetup && !isSetup2fa) {
         return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 });
+
+export default async function middleware(req: any) {
+    const isSetupMode = process.env.SETUP_MODE === 'true';
+    const dbUrl = process.env.DATABASE_URL;
+    const isUnconfigured = !dbUrl || dbUrl.trim() === '';
+    const path = req.nextUrl.pathname;
+
+    const isSetup = path.startsWith('/setup');
+    const isAsset = path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
+    const isNextInternal = path.startsWith('/_next');
+    const isApi = path.startsWith('/api');
+
+    // A. SETUP_MODE BYPASS (Highest Priority)
+    if (isSetupMode) {
+        if (isSetup || isNextInternal || isAsset) return;
+        if (isApi) {
+            return new NextResponse(
+                JSON.stringify({ error: 'System in Setup Mode. Access restricted.' }),
+                { status: 403, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+        return NextResponse.redirect(new URL('/setup', req.url));
+    }
+
+    // B. UNCONFIGURED BYPASS
+    if (isUnconfigured) {
+        if (isSetup || isNextInternal || isAsset || isApi) return;
+        return NextResponse.redirect(new URL('/setup', req.url));
+    }
+
+    // C. NORMAL AUTH FLOW
+    // We only execute NextAuth logic if the system is configured and NOT in setup mode.
+    // This prevents cookie/secret errors in Amplify during initial deployment.
+    return (authHandler as any)(req);
+}
 
 export const config = {
     matcher: ['/((?!api|_next/static|_next/image|.*\\.png$).*)'],
