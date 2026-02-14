@@ -49,7 +49,7 @@ export default function SetupPage() {
             setStatus({
                 envVars: envResult.envVars,
                 manualConfigRequired: manualRequired,
-                steps: { envUpdate: envResult.envUpdateSuccess, dbPush: false, seed: false }
+                steps: { envUpdate: !!envResult.envUpdateSuccess, dbPush: false, seed: false }
             });
 
             // PHASE 2: Sync DB
@@ -271,7 +271,7 @@ export default function SetupPage() {
                                 <h3 className="text-xl font-bold text-white uppercase tracking-wider">
                                     {currentStep === 'PREPARING_ENV' && 'Preparing Infrastructure...'}
                                     {currentStep === 'SYNCING_DB' && 'Syncing Database Tables...'}
-                                    {currentStep === 'SEEDING_DATA' && 'Initializing Administrator...'}
+                                    {currentStep === 'SEEDING_DATA' && 'Cleaning & Seeding Data...'}
                                 </h3>
                                 <p className="text-gray-400 text-sm italic">Please do not refresh the page.</p>
                             </div>

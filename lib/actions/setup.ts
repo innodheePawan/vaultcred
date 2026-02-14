@@ -101,6 +101,9 @@ export async function syncDatabase(dbUrl: string) {
 export async function seedDatabase(dbUrl: string, adminEmail: string, adminPasswordRaw: string) {
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
+        // 0. Purge existing data for a clean slate
+        await purgeDatabase(prisma);
+
         // A. Roles
         await seedRoles(prisma);
 
@@ -145,6 +148,55 @@ export async function seedDatabase(dbUrl: string, adminEmail: string, adminPassw
     } finally {
         await prisma.$disconnect();
     }
+}
+
+/**
+ * Purges all data from the database to ensure a clean start.
+ * Order respects foreign key constraints.
+ */
+async function purgeDatabase(prisma: any) {
+    console.log('[Setup] Purging existing data...');
+    // Type-specific credential details
+    await prisma.credPassword.deleteMany({});
+    await prisma.credApiOAuth.deleteMany({});
+    await prisma.credKeyCert.deleteMany({});
+    await prisma.credToken.deleteMany({});
+    await prisma.credFile.deleteMany({});
+    await prisma.credSecureNote.deleteMany({});
+
+    // Audit and Notifications
+    await prisma.auditLog.deleteMany({});
+    await prisma.expiryNotification.deleteMany({});
+
+    // Master Credentials
+    await prisma.credentialMaster.deleteMany({});
+
+    // Invite and Tokens
+    await prisma.invite.deleteMany({});
+    await prisma.passwordResetToken.deleteMany({});
+
+    // IAM Mapping
+    await prisma.userGroupMapping.deleteMany({});
+    await prisma.userGroupAccess.deleteMany({});
+    await prisma.accessGroupPolicy.deleteMany({});
+
+    // IAM Groups
+    await prisma.userGroup.deleteMany({});
+    await prisma.accessGroup.deleteMany({});
+
+    // Logs
+    await prisma.loginLog.deleteMany({});
+    await prisma.loginLogArchive.deleteMany({});
+
+    // Security
+    await prisma.ipSecurity.deleteMany({});
+
+    // Users
+    await prisma.user.deleteMany({});
+
+    // Settings
+    await prisma.systemSettings.deleteMany({});
+    console.log('[Setup] Purge complete.');
 }
 
 /**
