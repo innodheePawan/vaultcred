@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2 } from 'lucide-react';
-import { prepareEnvironment, syncDatabase, seedDatabase, testDbConnection } from '@/lib/actions/setup';
+import { prepareEnvironment, syncDatabase, seedDatabase, testDbConnection, purgeDatabase } from '@/lib/actions/setup';
 
-type SetupStep = 'IDLE' | 'PREPARING_ENV' | 'SYNCING_DB' | 'SEEDING_DATA' | 'COMPLETE' | 'FAILED';
+type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_DATA' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
 
 export default function SetupPage() {
     const [currentStep, setCurrentStep] = useState<SetupStep>('IDLE');
@@ -37,65 +37,62 @@ export default function SetupPage() {
         const adminEmail = formData.get('adminEmail') as string;
 
         try {
-            // PHASE 1: Prepare Environment
+            const dbHost = formData.get('dbHost') as string;
+            const dbUser = formData.get('dbUser') as string;
+            const dbPassword = formData.get('dbPassword') as string;
+            const dbName = formData.get('dbName') as string;
+            const dbPort = formData.get('dbPort') as string || '3306';
+            const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+
+            // PHASE 1: Purge existing records (for a clean slate)
+            setCurrentStep('PURGING_DB');
+            const purgeResult = await purgeDatabase(dbUrl);
+            if (purgeResult.error) {
+                console.warn('[Setup] Purge Failed:', purgeResult.error);
+                // We keep going as some tables might not exist yet if it's a fresh DB
+            }
+
+            // PHASE 2: Sync Database Schema
+            setCurrentStep('SYNCING_DB');
+            const syncResult = await syncDatabase(dbUrl);
+            let dbPushSuccess = !!syncResult.success;
+
+            if (syncResult.error) {
+                console.warn('[Setup] Async Sync Failed:', syncResult.error);
+            }
+
+            // PHASE 3: Seed Initial Records
+            setCurrentStep('SEEDING_DATA');
+            const seedResult = await seedDatabase(dbUrl, adminEmail, adminPassword);
+            let seedSuccess = !!seedResult.success;
+
+            if (seedResult.error) {
+                console.warn('[Setup] Seeding Failed:', seedResult.error);
+            }
+
+            // PHASE 4: Infrastructure Preparation (Last)
             setCurrentStep('PREPARING_ENV');
             const envResult = await prepareEnvironment(formData);
             if (envResult.error) throw new Error(envResult.error);
 
-            const manualRequired = !envResult.envUpdateSuccess;
-            const dbUrl = envResult.envVars!.DATABASE_URL;
+            const manualRequired = !envResult.envUpdateSuccess || !dbPushSuccess || !seedSuccess;
 
-            // Update status with env results (so keys show up if it fails later)
             setStatus({
                 envVars: envResult.envVars,
                 manualConfigRequired: manualRequired,
-                steps: { envUpdate: !!envResult.envUpdateSuccess, dbPush: false, seed: false }
-            });
-
-            // PHASE 2: Sync DB
-            setCurrentStep('SYNCING_DB');
-            const syncResult = await syncDatabase(dbUrl!);
-            let dbPushSuccess = false;
-
-            if (syncResult.error) {
-                console.warn('[Setup] Async Sync Failed:', syncResult.error);
-                // We continue to seeding if possible, but mark step as manual
-            } else {
-                dbPushSuccess = true;
-                setStatus(prev => ({ ...prev!, steps: { ...prev!.steps!, dbPush: true } }));
-            }
-
-            // PHASE 3: Seed Data
-            setCurrentStep('SEEDING_DATA');
-            const seedResult = await seedDatabase(dbUrl!, adminEmail, adminPassword);
-            let seedSuccess = false;
-
-            if (seedResult.error) {
-                console.warn('[Setup] Seeding Failed:', seedResult.error);
-            } else {
-                seedSuccess = true;
-                setStatus(prev => ({ ...prev!, steps: { ...prev!.steps!, seed: true } }));
-            }
-
-            // FINAL
-            const finalManual = manualRequired || !dbPushSuccess || !seedSuccess;
-
-            setStatus({
-                envVars: envResult.envVars,
-                manualConfigRequired: finalManual,
                 steps: {
                     envUpdate: !!envResult.envUpdateSuccess,
                     dbPush: dbPushSuccess,
                     seed: seedSuccess
                 },
-                success: finalManual
-                    ? 'Initialization completed with manual steps needed.'
-                    : 'System Configured Successfully!'
+                success: manualRequired
+                    ? 'Setup completed with manual steps needed for cloud persistence.'
+                    : 'System initialized and configured successfully!'
             });
 
             setCurrentStep('COMPLETE');
 
-            if (!finalManual) {
+            if (!manualRequired) {
                 setTimeout(() => router.push('/dashboard'), 3000);
             }
 
@@ -269,15 +266,16 @@ export default function SetupPage() {
                             <Loader2 className="h-12 w-12 text-indigo-500 animate-spin" />
                             <div className="text-center space-y-2">
                                 <h3 className="text-xl font-bold text-white uppercase tracking-wider">
-                                    {currentStep === 'PREPARING_ENV' && 'Preparing Infrastructure...'}
-                                    {currentStep === 'SYNCING_DB' && 'Syncing Database Tables...'}
-                                    {currentStep === 'SEEDING_DATA' && 'Cleaning & Seeding Data...'}
+                                    {currentStep === 'PURGING_DB' && 'Purging Old Records...'}
+                                    {currentStep === 'SYNCING_DB' && 'Syncing Schema...'}
+                                    {currentStep === 'SEEDING_DATA' && 'Seeding Records...'}
+                                    {currentStep === 'PREPARING_ENV' && 'Finalizing Infrastructure...'}
                                 </h3>
                                 <p className="text-gray-400 text-sm italic">Please do not refresh the page.</p>
                             </div>
 
                             <div className="w-full max-w-xs bg-gray-700 rounded-full h-1.5 mt-8 overflow-hidden">
-                                <div className={`bg-indigo-500 h-full transition-all duration-700 ${currentStep === 'PREPARING_ENV' ? 'w-1/3' : currentStep === 'SYNCING_DB' ? 'w-2/3' : 'w-full'}`}></div>
+                                <div className={`bg-indigo-500 h-full transition-all duration-700 ${currentStep === 'PURGING_DB' ? 'w-1/4' : currentStep === 'SYNCING_DB' ? 'w-2/4' : currentStep === 'SEEDING_DATA' ? 'w-3/4' : 'w-full'}`}></div>
                             </div>
                         </div>
                     )}

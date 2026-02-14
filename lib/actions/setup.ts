@@ -56,7 +56,12 @@ export async function prepareEnvironment(formData: FormData) {
             envContent += `NEXTAUTH_SECRET="${authSecret}"\n`;
         } else {
             const match = envContent.match(/(?:NEXTAUTH_SECRET|AUTH_SECRET)="?([^"\n]*)"?/);
-            if (match) authSecret = match[1];
+            if (match) {
+                authSecret = match[1];
+            } else {
+                // If it's in the environment but not the file
+                authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || randomBytes(32).toString('hex');
+            }
         }
 
         try {
@@ -101,8 +106,7 @@ export async function syncDatabase(dbUrl: string) {
 export async function seedDatabase(dbUrl: string, adminEmail: string, adminPasswordRaw: string) {
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
-        // 0. Purge existing data for a clean slate
-        await purgeDatabase(prisma);
+        // Purge is now handled in a separate Phase 1
 
         // A. Roles
         await seedRoles(prisma);
@@ -151,52 +155,69 @@ export async function seedDatabase(dbUrl: string, adminEmail: string, adminPassw
 }
 
 /**
+ * PHASE 1: Purge Database
  * Purges all data from the database to ensure a clean start.
  * Order respects foreign key constraints.
  */
-async function purgeDatabase(prisma: any) {
-    console.log('[Setup] Purging existing data...');
-    // Type-specific credential details
-    await prisma.credPassword.deleteMany({});
-    await prisma.credApiOAuth.deleteMany({});
-    await prisma.credKeyCert.deleteMany({});
-    await prisma.credToken.deleteMany({});
-    await prisma.credFile.deleteMany({});
-    await prisma.credSecureNote.deleteMany({});
+export async function purgeDatabase(dbUrl: string) {
+    const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+    try {
+        console.log('[Setup] Purging existing data...');
 
-    // Audit and Notifications
-    await prisma.auditLog.deleteMany({});
-    await prisma.expiryNotification.deleteMany({});
+        // Resilient deletion: wrap each in try/catch in case tables don't exist yet
+        const safeDelete = async (model: any) => {
+            try { await model.deleteMany({}); } catch (e) { }
+        };
 
-    // Master Credentials
-    await prisma.credentialMaster.deleteMany({});
+        // Type-specific credential details
+        await safeDelete(prisma.credPassword);
+        await safeDelete(prisma.credApiOAuth);
+        await safeDelete(prisma.credKeyCert);
+        await safeDelete(prisma.credToken);
+        await safeDelete(prisma.credFile);
+        await safeDelete(prisma.credSecureNote);
 
-    // Invite and Tokens
-    await prisma.invite.deleteMany({});
-    await prisma.passwordResetToken.deleteMany({});
+        // Audit and Notifications
+        await safeDelete(prisma.auditLog);
+        await safeDelete(prisma.expiryNotification);
 
-    // IAM Mapping
-    await prisma.userGroupMapping.deleteMany({});
-    await prisma.userGroupAccess.deleteMany({});
-    await prisma.accessGroupPolicy.deleteMany({});
+        // Master Credentials
+        await safeDelete(prisma.credentialMaster);
 
-    // IAM Groups
-    await prisma.userGroup.deleteMany({});
-    await prisma.accessGroup.deleteMany({});
+        // Invite and Tokens
+        await safeDelete(prisma.invite);
+        await safeDelete(prisma.passwordResetToken);
 
-    // Logs
-    await prisma.loginLog.deleteMany({});
-    await prisma.loginLogArchive.deleteMany({});
+        // IAM Mapping
+        await safeDelete(prisma.userGroupMapping);
+        await safeDelete(prisma.userGroupAccess);
+        await safeDelete(prisma.accessGroupPolicy);
 
-    // Security
-    await prisma.ipSecurity.deleteMany({});
+        // IAM Groups
+        await safeDelete(prisma.userGroup);
+        await safeDelete(prisma.accessGroup);
 
-    // Users
-    await prisma.user.deleteMany({});
+        // Logs
+        await safeDelete(prisma.loginLog);
+        await safeDelete(prisma.loginLogArchive);
 
-    // Settings
-    await prisma.systemSettings.deleteMany({});
-    console.log('[Setup] Purge complete.');
+        // Security
+        await safeDelete(prisma.ipSecurity);
+
+        // Users
+        await safeDelete(prisma.user);
+
+        // Settings
+        await safeDelete(prisma.systemSettings);
+
+        console.log('[Setup] Purge complete.');
+        return { success: true };
+    } catch (error: any) {
+        console.error('[Setup] Purge Failed:', error);
+        return { error: error.message };
+    } finally {
+        await prisma.$disconnect();
+    }
 }
 
 /**
