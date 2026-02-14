@@ -97,17 +97,30 @@ export async function prepareEnvironment(formData: FormData) {
  * PHASE 2: Sync Database Schema
  */
 export async function syncDatabase(dbUrl: string) {
+    console.log(`[Setup] Starting Database Sync at ${new Date().toISOString()}`);
     try {
         // HOME: '/tmp' is often required in serverless environments (like AWS Amplify)
         // to give npm/npx a writable directory for its cache.
-        await execPromise(`npx prisma db push --accept-data-loss`, {
+        const { stdout, stderr } = await execPromise(`npx prisma db push --accept-data-loss`, {
             env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
-            timeout: 45000 // 45 seconds to avoid early timeout
+            timeout: 300000 // Increased to 300 seconds (5 minutes)
         });
-        return { success: true };
+
+        if (stderr && !stderr.includes('The database is already in sync')) {
+            console.warn('[Setup] Sync Warning/Error Output:', stderr);
+        }
+
+        console.log('[Setup] Sync Output:', stdout);
+        return { success: true, log: stdout };
     } catch (error: any) {
-        console.error('[Setup] DB Sync Failed:', error);
-        return { error: error.message };
+        console.error('[Setup] DB Sync CRITICAL FAILURE:', error);
+        // Include as much info as possible in the return
+        return {
+            error: error.message || 'Unknown shell error',
+            stderr: error.stderr || '',
+            stdout: error.stdout || '',
+            code: error.code
+        };
     }
 }
 
@@ -255,8 +268,58 @@ export async function testDbConnection(formData: FormData) {
         await prisma.$queryRaw`SELECT 1`;
         return { success: 'Connection established successfully!' };
     } catch (error: any) {
-        return { error: 'Connection Failed: ' + error.message };
+        console.error('[Setup] DB Connection Test Failed:', error);
+        return { error: 'Connection Failed: ' + (error.message || error) };
     } finally {
         await prisma.$disconnect();
     }
+}
+
+/**
+ * Diagnostic tool to check environment capabilities
+ */
+export async function performDiagnostics() {
+    const results: any = {
+        timestamp: new Date().toISOString(),
+        nodeVersion: process.version,
+        platform: process.platform,
+        cwd: process.cwd(),
+        env: {
+            NODE_ENV: process.env.NODE_ENV,
+            DB_URL_SET: !!process.env.DATABASE_URL,
+            MK_SET: !!process.env.MASTER_KEY,
+            AS_SET: !!process.env.NEXTAUTH_SECRET,
+        },
+        fs: {},
+        shell: {}
+    };
+
+    // Check FS
+    try {
+        const testPath = path.resolve(process.cwd(), '.env');
+        await fs.access(testPath);
+        results.fs.envAccess = 'READABLE';
+        const stats = await fs.stat(testPath);
+        results.fs.envStats = stats;
+    } catch (e: any) {
+        results.fs.envAccess = `ERROR: ${e.message}`;
+    }
+
+    // Check /tmp
+    try {
+        await fs.access('/tmp');
+        results.fs.tmpAccess = 'ACCESSIBLE';
+    } catch (e: any) {
+        results.fs.tmpAccess = `ERROR: ${e.message}`;
+    }
+
+    // Check Shell
+    try {
+        const { stdout } = await execPromise('npx prisma --version');
+        results.shell.prisma = stdout.trim();
+    } catch (e: any) {
+        results.shell.prisma = `FAILURE: ${e.message}`;
+    }
+
+    return results;
 }

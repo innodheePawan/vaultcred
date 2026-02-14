@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2 } from 'lucide-react';
-import { prepareEnvironment, syncDatabase, seedDatabase, testDbConnection, purgeDatabase } from '@/lib/actions/setup';
+import { prepareEnvironment, syncDatabase, seedDatabase, testDbConnection, purgeDatabase, performDiagnostics } from '@/lib/actions/setup';
 
 type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_DATA' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
 
@@ -22,8 +22,12 @@ export default function SetupPage() {
     const [adminPassword, setAdminPassword] = useState('');
     const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
     const [copiedField, setCopiedField] = useState<string | null>(null);
+    const [debugLogs, setDebugLogs] = useState<string[]>([]);
+    const [showDiagnostics, setShowDiagnostics] = useState(false);
+    const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
 
     const router = useRouter();
+
     const isCloudEnv = typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
 
     const passwordsMatch = adminPassword !== '' && adminPassword === adminPasswordConfirm;
@@ -34,8 +38,11 @@ export default function SetupPage() {
         if (!isFormValid) return;
 
         setStatus(null);
+        setDebugLogs([]);
         const formData = new FormData(e.currentTarget);
         const adminEmail = formData.get('adminEmail') as string;
+
+        const addLog = (msg: string) => setDebugLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
         try {
             const dbHost = formData.get('dbHost') as string;
@@ -45,25 +52,48 @@ export default function SetupPage() {
             const dbPort = formData.get('dbPort') as string || '3306';
             const dbUrl = `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
 
+            addLog('Initializing system setup sequence...');
+
             // PHASE 1: Purge existing records (for a clean slate)
             setCurrentStep('PURGING_DB');
+            addLog('Phase 1: Purging database records...');
             const purgeResult = await purgeDatabase(dbUrl);
-            if (purgeResult.error) throw new Error(`[Purge Error] ${purgeResult.error}`);
+            if (purgeResult.error) {
+                addLog(`Purge Error: ${purgeResult.error}`);
+                throw new Error(`[Purge Error] ${purgeResult.error}`);
+            }
+            addLog('Purge completed successfully.');
 
             // PHASE 2: Sync Database Schema
             setCurrentStep('SYNCING_DB');
+            addLog('Phase 2: Synchronizing database schema with Prisma...');
             const syncResult = await syncDatabase(dbUrl);
-            if (syncResult.error) throw new Error(`[Database Sync Error] ${syncResult.error}`);
+            if (syncResult.error) {
+                addLog(`Sync Error: ${syncResult.error}`);
+                if (syncResult.stderr) addLog(`STDERR: ${syncResult.stderr}`);
+                throw new Error(`[Database Sync Error] ${syncResult.error}`);
+            }
+            addLog('Schema synchronized successfully.');
 
             // PHASE 3: Seed Initial Records
             setCurrentStep('SEEDING_DATA');
+            addLog('Phase 3: Seeding initial administrative data...');
             const seedResult = await seedDatabase(dbUrl, adminEmail, adminPassword);
-            if (seedResult.error) throw new Error(`[Seeding Error] ${seedResult.error}`);
+            if (seedResult.error) {
+                addLog(`Seeding Error: ${seedResult.error}`);
+                throw new Error(`[Seeding Error] ${seedResult.error}`);
+            }
+            addLog('Initial data seeded successfully.');
 
             // PHASE 4: Infrastructure Preparation (Last)
             setCurrentStep('PREPARING_ENV');
+            addLog('Phase 4: Finalizing infrastructure and secrets...');
             const envResult = await prepareEnvironment(formData);
-            if (envResult.error) throw new Error(`[Infrastructure Error] ${envResult.error}`);
+            if (envResult.error) {
+                addLog(`Infra Error: ${envResult.error}`);
+                throw new Error(`[Infrastructure Error] ${envResult.error}`);
+            }
+            addLog('Infrastructure preparation complete.');
 
             const manualRequired = !envResult.envUpdateSuccess;
 
@@ -88,7 +118,12 @@ export default function SetupPage() {
 
         } catch (err: any) {
             setCurrentStep('FAILED');
-            setStatus({ error: err.message });
+            // Check if it's the generic "unexpected response" and try to provide better context
+            const errorMsg = err.message === 'An unexpected response was received from the server.'
+                ? 'Server Action Crash (likely Timeout or Memory Limit on AWS). Check CloudWatch logs for details.'
+                : err.message;
+            setStatus({ error: errorMsg });
+            setDebugLogs(prev => [...prev, `CRITICAL ERROR: ${errorMsg}`]);
         }
     };
 
@@ -242,8 +277,37 @@ export default function SetupPage() {
                             </div>
 
                             {status?.error && (
-                                <div className="rounded-md bg-red-900/50 p-4 border border-red-700 animate-in fade-in duration-300">
-                                    <div className="flex"><AlertTriangle className="h-5 w-5 text-red-400 mt-0.5" /><div className="ml-3"><h3 className="text-sm font-medium text-red-200">Configuration Failed</h3><div className="mt-2 text-sm text-red-300">{status.error}</div></div></div>
+                                <div className="space-y-4 animate-in fade-in duration-300">
+                                    <div className="rounded-md bg-red-900/50 p-4 border border-red-700">
+                                        <div className="flex">
+                                            <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5" />
+                                            <div className="ml-3">
+                                                <h3 className="text-sm font-medium text-red-200">Configuration Failed</h3>
+                                                <div className="mt-2 text-sm text-red-300">{status.error}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Debug Console */}
+                                    <div className="bg-black/80 rounded-md border border-gray-700 p-4 font-mono text-[10px] text-gray-400 max-h-48 overflow-y-auto">
+                                        <div className="flex justify-between items-center mb-2 border-b border-gray-800 pb-1">
+                                            <span className="text-gray-500 uppercase tracking-widest text-[9px]">Local Debug Console</span>
+                                            <button
+                                                onClick={async () => {
+                                                    const d = await performDiagnostics();
+                                                    setDiagnosticsData(d);
+                                                    setShowDiagnostics(true);
+                                                }}
+                                                className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                                            >
+                                                <RefreshCw className="h-3 w-3" /> Run Cloud Diagnostics
+                                            </button>
+                                        </div>
+                                        {debugLogs.map((log, i) => (
+                                            <div key={i} className={log.includes('ERROR') ? 'text-red-400' : ''}>{log}</div>
+                                        ))}
+                                        {debugLogs.length === 0 && <div className="italic">No detailed logs captured for this session.</div>}
+                                    </div>
                                 </div>
                             )}
 
@@ -333,6 +397,25 @@ export default function SetupPage() {
                                     <button onClick={() => router.push('/login')} className="bg-indigo-600 text-white font-bold py-3 px-12 rounded-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20">Login to Dashboard</button>
                                 </div>
                             )}
+                        </div>
+                    )}
+                    {/* Diagnostics Modal Overlays */}
+                    {showDiagnostics && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-white overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold flex items-center gap-2">
+                                        <RefreshCw className="h-5 w-5 text-indigo-400" /> Cloud Diagnostics Report
+                                    </h3>
+                                    <button onClick={() => setShowDiagnostics(false)} className="text-gray-400 hover:text-white">&times;</button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto font-mono text-[11px] bg-black/40 p-4 rounded-lg border border-gray-900 space-y-4">
+                                    <pre className="whitespace-pre-wrap">{JSON.stringify(diagnosticsData, null, 2)}</pre>
+                                </div>
+                                <div className="mt-6 flex justify-end">
+                                    <button onClick={() => setShowDiagnostics(false)} className="px-6 py-2 bg-indigo-600 rounded-md font-bold hover:bg-indigo-700 transition-colors">Close</button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
