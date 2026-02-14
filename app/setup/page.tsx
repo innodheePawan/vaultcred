@@ -48,46 +48,35 @@ export default function SetupPage() {
             // PHASE 1: Purge existing records (for a clean slate)
             setCurrentStep('PURGING_DB');
             const purgeResult = await purgeDatabase(dbUrl);
-            if (purgeResult.error) {
-                console.warn('[Setup] Purge Failed:', purgeResult.error);
-                // We keep going as some tables might not exist yet if it's a fresh DB
-            }
+            if (purgeResult.error) throw new Error(`[Purge Error] ${purgeResult.error}`);
 
             // PHASE 2: Sync Database Schema
             setCurrentStep('SYNCING_DB');
             const syncResult = await syncDatabase(dbUrl);
-            let dbPushSuccess = !!syncResult.success;
-
-            if (syncResult.error) {
-                console.warn('[Setup] Async Sync Failed:', syncResult.error);
-            }
+            if (syncResult.error) throw new Error(`[Database Sync Error] ${syncResult.error}`);
 
             // PHASE 3: Seed Initial Records
             setCurrentStep('SEEDING_DATA');
             const seedResult = await seedDatabase(dbUrl, adminEmail, adminPassword);
-            let seedSuccess = !!seedResult.success;
-
-            if (seedResult.error) {
-                console.warn('[Setup] Seeding Failed:', seedResult.error);
-            }
+            if (seedResult.error) throw new Error(`[Seeding Error] ${seedResult.error}`);
 
             // PHASE 4: Infrastructure Preparation (Last)
             setCurrentStep('PREPARING_ENV');
             const envResult = await prepareEnvironment(formData);
-            if (envResult.error) throw new Error(envResult.error);
+            if (envResult.error) throw new Error(`[Infrastructure Error] ${envResult.error}`);
 
-            const manualRequired = !envResult.envUpdateSuccess || !dbPushSuccess || !seedSuccess;
+            const manualRequired = !envResult.envUpdateSuccess;
 
             setStatus({
                 envVars: envResult.envVars,
                 manualConfigRequired: manualRequired,
                 steps: {
                     envUpdate: !!envResult.envUpdateSuccess,
-                    dbPush: dbPushSuccess,
-                    seed: seedSuccess
+                    dbPush: true,
+                    seed: true
                 },
                 success: manualRequired
-                    ? 'Setup completed with manual steps needed for cloud persistence.'
+                    ? 'Setup completed with manual environment configuration needed for cloud persistence.'
                     : 'System initialized and configured successfully!'
             });
 
@@ -327,30 +316,10 @@ export default function SetupPage() {
                                         </section>
                                     )}
 
-                                    {/* DB Sync Command */}
-                                    {!status.steps?.dbPush && (
-                                        <section className="space-y-3">
-                                            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">2. Initialize Remote Database</p>
-                                            <div className="bg-black/40 rounded border border-gray-800 p-3 pt-4 relative group">
-                                                <div className="absolute top-0 right-0 p-1 text-[8px] text-gray-600 font-mono uppercase">Local Terminal Command</div>
-                                                <code className="text-indigo-300 text-[11px] font-mono break-all leading-relaxed pr-6">
-                                                    DATABASE_URL=&quot;{status.envVars?.DATABASE_URL}&quot; npx prisma db push
-                                                </code>
-                                                <button onClick={() => copyToClipboard(`DATABASE_URL="${status.envVars?.DATABASE_URL}" npx prisma db push`, 'db')} className="absolute bottom-2 right-2 p-1.5 text-gray-500 hover:text-white">
-                                                    {copiedField === 'db' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                                                </button>
-                                            </div>
-                                            {isCloudEnv && status.envVars?.DATABASE_URL?.includes('localhost') && (
-                                                <p className="text-[10px] text-amber-400 mt-2 flex gap-1 items-start bg-amber-900/10 p-2 rounded">
-                                                    <AlertTriangle className="h-3 w-3 shrink-0" />
-                                                    <span><strong>Attention:</strong> You are using &quot;localhost&quot;. For AWS deployments, you must replace &quot;localhost&quot; in the command above with your remote database IP (e.g., 43.225.xx.xx) before running it in your terminal.</span>
-                                                </p>
-                                            )}
-                                        </section>
-                                    )}
+                                    {/* DB Sync Command - Removed per user request to prioritize automatic sync and error reporting */}
 
                                     <div className="pt-4 border-t border-gray-800 text-center">
-                                        <p className="text-[10px] text-gray-500 italic mb-4">After finishing these steps, redeploy your app to complete the setup.</p>
+                                        <p className="text-[10px] text-gray-500 italic mb-4">After setting your environment variables, redeploy your app to complete the setup.</p>
                                         <div className="flex gap-3">
                                             <button onClick={() => setCurrentStep('IDLE')} className="flex-1 border border-gray-700 text-gray-400 text-xs py-2 rounded font-bold hover:bg-gray-700 transition-colors">Back</button>
                                             <button onClick={() => router.push('/login')} className="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-600/10 transition-colors">Go to Login</button>

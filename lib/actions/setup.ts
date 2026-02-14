@@ -98,8 +98,10 @@ export async function prepareEnvironment(formData: FormData) {
  */
 export async function syncDatabase(dbUrl: string) {
     try {
+        // HOME: '/tmp' is often required in serverless environments (like AWS Amplify)
+        // to give npm/npx a writable directory for its cache.
         await execPromise(`npx prisma db push --accept-data-loss`, {
-            env: { ...process.env, DATABASE_URL: dbUrl },
+            env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
             timeout: 45000 // 45 seconds to avoid early timeout
         });
         return { success: true };
