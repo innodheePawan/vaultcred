@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2, Lock } from 'lucide-react';
-import { prepareEnvironment, syncDatabase, seedDatabase, testDbConnection, purgeDatabase, performDiagnostics } from '@/lib/actions/setup';
+import { prepareEnvironment, syncDatabase, seedDatabase, testDbConnection, purgeDatabase, performDiagnostics, getSyncStatusAction } from '@/lib/actions/setup';
 
 type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_DATA' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
 
@@ -74,16 +74,46 @@ export default function SetupPage() {
                 addLog('Phase 2: Skipping database purge (Keep existing data).');
             }
 
-            // PHASE 3: Sync Database Schema
+            // PHASE 3: Sync Database Schema (Async Polling)
             setCurrentStep('SYNCING_DB');
-            addLog('Phase 3: Synchronizing database schema (creating tables)...');
-            const syncResult = await syncDatabase();
-            if (syncResult.error) {
-                addLog(`CRITICAL SYNC ERROR: ${syncResult.error}`);
-                if (syncResult.stderr) addLog(`OS STDERR: ${syncResult.stderr}`);
-                throw new Error(`[Schema Error] ${syncResult.error}`);
+            addLog('Phase 3: Initiating asynchronous database schema synchronization...');
+            const syncTrigger = await syncDatabase();
+
+            if (syncTrigger.error) {
+                throw new Error(`[Sync Initiation Error] ${syncTrigger.error}`);
             }
-            addLog('SUCCESS: Schema sync complete.');
+
+            // Polling Loop
+            let isSyncing = true;
+            let pollCount = 0;
+            while (isSyncing) {
+                pollCount++;
+                // Wait 2 seconds between polls
+                await new Promise(r => setTimeout(r, 2000));
+
+                const task = await getSyncStatusAction();
+
+                // Update local logs with task logs (ensuring we don't duplicate)
+                if (task.logs && task.logs.length > 0) {
+                    setDebugLogs(prev => {
+                        const newLogs = [...prev];
+                        task.logs.forEach(l => {
+                            if (!newLogs.includes(l)) newLogs.push(l);
+                        });
+                        return newLogs;
+                    });
+                }
+
+                if (task.status === 'SUCCESS') {
+                    addLog('SUCCESS: Asynchronous schema sync complete.');
+                    isSyncing = false;
+                } else if (task.status === 'FAILED') {
+                    addLog(`CRITICAL SYNC ERROR: ${task.error}`);
+                    throw new Error(`[Schema Error] ${task.error}`);
+                } else if (pollCount > 150) { // 5 minute safety timeout on client side
+                    throw new Error('[Sync Timeout] The synchronization task is taking too long. Check CloudWatch logs.');
+                }
+            }
 
             // PHASE 4: Seed Mandatory Baseline Data & Super Admin
             setCurrentStep('SEEDING_DATA');

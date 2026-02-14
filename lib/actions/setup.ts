@@ -119,36 +119,76 @@ export async function prepareEnvironment(formData: FormData) {
     }
 }
 
+import { spawn } from 'child_process';
+import { updateTaskStatus, appendTaskLog, getTaskStatus, clearTaskStatus } from '@/lib/setup-task';
+
 /**
- * PHASE 2: Sync Database Schema
+ * PHASE 2: Sync Database Schema (Asynchronous with Polling)
  */
 export async function syncDatabase() {
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
-    console.log(`[Setup] Starting Database Sync at ${new Date().toISOString()}`);
+
+    // Clear previous status before starting
+    await clearTaskStatus();
+    await updateTaskStatus({
+        status: 'RUNNING',
+        logs: ['[ASYNC] Starting Database Schema Synchronization...'],
+        startTime: new Date().toISOString()
+    });
+
     try {
-        // HOME: '/tmp' is often required in serverless environments (like AWS Amplify)
-        // to give npm/npx a writable directory for its cache.
-        const { stdout, stderr } = await execPromise(`npx prisma db push --accept-data-loss`, {
-            env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' }
+        const prismaPath = path.resolve(process.cwd(), 'node_modules', '.bin', 'prisma');
+        console.log(`[Setup] Spawning Async DB Sync: ${prismaPath}`);
+
+        // Spawn process - we DON'T await it here to avoid HTTP timeout
+        const child = spawn(prismaPath, ['db', 'push', '--accept-data-loss'], {
+            env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
+            cwd: process.cwd(),
+            detached: true, // Try to keep alive
+            stdio: 'pipe'
         });
 
-        if (stderr && !stderr.includes('The database is already in sync')) {
-            console.warn('[Setup] Sync Warning/Error Output:', stderr);
-        }
+        // Capture output
+        child.stdout.on('data', (data) => {
+            const line = data.toString().trim();
+            if (line) appendTaskLog(line);
+        });
 
-        console.log('[Setup] Sync Output:', stdout);
-        return { success: true, log: stdout };
+        child.stderr.on('data', (data) => {
+            const line = data.toString().trim();
+            if (line) appendTaskLog(`[ERROR] ${line}`);
+        });
+
+        child.on('close', (code) => {
+            console.log(`[Setup] Async Sync finished with code ${code}`);
+            if (code === 0) {
+                updateTaskStatus({ status: 'SUCCESS', endTime: new Date().toISOString() });
+            } else {
+                updateTaskStatus({ status: 'FAILED', endTime: new Date().toISOString(), error: `Process exited with code ${code}` });
+            }
+        });
+
+        // Unref to allow the parent process to exit independently if needed
+        // (Though in a server action, the parent won't exit until the action returns)
+        child.unref();
+
+        return { success: true, async: true, status: 'STARTED' };
+
     } catch (error: any) {
         console.error('[Setup] DB Sync CRITICAL FAILURE:', error);
-        // Ensure everything is a plain primitive for serialization
+        await updateTaskStatus({ status: 'FAILED', error: String(error.message) });
         return {
-            error: String(error.message || 'Unknown shell error'),
-            stderr: String(error.stderr || ''),
-            stdout: String(error.stdout || ''),
-            code: typeof error.code === 'number' || typeof error.code === 'string' ? error.code : undefined
+            error: String(error.message || 'Unknown spawn error')
         };
     }
+}
+
+/**
+ * POLLEABLE ACTION: Get current sync status
+ */
+export async function getSyncStatusAction() {
+    return await getTaskStatus();
 }
 
 /**
