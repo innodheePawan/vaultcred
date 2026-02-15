@@ -141,11 +141,12 @@ export async function syncDatabase() {
         const prismaPath = path.resolve(process.cwd(), 'node_modules', '.bin', 'prisma');
         console.log(`[Setup] Spawning Async DB Sync: ${prismaPath}`);
 
-        // Spawn process - we DON'T await it here to avoid HTTP timeout
-        const child = spawn(prismaPath, ['db', 'push', '--accept-data-loss'], {
+        // Detached spawn doesn't always survive in Lambda after return.
+        // We add --skip-generate to speed up the push if schema is already compiled.
+        const child = spawn(prismaPath, ['db', 'push', '--accept-data-loss', '--skip-generate'], {
             env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
             cwd: process.cwd(),
-            detached: true, // Try to keep alive
+            detached: true,
             stdio: 'pipe'
         });
 
@@ -192,25 +193,39 @@ export async function getSyncStatusAction() {
 }
 
 /**
- * PHASE 3: Seed Initial Data
+ * PHASE 4.1: Seed Roles
  */
-export async function seedDatabase(adminEmail: string, adminPasswordRaw: string) {
+export async function seedRolesAction() {
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
-        // Purge is now handled in a separate Phase 1
-
-        // A. Roles
+        console.log('[Setup] Seeding Roles...');
         await seedRoles(prisma);
+        return { success: true };
+    } catch (error: any) {
+        console.error('[Setup] Role Seeding Failed:', error);
+        return { error: String(error.message || error) };
+    } finally {
+        await prisma.$disconnect();
+    }
+}
 
-        // B. Admin User
-        const hashedPassword = await hash(adminPasswordRaw, 12);
+/**
+ * PHASE 4.2: Seed Super Admin
+ */
+export async function seedSuperAdminAction(email: string, passwordRaw: string) {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return { error: 'DATABASE_URL not configured' };
+    const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+    try {
+        console.log(`[Setup] Seeding Super Admin: ${email}...`);
+        const hashedPassword = await hash(passwordRaw, 12);
         const user = await prisma.user.upsert({
-            where: { email: adminEmail },
+            where: { email },
             update: { passwordHash: hashedPassword, role: 'ADMIN', status: 'ACTIVE' },
             create: {
-                email: adminEmail,
+                email,
                 passwordHash: hashedPassword,
                 name: 'Super Administrator',
                 role: 'ADMIN',
@@ -226,13 +241,27 @@ export async function seedDatabase(adminEmail: string, adminPasswordRaw: string)
                 create: { userId: user.id, groupId: adminGroup.id, assignedBy: 'SYSTEM' }
             });
         }
+        return { success: true };
+    } catch (error: any) {
+        console.error('[Setup] Admin Seeding Failed:', error);
+        return { error: String(error.message || error) };
+    } finally {
+        await prisma.$disconnect();
+    }
+}
 
-        // C. System Branding
+/**
+ * PHASE 4.3: Seed Branding & Settings
+ */
+export async function seedBrandingAction() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return { error: 'DATABASE_URL not configured' };
+    const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+    try {
+        console.log('[Setup] Seeding Branding...');
         await prisma.systemSettings.upsert({
             where: { id: 1 },
-            update: {
-                logoUrl: '/logo.png'
-            },
+            update: { logoUrl: '/logo.png' },
             create: {
                 id: 1,
                 applicationName: 'CRED Secure',
@@ -240,15 +269,19 @@ export async function seedDatabase(adminEmail: string, adminPasswordRaw: string)
                 logoUrl: '/logo.png'
             }
         });
-
         return { success: true };
     } catch (error: any) {
-        console.error('[Setup] Seed Failed:', error);
+        console.error('[Setup] Branding Seeding Failed:', error);
         return { error: String(error.message || error) };
     } finally {
         await prisma.$disconnect();
     }
 }
+
+/**
+ * LEFACY SEED WRAPPER (Removing to force granular usage)
+ * export async function seedDatabase(...)
+ */
 
 /**
  * PHASE 1: Purge Database

@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2, Lock } from 'lucide-react';
-import { prepareEnvironment, syncDatabase, seedDatabase, testDbConnection, purgeDatabase, performDiagnostics, getSyncStatusAction } from '@/lib/actions/setup';
+import { prepareEnvironment, syncDatabase, seedRolesAction, seedSuperAdminAction, seedBrandingAction, testDbConnection, purgeDatabase, performDiagnostics, getSyncStatusAction } from '@/lib/actions/setup';
 
-type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_DATA' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
+type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_ROLES' | 'SEEDING_ADMIN' | 'SEEDING_BRANDING' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
 
 export default function SetupPage() {
     const [currentStep, setCurrentStep] = useState<SetupStep>('IDLE');
@@ -115,15 +115,35 @@ export default function SetupPage() {
                 }
             }
 
-            // PHASE 4: Seed Mandatory Baseline Data & Super Admin
-            setCurrentStep('SEEDING_DATA');
-            addLog(`Phase 4: Seeding baseline data and creating Super Administrator (${adminEmail})...`);
-            const seedResult = await seedDatabase(adminEmail, adminPassword);
-            if (seedResult.error) {
-                addLog(`CRITICAL SEEDING ERROR: ${seedResult.error}`);
-                throw new Error(`[Seeding Error] ${seedResult.error}`);
+            // PHASE 4.1: Seed Roles
+            setCurrentStep('SEEDING_ROLES');
+            addLog('Phase 4.1: Seeding mandatory system roles...');
+            const roleResult = await seedRolesAction();
+            if (roleResult.error) {
+                addLog(`CRITICAL ROLE SEED ERROR: ${roleResult.error}`);
+                throw new Error(`[Role Error] ${roleResult.error}`);
             }
-            addLog('SUCCESS: Baseline data and Super Admin initialized.');
+            addLog('SUCCESS: System roles initialized.');
+
+            // PHASE 4.2: Seed Super Admin
+            setCurrentStep('SEEDING_ADMIN');
+            addLog(`Phase 4.2: Creating Super Administrator (${adminEmail})...`);
+            const adminResult = await seedSuperAdminAction(adminEmail, adminPassword);
+            if (adminResult.error) {
+                addLog(`CRITICAL ADMIN SEED ERROR: ${adminResult.error}`);
+                throw new Error(`[Admin Error] ${adminResult.error}`);
+            }
+            addLog('SUCCESS: Super Admin created.');
+
+            // PHASE 4.3: Seed Branding
+            setCurrentStep('SEEDING_BRANDING');
+            addLog('Phase 4.3: Initializing system branding and settings...');
+            const brandingResult = await seedBrandingAction();
+            if (brandingResult.error) {
+                addLog(`CRITICAL BRANDING ERROR: ${brandingResult.error}`);
+                throw new Error(`[Branding Error] ${brandingResult.error}`);
+            }
+            addLog('SUCCESS: System branding initialized.');
 
             // PHASE 5: Environment Preparation (Secrets)
             setCurrentStep('PREPARING_ENV');
@@ -317,7 +337,9 @@ export default function SetupPage() {
                                 <h3 className="text-lg font-bold text-white">
                                     {currentStep === 'PURGING_DB' && (shouldPurge ? 'Purging Existing Data...' : 'Validating Connectivity...')}
                                     {currentStep === 'SYNCING_DB' && 'Synchronizing Schema...'}
-                                    {currentStep === 'SEEDING_DATA' && 'Seeding Baseline Data...'}
+                                    {currentStep === 'SEEDING_ROLES' && 'Seeding Roles...'}
+                                    {currentStep === 'SEEDING_ADMIN' && 'Creating Super Admin...'}
+                                    {currentStep === 'SEEDING_BRANDING' && 'Initializing Branding...'}
                                     {currentStep === 'PREPARING_ENV' && 'Generating Security Secrets...'}
                                 </h3>
                                 <div className="mt-2 text-xs text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2">
