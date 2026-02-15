@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2, Lock } from 'lucide-react';
-import { prepareEnvironment, syncDatabase, seedRolesAction, seedSuperAdminAction, seedBrandingAction, testDbConnection, purgeDatabase, performDiagnostics, getSyncStatusAction, verifyTablesAction } from '@/lib/actions/setup';
+import { prepareEnvironment, syncDatabase, seedRolesAction, seedSuperAdminAction, seedBrandingAction, testDbConnection, purgeDatabase, getSyncStatusAction, verifyTablesAction } from '@/lib/actions/setup';
 
 type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_ROLES' | 'SEEDING_ADMIN' | 'SEEDING_BRANDING' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
 
@@ -23,8 +23,6 @@ export default function SetupPage() {
     const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [debugLogs, setDebugLogs] = useState<string[]>([]);
-    const [showDiagnostics, setShowDiagnostics] = useState(false);
-    const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
 
     const router = useRouter();
 
@@ -314,17 +312,6 @@ export default function SetupPage() {
                                     <div className="bg-black/80 rounded-md border border-gray-800 p-4 font-mono text-[9px] text-gray-500 max-h-40 overflow-y-auto shadow-inner">
                                         <div className="flex justify-between items-center mb-2 border-b border-gray-900 pb-1">
                                             <span className="uppercase tracking-widest text-[8px]">Audit Console</span>
-                                            <button
-                                                type="button"
-                                                onClick={async () => {
-                                                    const d = await performDiagnostics();
-                                                    setDiagnosticsData(d);
-                                                    setShowDiagnostics(true);
-                                                }}
-                                                className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-                                            >
-                                                <RefreshCw className="h-3 w-3" /> Cloud Report
-                                            </button>
                                         </div>
                                         {debugLogs.map((log, i) => (
                                             <div key={i} className={log.includes('ERROR') ? 'text-red-400/80' : ''}>{log}</div>
@@ -427,25 +414,6 @@ export default function SetupPage() {
                 </div>
             </div>
 
-            {/* Diagnostics Modal Overlays */}
-            {showDiagnostics && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-white overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                <RefreshCw className="h-5 w-5 text-indigo-400" /> Cloud Diagnostics Report
-                            </h3>
-                            <button onClick={() => setShowDiagnostics(false)} className="text-gray-400 hover:text-white">&times;</button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto font-mono text-[11px] bg-black/40 p-4 rounded-lg border border-gray-900 space-y-4">
-                            <pre className="whitespace-pre-wrap">{JSON.stringify(diagnosticsData, null, 2)}</pre>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <button onClick={() => setShowDiagnostics(false)} className="px-6 py-2 bg-indigo-600 rounded-md font-bold hover:bg-indigo-700 transition-colors">Close</button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

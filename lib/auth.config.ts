@@ -21,17 +21,13 @@ export const authConfig = {
             const isSetupMode = String(rawSetupMode).trim().toLowerCase() === "true";
 
             if (isSetupMode && isProtected) {
-                console.log('[AuthGuard] System in Setup Mode. Blocking protected access.');
                 return false;
             }
 
             if (isProtected) {
                 if (isLoggedIn) {
-                    // DEBUG LOG
-                    console.log(`[AuthDebug] Path: ${nextUrl.pathname}, User: ${auth.user?.email}, Role: ${(auth.user as any)?.role}`);
 
                     if (nextUrl.pathname.startsWith('/admin') && (auth.user as any)?.role !== 'ADMIN') {
-                        console.log('[AuthDebug] Access Denied: Not Admin');
                         return false;
                     }
                     return true;

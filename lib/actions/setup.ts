@@ -22,9 +22,6 @@ export async function prepareEnvironment(formData: FormData) {
     let dbUrl = process.env.DATABASE_URL || '';
     if (dbHost && dbUser && dbName) {
         dbUrl = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
-        console.log(`[Setup] Updating Database URL to: ${dbHost}:${dbPort}/${dbName}`);
-    } else {
-        console.log(`[Setup] Preserving existing DATABASE_URL from environment.`);
     }
     let envUpdateSuccess = true;
 
@@ -44,16 +41,13 @@ export async function prepareEnvironment(formData: FormData) {
         let dbUrlForUpdate = '';
         if (dbHost && dbUser && dbName) {
             dbUrlForUpdate = `mysql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
-            console.log(`[Setup] Updating DATABASE_URL to new value from parameters.`);
         } else {
             // Preservation logic
             const dbMatch = envContent.match(/DATABASE_URL="?([^"\n]*)"?/);
             if (dbMatch && dbMatch[1]) {
                 dbUrlForUpdate = dbMatch[1];
-                console.log('[Setup] Preserving DATABASE_URL from .env file.');
             } else {
                 dbUrlForUpdate = process.env.DATABASE_URL || '';
-                if (dbUrlForUpdate) console.log('[Setup] Preserving DATABASE_URL from system environment.');
             }
         }
 
@@ -97,12 +91,9 @@ export async function prepareEnvironment(formData: FormData) {
         try {
             await fs.writeFile(envPath, envContent, 'utf8');
         } catch (fsError) {
-            console.warn('[Setup] Could not write .env file (likely read-only FS).');
             envUpdateSuccess = false;
         }
 
-        const mask = (s: string) => s ? `${s.substring(0, 4)}...${s.substring(s.length - 4)}` : 'MISSING';
-        console.log(`[Setup] Generated Secrets - MASTER_KEY: ${mask(masterKey)}, AUTH_SECRET: ${mask(authSecret)}`);
 
         return {
             success: true,
@@ -139,7 +130,6 @@ export async function syncDatabase() {
 
     try {
         const prismaPath = path.resolve(process.cwd(), 'node_modules', '.bin', 'prisma');
-        console.log(`[Setup] Spawning Async DB Sync: ${prismaPath}`);
 
         // Detached spawn doesn't always survive in Lambda after return.
         // We add --skip-generate to speed up the push if schema is already compiled.
@@ -162,7 +152,6 @@ export async function syncDatabase() {
         });
 
         child.on('close', (code) => {
-            console.log(`[Setup] Async Sync finished with code ${code}`);
             if (code === 0) {
                 updateTaskStatus({ status: 'SUCCESS', endTime: new Date().toISOString() });
             } else {
@@ -323,7 +312,6 @@ export async function purgeDatabase() {
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
-        console.log('[Setup] Purging existing data...');
 
         // Resilient deletion: wrap each in try/catch in case tables don't exist yet
         const safeDelete = async (model: any) => {
@@ -371,7 +359,6 @@ export async function purgeDatabase() {
         // Settings
         await safeDelete(prisma.systemSettings);
 
-        console.log('[Setup] Purge complete.');
         return { success: true };
     } catch (error: any) {
         console.error('[Setup] Purge Failed:', error);
@@ -394,8 +381,6 @@ export async function configureSystem(formData: FormData) {
 export async function testDbConnection() {
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
-    console.log(`[Setup] Testing connection to configured DATABASE_URL`);
-
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
         await prisma.$connect();
