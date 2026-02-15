@@ -193,6 +193,29 @@ export async function getSyncStatusAction() {
 }
 
 /**
+ * HELPER: Verify which tables exist in the database
+ */
+export async function verifyTablesAction() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return { error: 'DATABASE_URL not configured' };
+    const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+    try {
+        const tables = await prisma.$queryRaw<any[]>`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = (SELECT DATABASE())
+        `;
+        const tableNames = tables.map(t => t.table_name || Object.values(t)[0]);
+        return { success: true, count: tableNames.length, tables: tableNames };
+    } catch (e: any) {
+        console.error('[VerifyTables] Failed:', e);
+        return { error: 'Verification Failed: ' + String(e.message || e) };
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+/**
  * PHASE 4.1: Seed Roles
  */
 export async function seedRolesAction() {
@@ -200,8 +223,10 @@ export async function seedRolesAction() {
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
-        console.log('[Setup] Seeding Roles...');
+        await appendTaskLog('Starting Phase 4.1: Roles Initialization');
+        await appendTaskLog('Working on table: UserGroup...');
         await seedRoles(prisma);
+        await appendTaskLog('SUCCESS: Roles (UserGroup) initialized.');
         return { success: true };
     } catch (error: any) {
         console.error('[Setup] Role Seeding Failed:', error);
@@ -219,7 +244,8 @@ export async function seedSuperAdminAction(email: string, passwordRaw: string) {
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
-        console.log(`[Setup] Seeding Super Admin: ${email}...`);
+        await appendTaskLog(`Starting Phase 4.2: Super Admin (${email})`);
+        await appendTaskLog('Working on table: User...');
         const hashedPassword = await hash(passwordRaw, 12);
         const user = await prisma.user.upsert({
             where: { email },
@@ -233,6 +259,7 @@ export async function seedSuperAdminAction(email: string, passwordRaw: string) {
             },
         });
 
+        await appendTaskLog('Mapping Admin to Administrator group...');
         const adminGroup = await prisma.userGroup.findUnique({ where: { name: 'Administrator' } });
         if (adminGroup) {
             await prisma.userGroupMapping.upsert({
@@ -241,6 +268,7 @@ export async function seedSuperAdminAction(email: string, passwordRaw: string) {
                 create: { userId: user.id, groupId: adminGroup.id, assignedBy: 'SYSTEM' }
             });
         }
+        await appendTaskLog('SUCCESS: Super Admin created.');
         return { success: true };
     } catch (error: any) {
         console.error('[Setup] Admin Seeding Failed:', error);
@@ -258,7 +286,8 @@ export async function seedBrandingAction() {
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     try {
-        console.log('[Setup] Seeding Branding...');
+        await appendTaskLog('Starting Phase 4.3: Branding & Settings');
+        await appendTaskLog('Working on table: SystemSettings...');
         await prisma.systemSettings.upsert({
             where: { id: 1 },
             update: { logoUrl: '/logo.png' },
@@ -269,6 +298,7 @@ export async function seedBrandingAction() {
                 logoUrl: '/logo.png'
             }
         });
+        await appendTaskLog('SUCCESS: System branding initialized.');
         return { success: true };
     } catch (error: any) {
         console.error('[Setup] Branding Seeding Failed:', error);

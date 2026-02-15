@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2, Lock } from 'lucide-react';
-import { prepareEnvironment, syncDatabase, seedRolesAction, seedSuperAdminAction, seedBrandingAction, testDbConnection, purgeDatabase, performDiagnostics, getSyncStatusAction } from '@/lib/actions/setup';
+import { prepareEnvironment, syncDatabase, seedRolesAction, seedSuperAdminAction, seedBrandingAction, testDbConnection, purgeDatabase, performDiagnostics, getSyncStatusAction, verifyTablesAction } from '@/lib/actions/setup';
 
 type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_ROLES' | 'SEEDING_ADMIN' | 'SEEDING_BRANDING' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
 
@@ -110,9 +110,27 @@ export default function SetupPage() {
                 } else if (task.status === 'FAILED') {
                     addLog(`CRITICAL SYNC ERROR: ${task.error}`);
                     throw new Error(`[Schema Error] ${task.error}`);
-                } else if (pollCount > 150) { // 5 minute safety timeout on client side
-                    throw new Error('[Sync Timeout] The synchronization task is taking too long. Check CloudWatch logs.');
+                } else if (pollCount > 10) {
+                    // HEURISTIC: After 10 polls (20s), check if tables exist even if process didn't report SUCCESS
+                    // This handles cases where Lambda kills the status file write.
+                    const verify = await verifyTablesAction();
+                    if (verify.success && verify.count && verify.count > 0) {
+                        addLog(`DETECTED: Database has ${verify.count} tables. Assuming sync succeeded.`);
+                        isSyncing = false;
+                    } else if (pollCount > 60) { // 2 minute timeout
+                        throw new Error('[Sync Timeout] The synchronization task is taking too long. Check CloudWatch logs.');
+                    }
                 }
+            }
+
+            // FINAL SYNC VERIFICATION
+            const finalVerify = await verifyTablesAction();
+            if (finalVerify.success) {
+                addLog(`Database Sync Verification: ${finalVerify.count} tables found.`);
+                if (finalVerify.tables && finalVerify.tables.length > 0) {
+                    addLog(`Tables list: ${finalVerify.tables.join(', ')}`);
+                }
+                if (!finalVerify.count) throw new Error('No tables found in database after sync.');
             }
 
             // PHASE 4.1: Seed Roles
