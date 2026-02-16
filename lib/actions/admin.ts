@@ -115,9 +115,32 @@ export async function inviteUser(prevState: any, formData: FormData) {
 
     try {
         const invite = await createInvite(email, session.user.id!, targetGroupIds, role, scopedCats, scopedEnvs);
+
+        const { isSmtpConfigured } = await import('@/lib/email');
+        const smtpOk = await isSmtpConfigured();
+
         revalidatePath('/dashboard/admin/users');
         revalidatePath('/admin/users');
-        return { success: true, message: `Invite sent to ${email}`, token: invite.token };
+
+        if (!smtpOk) {
+            return {
+                success: true,
+                warning: true,
+                message: `Invite generated for ${email}, but SMTP is not configured. The user will NOT receive an email.`,
+                token: invite.token
+            };
+        }
+
+        if (!(invite as any).emailSent) {
+            return {
+                success: true,
+                warning: true,
+                message: `Invite generated, but the email failed to send. Check your SMTP settings.`,
+                token: invite.token
+            };
+        }
+
+        return { success: true, message: `Invite sent successfully to ${email}` };
     } catch (error: any) {
         return { error: error.message };
     }
@@ -143,6 +166,17 @@ export async function resendInvite(inviteId: string) {
         if (invite.accepted) return { error: 'Invite already accepted' };
 
         // Send Email
+        const { isSmtpConfigured } = await import('@/lib/email');
+        const smtpOk = await isSmtpConfigured();
+
+        if (!smtpOk) {
+            return {
+                success: true,
+                warning: true,
+                message: `Invite generated for ${invite.email}, but SMTP is not configured. The user will NOT receive an email automatically.`
+            };
+        }
+
         await import('@/lib/email').then(mod =>
             mod.sendInviteEmail(invite.email, invite.token, session.user.name || 'Admin')
         );

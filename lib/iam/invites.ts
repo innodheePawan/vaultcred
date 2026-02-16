@@ -55,6 +55,7 @@ export async function createInvite(
     });
 
     // Send invitation email
+    let emailSent = false;
     try {
         const inviter = await prisma.user.findUnique({
             where: { id: invitedByUserId },
@@ -62,12 +63,13 @@ export async function createInvite(
         });
         const inviterName = inviter?.name || inviter?.email || 'An administrator';
         await sendInviteEmail(email, token, inviterName);
+        emailSent = true;
     } catch (emailError) {
         console.error('[Invite] Failed to send invite email:', emailError);
         // Don't throw — the invite is created, email failure is non-fatal
     }
 
-    return invite;
+    return { ...invite, emailSent };
 }
 
 /**

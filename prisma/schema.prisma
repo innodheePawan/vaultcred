@@ -176,7 +176,7 @@ model AccessGroupPolicy {
 
 model CredentialMaster {
   id              String    @id @default(uuid()) @map("credential_id")
-  name            String    @map("credential_name")
+  name            String    @unique @map("credential_name")
   type            String    @map("credential_type") // PASSWORD, API_OAUTH, KEY_CERT, TOKEN, FILE, SECURE_NOTE
   category        String?   // Application, Infra, Integration
   environment     String?   // Dev, QA, Prod

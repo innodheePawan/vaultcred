@@ -14,6 +14,7 @@ type BulkResult = {
     total: number;
     success: number;
     failed: number;
+    skipped: number;
     errors: { row: number; name: string; error: string }[];
 };
 
@@ -58,21 +59,30 @@ function validateRow(row: BulkRow, rowNum: number): string | null {
 export async function bulkImportCredentials(csvData: BulkRow[]): Promise<BulkResult> {
     const session = await auth();
     if (!session?.user?.id) {
-        return { total: 0, success: 0, failed: 0, errors: [{ row: 0, name: '', error: 'Unauthorized' }] };
+        return { total: 0, success: 0, failed: 0, skipped: 0, errors: [{ row: 0, name: '', error: 'Unauthorized' }] };
     }
 
     // Only Super Admin or Admin with full scope access
     const ctx = await getUserAccessContext(session.user.id);
     if (!ctx.isAdmin) {
-        return { total: 0, success: 0, failed: 0, errors: [{ row: 0, name: '', error: 'Only Super Admin users can perform bulk imports.' }] };
+        return { total: 0, success: 0, failed: 0, skipped: 0, errors: [{ row: 0, name: '', error: 'Only Super Admin users can perform bulk imports.' }] };
     }
 
     const result: BulkResult = {
         total: csvData.length,
         success: 0,
         failed: 0,
+        skipped: 0,
         errors: [],
     };
+
+    // 1. Batch Validation: Query all existing names at once
+    const allNames = csvData.map(r => r.name?.trim()).filter(Boolean);
+    const existingMasterRecords = await prisma.credentialMaster.findMany({
+        where: { name: { in: allNames as string[] } },
+        select: { name: true }
+    });
+    const existingNamesSet = new Set(existingMasterRecords.map(r => r.name));
 
     for (let i = 0; i < csvData.length; i++) {
         const row = csvData[i];
@@ -83,6 +93,14 @@ export async function bulkImportCredentials(csvData: BulkRow[]): Promise<BulkRes
         if (validationError) {
             result.failed++;
             result.errors.push({ row: rowNum, name: row.name || '(empty)', error: validationError });
+            continue;
+        }
+
+        // 2. Optimized Deduplication: Check memory set instead of individual DB queries
+        const name = row.name.trim();
+        if (existingNamesSet.has(name)) {
+            result.skipped++;
+            // Optional: Log skip in audit or just keep count
             continue;
         }
 
@@ -192,7 +210,7 @@ export async function bulkImportCredentials(csvData: BulkRow[]): Promise<BulkRes
 
     await logAudit({
         action: 'BULK_IMPORT',
-        details: `Bulk import completed: ${result.success} success, ${result.failed} failed out of ${result.total} total`,
+        details: `Bulk import completed: ${result.success} success, ${result.skipped} skipped, ${result.failed} failed out of ${result.total} total`,
         userId: session.user.id,
     });
 

@@ -9,6 +9,11 @@ import { getInviteEmailTemplate, getPasswordResetEmailTemplate } from '@/lib/ema
  * Gets the SMTP transporter from SystemSettings.
  * Falls back to Ethereal (dev-only fake SMTP) if no config is set.
  */
+export async function isSmtpConfigured() {
+    const settings = await prisma.systemSettings.findFirst();
+    return !!(settings?.smtpHost && settings?.smtpUser && settings?.smtpPass);
+}
+
 async function getTransporter() {
     const settings = await prisma.systemSettings.findFirst();
 

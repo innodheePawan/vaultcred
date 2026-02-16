@@ -163,15 +163,19 @@ export default function InviteUserForm({ groups, action }: { groups: any[], acti
 
             {
                 state?.success && (
-                    <div className="rounded-md bg-green-50 p-4">
+                    <div className={`rounded-md p-4 ${state.warning ? 'bg-amber-50 border border-amber-200' : 'bg-green-50'}`}>
                         <div className="flex">
                             <div className="flex-shrink-0">
-                                <Check className="h-5 w-5 text-green-400" aria-hidden="true" />
+                                {state.warning ? (
+                                    <AlertCircle className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                                ) : (
+                                    <Check className="h-5 w-5 text-green-400" aria-hidden="true" />
+                                )}
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm font-medium text-green-800">{state.message}</p>
-                                {/* Dev helper to show token immediately since we don't have email sender */}
-                                {/* Token display removed as per request */}
+                                <p className={`text-sm font-medium ${state.warning ? 'text-amber-800' : 'text-green-800'}`}>
+                                    {state.message}
+                                </p>
                             </div>
                         </div>
                     </div>

@@ -137,7 +137,7 @@ export default function BulkImportPage() {
     const [rows, setRows] = useState<ParsedRow[]>([]);
     const [importing, setImporting] = useState(false);
     const [result, setResult] = useState<{
-        total: number; success: number; failed: number;
+        total: number; success: number; failed: number; skipped: number;
         errors: { row: number; name: string; error: string }[];
     } | null>(null);
     const [fileName, setFileName] = useState('');
@@ -165,7 +165,7 @@ export default function BulkImportPage() {
             const res = await bulkImportCredentials(rows);
             setResult(res);
         } catch (err: any) {
-            setResult({ total: rows.length, success: 0, failed: rows.length, errors: [{ row: 0, name: '', error: err.message }] });
+            setResult({ total: rows.length, success: 0, failed: rows.length, skipped: 0, errors: [{ row: 0, name: '', error: err.message }] });
         } finally {
             setImporting(false);
         }
@@ -376,10 +376,10 @@ export default function BulkImportPage() {
                         )}
                         <div>
                             <p className="font-semibold">
-                                Import Complete: {result.success} of {result.total} credential{result.total !== 1 ? 's' : ''} imported successfully.
+                                Import Complete: {result.success} imported, {result.skipped} skipped (duplicates), {result.failed} failed.
                             </p>
                             {result.failed > 0 && (
-                                <p className="text-sm mt-1">{result.failed} failed — see details below.</p>
+                                <p className="text-sm mt-1">Check the details below for rows that failed validation.</p>
                             )}
                         </div>
                     </div>
