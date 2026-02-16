@@ -3,7 +3,38 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/crypto';
-import { getInviteEmailTemplate, getPasswordResetEmailTemplate } from '@/lib/email-templates';
+import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate } from '@/lib/email-templates';
+
+/**
+ * Sends an invite activation email.
+ */
+// ... existing sendInviteEmail ...
+
+/**
+ * Sends a password reset email.
+ */
+// ... existing sendPasswordResetEmail ...
+
+/**
+ * Sends a 2FA reconfiguration email.
+ */
+export async function sendTwoFactorReconfigureEmail(email: string, token: string) {
+    const baseUrl = await getBaseUrl();
+    const reconfigureLink = `${baseUrl}/reconfigure-2fa/${token}`;
+
+    const settings = await prisma.systemSettings.findFirst();
+    const appName = settings?.applicationName || 'CRED Secure';
+    const logoUrl = settings?.logoUrl || null;
+
+    const html = getTwoFactorReconfigureEmailTemplate({
+        appName,
+        logoUrl,
+        reconfigureLink,
+        email,
+    });
+
+    return sendEmail(email, `${appName} - 2FA Reconfiguration`, html);
+}
 
 /**
  * Gets the SMTP transporter from SystemSettings.

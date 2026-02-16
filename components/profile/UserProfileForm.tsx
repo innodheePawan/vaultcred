@@ -2,9 +2,9 @@
 
 import { useState, useRef, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { User, ShieldCheck, ShieldOff, AlertCircle, Loader2, Copy, CheckCircle } from 'lucide-react';
+import { User, ShieldCheck, ShieldOff, AlertCircle, Loader2, Copy, CheckCircle, RefreshCw } from 'lucide-react';
 import { updateUserProfile } from '@/lib/actions/users';
-import { generateTwoFactorSetup, enableTwoFactor, disableTwoFactor } from '@/lib/actions/two-factor';
+import { generateTwoFactorSetup, enableTwoFactor, disableTwoFactor, requestTwoFactorReconfiguration } from '@/lib/actions/two-factor';
 
 interface UserProfileFormProps {
     user: {
@@ -33,6 +33,7 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
     const [twoFASuccess, setTwoFASuccess] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const [is2FAPending, start2FATransition] = useTransition();
+    const [reconfigSent, setReconfigSent] = useState(false);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -112,21 +113,20 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
     };
 
     const handleDisable2FA = () => {
-        if (twoFACode.length !== 6) {
-            setTwoFAError('Please enter your current 2FA code to disable.');
-            return;
-        }
+        // ...
+    };
+
+    const handleReconfigure2FA = () => {
         setTwoFAError(null);
+        setTwoFASuccess(null);
         start2FATransition(async () => {
-            const result = await disableTwoFactor(twoFACode);
+            const result = await requestTwoFactorReconfiguration();
             if (result.error) {
                 setTwoFAError(result.error);
                 return;
             }
-            setTwoFAEnabled(false);
-            setTwoFAStep('idle');
-            setTwoFASuccess(result.message || '2FA disabled.');
-            setTwoFACode('');
+            setReconfigSent(true);
+            setTwoFASuccess(result.message || 'Reconfiguration email sent!');
         });
     };
 
@@ -292,14 +292,30 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
                                         </p>
                                     </div>
                                 ) : (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => { setTwoFAStep('disable'); setTwoFACode(''); setTwoFAError(null); setTwoFASuccess(null); }}
-                                        className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
-                                    >
-                                        <ShieldOff className="w-4 h-4 mr-2" /> Disable 2FA
-                                    </Button>
+                                    <div className="flex flex-wrap gap-3">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => { setTwoFAStep('disable'); setTwoFACode(''); setTwoFAError(null); setTwoFASuccess(null); }}
+                                            className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
+                                        >
+                                            <ShieldOff className="w-4 h-4 mr-2" /> Disable 2FA
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={handleReconfigure2FA}
+                                            disabled={is2FAPending || reconfigSent}
+                                            className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 dark:text-indigo-400 dark:border-indigo-700 dark:hover:bg-indigo-900/20"
+                                        >
+                                            {is2FAPending ? (
+                                                <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Sending...</>
+                                            ) : (
+                                                <><RefreshCw className="w-4 h-4 mr-2" /> Reconfigure 2FA</>
+                                            )}
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                         )}

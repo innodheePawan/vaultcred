@@ -174,15 +174,50 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
             {step === 'verify' && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                     {/* QR Code */}
-                    <div className="text-center">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                            Scan this QR code with your authenticator app:
-                        </p>
-                        {qrCode && (
-                            <div className="inline-block p-3 bg-white rounded-lg shadow-sm border border-gray-200">
-                                <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
+                    <div className="text-center space-y-4">
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                1. Scan this QR code with your authenticator app:
+                            </p>
+                            {qrCode && (
+                                <div className="inline-block p-3 bg-white rounded-lg shadow-sm border border-gray-200">
+                                    <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Direct Download Links for Mobile Users */}
+                        <div className="space-y-3 pt-2">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Don&apos;t have the app yet? Download it now:
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-3">
+                                <a
+                                    href={appStoreLinks.ios}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                                >
+                                    <svg className="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.1 2.48-1.34.03-1.77-.79-3.29-.79-1.53 0-1.99.77-3.29.82-1.35.05-2.33-1.32-3.18-2.55C3.93 16.6 2.46 11.12 4.38 7.8c.95-1.65 2.65-2.69 4.5-2.72 1.4-.02 2.73.96 3.59.96.86 0 2.48-1.17 4.15-.99 1.44.13 2.58.62 3.34 1.73-3.12 1.84-2.62 5.67.43 6.94-.7 1.78-1.59 3.56-2.68 5.7zM15.47 2c.73 0 2.06.49 2.5 1.5.06.12-.13.3-.25.3-.44 0-2.06-.49-2.5-1.5-.06-.12.13-.3.25-.3z" /></svg>
+                                    <div className="text-left">
+                                        <p className="text-[8px] uppercase leading-none">Download on the</p>
+                                        <p className="text-sm font-semibold leading-tight">App Store</p>
+                                    </div>
+                                </a>
+                                <a
+                                    href={appStoreLinks.android}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                                >
+                                    <svg className="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 24 24"><path d="M17.523 15.3414C17.0709 15.3414 16.6993 14.9698 16.6993 14.5177C16.6993 14.0656 17.0709 13.694 17.523 13.694C17.9751 13.694 18.3467 14.0656 18.3467 14.5177C18.3467 14.9698 17.9751 15.3414 17.523 15.3414ZM6.47702 15.3414C6.02492 15.3414 5.65332 14.9698 5.65332 14.5177C5.65332 14.0656 6.02492 13.694 6.47702 13.694C6.92912 13.694 7.30072 14.0656 7.30072 14.5177C7.30072 14.9698 6.92912 15.3414 6.47702 15.3414ZM17.8465 10.3877L19.5781 7.38734C19.6896 7.1942 19.6234 6.94723 19.4303 6.8357C19.2371 6.72418 18.9902 6.79038 18.8787 6.98352L17.1197 10.0306C15.6888 9.381 14.0955 9.01953 12.4 9.01953C10.7045 9.01953 9.3112 9.381 7.68028 10.0306L5.92128 6.98352C5.80975 6.79038 5.56279 6.72418 5.36965 6.8357C5.17651 6.94723 5.11031 7.1942 5.22183 7.38734L6.9535 10.3877C4.16273 11.8906 2.25391 14.7431 2.25391 18.0645H22.5461C22.5461 14.7431 20.6373 11.8906 17.8465 10.3877Z" /></svg>
+                                    <div className="text-left">
+                                        <p className="text-[8px] uppercase leading-none">Get it on</p>
+                                        <p className="text-sm font-semibold leading-tight">Google Play</p>
+                                    </div>
+                                </a>
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     {/* Manual Secret */}

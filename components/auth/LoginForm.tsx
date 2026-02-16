@@ -3,7 +3,8 @@
 import { useState, useTransition, useRef } from 'react';
 import { authenticate } from '@/lib/actions';
 import { preLoginCheck } from '@/lib/actions/auth-check';
-import { AlertCircle, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { requestTwoFactorResetDuringLogin } from '@/lib/actions/two-factor';
+import { AlertCircle, Loader2, ArrowLeft, ShieldCheck, Mail, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SecurityChallenge } from './SecurityChallenge';
 
@@ -17,6 +18,11 @@ export default function LoginForm() {
     const [showCaptcha, setShowCaptcha] = useState(false);
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [isPending, startTransition] = useTransition();
+
+    // Reconfiguration state
+    const [reconfigIsPending, startReconfigTransition] = useTransition();
+    const [reconfigSent, setReconfigSent] = useState(false);
+    const [reconfigMessage, setReconfigMessage] = useState<string | null>(null);
 
     const codeInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,10 +107,33 @@ export default function LoginForm() {
         });
     };
 
+    const handleRequest2FAReset = () => {
+        setError(null);
+        setReconfigMessage(null);
+
+        startReconfigTransition(async () => {
+            const formData = new FormData();
+            formData.set('email', email);
+            formData.set('password', password);
+
+            const result = await requestTwoFactorResetDuringLogin(formData);
+
+            if (result.error) {
+                setError(result.error);
+                return;
+            }
+
+            setReconfigSent(true);
+            setReconfigMessage(result.message || 'Reconfiguration email sent!');
+        });
+    };
+
     const handleBackToCredentials = () => {
         setStep('credentials');
         setTwoFactorCode('');
         setError(null);
+        setReconfigSent(false);
+        setReconfigMessage(null);
     };
 
     return (
@@ -248,6 +277,33 @@ export default function LoginForm() {
                             'Verify'
                         )}
                     </button>
+
+                    {/* 2FA Recovery Link */}
+                    <div className="text-center">
+                        {!reconfigSent ? (
+                            <button
+                                type="button"
+                                disabled={reconfigIsPending}
+                                onClick={handleRequest2FAReset}
+                                className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 flex items-center justify-center gap-1 mx-auto disabled:opacity-50"
+                            >
+                                {reconfigIsPending ? (
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> Sending link...</>
+                                ) : (
+                                    <><Mail className="w-4 h-4" /> Lost your device? Reset via email</>
+                                )}
+                            </button>
+                        ) : (
+                            <div className="flex flex-col items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-400">
+                                <div className="flex items-center gap-2 font-medium">
+                                    <CheckCircle className="w-4 h-4" /> Email Sent!
+                                </div>
+                                <p className="text-xs text-center">
+                                    Please check your inbox for the reconfiguration link.
+                                </p>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Error */}
                     <div className="flex h-8 items-end space-x-1" aria-live="polite" aria-atomic="true">

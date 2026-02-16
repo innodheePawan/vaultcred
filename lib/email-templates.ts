@@ -148,3 +148,68 @@ export function getPasswordResetEmailTemplate(props: PasswordResetTemplateProps)
 </html>
     `.trim();
 }
+
+interface TwoFactorReconfigureTemplateProps {
+    appName: string;
+    logoUrl: string | null;
+    reconfigureLink: string;
+    email: string;
+}
+
+export function getTwoFactorReconfigureEmailTemplate(props: TwoFactorReconfigureTemplateProps): string {
+    const { appName, logoUrl, reconfigureLink, email } = props;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>${getBaseStyles()}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                ${getLogoHtml(logoUrl, appName)}
+            </div>
+            
+            <h2 style="color: #111827; margin-top: 0;">2FA Reconfiguration Request</h2>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                We received a request to reconfigure Two-Factor Authentication for your account associated with
+                <strong>${email}</strong>.
+            </p>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                Click the button below to reset your current 2FA settings and set up a new authenticator device.
+            </p>
+            
+            <div style="text-align: center; padding: 24px 0;">
+                <a href="${reconfigureLink}" class="btn">Reconfigure 2FA</a>
+            </div>
+            
+            <p class="muted">
+                If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            <p style="word-break: break-all; color: #4F46E5; font-size: 13px;">
+                ${reconfigureLink}
+            </p>
+            
+            <div style="text-align: left; background-color: #FEF3C7; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                <p style="color: #92400E; margin: 0; font-size: 14px;">
+                    ⚠️ <strong>Security Notice:</strong> Using this link will immediately disable your current 2FA setup once verified. 
+                    This link expires in 30 minutes and can only be used once.
+                </p>
+            </div>
+            
+            <div class="footer">
+                <p>This link expires in 30 minutes.</p>
+                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+}
