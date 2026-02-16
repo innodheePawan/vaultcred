@@ -125,11 +125,27 @@ async function getFromAddress(): Promise<string> {
     return `"${appName}" <noreply@credsecure.local>`;
 }
 
+import { headers } from 'next/headers';
+
 /**
  * Get the base URL for link generation.
  */
-function getBaseUrl(): string {
-    // Use NEXTAUTH_URL or APP_URL env vars, fallback to localhost
+async function getBaseUrl(): Promise<string> {
+    // 1. Try to get from headers (works in server actions/SSR)
+    try {
+        const headersList = await headers();
+        const host = headersList.get('host');
+        const proto = headersList.get('x-forwarded-proto') || 'https';
+        if (host) {
+            // Handle common local development edge case
+            const protocol = host.includes('localhost') ? 'http' : proto;
+            return `${protocol}://${host}`;
+        }
+    } catch (e) {
+        // Fallback if headers are not available or not in request lifecycle
+    }
+
+    // 2. Use environment variables, fallback to localhost
     return process.env.NEXTAUTH_URL || process.env.APP_URL || 'http://localhost:3000';
 }
 
@@ -165,7 +181,7 @@ export async function sendInviteEmail(
     token: string,
     inviterName: string
 ) {
-    const baseUrl = getBaseUrl();
+    const baseUrl = await getBaseUrl();
     const activationLink = `${baseUrl}/invite/${token}`;
 
     const settings = await prisma.systemSettings.findFirst();
@@ -187,7 +203,7 @@ export async function sendInviteEmail(
  * Sends a password reset email.
  */
 export async function sendPasswordResetEmail(email: string, token: string) {
-    const baseUrl = getBaseUrl();
+    const baseUrl = await getBaseUrl();
     const resetLink = `${baseUrl}/reset-password/${token}`;
 
     const settings = await prisma.systemSettings.findFirst();
