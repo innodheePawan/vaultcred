@@ -15,9 +15,10 @@ const authHandler = auth((req) => {
     const isInvite = path.startsWith('/invite');
     const isForgotPassword = path.startsWith('/forgot-password');
     const isResetPassword = path.startsWith('/reset-password');
+    const isReconfigure2fa = path.startsWith('/reconfigure-2fa');
     const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
     const isEnvValue_auth = path.startsWith('/env-value');
-    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth;
+    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa;
 
     // Auth Session
     const isLoggedIn = !!req.auth;

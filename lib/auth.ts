@@ -201,16 +201,22 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             return session;
         },
         async redirect({ url, baseUrl }) {
-            const effectiveBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || baseUrl;
-            const cleanBaseUrl = effectiveBaseUrl.endsWith('/') ? effectiveBaseUrl.slice(0, -1) : effectiveBaseUrl;
+            const { getBaseUrl } = await import("@/lib/utils/url");
+            const dynamicBaseUrl = await getBaseUrl();
 
-            if (url.startsWith("/")) return `${cleanBaseUrl}${url}`
-            if (new URL(url).origin === cleanBaseUrl) return url
-            if (process.env.NEXT_PUBLIC_APP_URL && url.startsWith(process.env.NEXT_PUBLIC_APP_URL)) {
-                return url;
+            // Allow relative paths
+            if (url.startsWith("/")) return `${dynamicBaseUrl}${url}`;
+
+            // Allow redirects to the same origin
+            try {
+                const urlObj = new URL(url);
+                const baseUrlObj = new URL(dynamicBaseUrl);
+                if (urlObj.origin === baseUrlObj.origin) return url;
+            } catch (e) {
+                // If invalid URL, fallback
             }
 
-            return cleanBaseUrl;
+            return dynamicBaseUrl;
         }
     },
     session: {
