@@ -3,7 +3,6 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { ShieldCheck, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { resetTwoFactorWithToken } from '@/lib/actions/two-factor';
 
@@ -12,7 +11,7 @@ interface Reconfigure2FAPageProps {
 }
 
 export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) {
-    const { token } = use(token);
+    const { token } = use(params);
     const router = useRouter();
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
     const [message, setMessage] = useState('');
@@ -33,24 +32,25 @@ export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) 
     }, [token]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <div className="mx-auto w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                        <ShieldCheck className="w-6 h-6 text-indigo-600" />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+            <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-6 text-center">
+                    <div className="mx-auto w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mb-4">
+                        <ShieldCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <CardTitle>2FA Reconfiguration</CardTitle>
-                    <CardDescription>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">2FA Reconfiguration</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {status === 'verifying' && 'Verifying your request...'}
                         {status === 'success' && 'Reset successful!'}
                         {status === 'error' && 'Reset failed'}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center space-y-4">
+                    </p>
+                </div>
+
+                <div className="px-6 py-4 text-center space-y-4">
                     {status === 'verifying' && (
                         <div className="flex flex-col items-center py-8">
                             <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-2" />
-                            <p className="text-sm text-gray-500">Please wait while we secure your account.</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Please wait while we secure your account.</p>
                         </div>
                     )}
 
@@ -59,8 +59,8 @@ export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) 
                             <div className="flex items-center justify-center text-green-600 mb-4">
                                 <CheckCircle className="w-12 h-12" />
                             </div>
-                            <p className="text-gray-700">{message}</p>
-                            <p className="text-sm text-gray-500 mt-2">
+                            <p className="text-gray-700 dark:text-gray-300">{message}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                 For your security, you must now set up a new authenticator device.
                             </p>
                         </div>
@@ -71,14 +71,15 @@ export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) 
                             <div className="flex items-center justify-center text-red-600 mb-4">
                                 <AlertCircle className="w-12 h-12" />
                             </div>
-                            <p className="text-gray-700">{message}</p>
-                            <p className="text-sm text-gray-500 mt-2">
+                            <p className="text-gray-700 dark:text-gray-300">{message}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                 This link may have expired or already been used. Please request a new one from your profile settings.
                             </p>
                         </div>
                     )}
-                </CardContent>
-                <CardFooter>
+                </div>
+
+                <div className="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800">
                     {status === 'success' ? (
                         <Button
                             className="w-full bg-indigo-600 hover:bg-indigo-700"
@@ -95,8 +96,8 @@ export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) 
                             Back to Login
                         </Button>
                     ) : null}
-                </CardFooter>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 }
