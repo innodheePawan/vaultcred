@@ -112,6 +112,17 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                         </button>
                     </div>
 
+                    <div className="flex flex-col items-center gap-3">
+                        <a
+                            href={appStoreLinks[platform]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 dark:text-indigo-400 text-sm font-semibold hover:underline flex items-center gap-1"
+                        >
+                            Click here to download for {platform === 'ios' ? 'iOS' : 'Android'}
+                        </a>
+                    </div>
+
                     <div className="inline-block p-4 bg-white rounded-xl shadow-md border border-gray-100 ring-4 ring-gray-50 dark:ring-gray-900/50">
                         <img
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(appStoreLinks[platform as keyof typeof appStoreLinks])}`}
