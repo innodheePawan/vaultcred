@@ -10,6 +10,7 @@ import { Suspense } from 'react';
 
 import { getSystemSettings } from "@/lib/actions/settings";
 import { prisma } from "@/lib/prisma"; // Added prisma to fetch user directly
+import { LayoutProvider } from "@/components/layout/LayoutContext";
 
 
 export default async function DashboardLayout({
@@ -53,25 +54,27 @@ export default async function DashboardLayout({
     }
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden">
-            <SessionTimeout timeoutMs={600000} />
-            {/* Pass currentUser which contains profileImage */}
-            <Header settings={settings} user={currentUser} />
-            <div className="flex flex-1 overflow-hidden">
-                <Suspense fallback={<div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700" />}>
-                    <Sidebar
-                        role={session?.user?.role}
-                        showSettings={showSettings}
-                        showAdminMenu={showAdminMenu}
-                    />
-                </Suspense>
-                <div className="flex flex-1 flex-col overflow-hidden relative z-0">
-                    <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                        {children}
-                    </main>
-                    <Footer />
+        <LayoutProvider>
+            <div className="h-screen flex flex-col overflow-hidden">
+                <SessionTimeout timeoutMs={600000} />
+                {/* Pass currentUser which contains profileImage */}
+                <Header settings={settings} user={currentUser} />
+                <div className="flex flex-1 overflow-hidden">
+                    <Suspense fallback={<div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700" />}>
+                        <Sidebar
+                            role={session?.user?.role}
+                            showSettings={showSettings}
+                            showAdminMenu={showAdminMenu}
+                        />
+                    </Suspense>
+                    <div className="flex flex-1 flex-col overflow-hidden relative z-0">
+                        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+                            {children}
+                        </main>
+                        <Footer />
+                    </div>
                 </div>
             </div>
-        </div>
+        </LayoutProvider>
     );
 }

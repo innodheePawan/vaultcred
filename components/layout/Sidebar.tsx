@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronRight, LayoutDashboard, Key, Users, Settings, Shield, FileText, Lock, Terminal, Folder } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useSession } from 'next-auth/react';
+import { useLayout } from './LayoutContext';
 
 type MenuItem = {
     title: string;
@@ -57,6 +58,7 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
     const searchParams = useSearchParams();
     const currentType = searchParams.get('type');
     const { data: session } = useSession();
+    const { isCollapsed } = useLayout();
 
     // Use server-passed role (immediate) or client-side session role (fallback/update)
     const userRole = initialRole || session?.user?.role;
@@ -74,6 +76,7 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
     });
 
     const toggleExpand = (title: string) => {
+        if (isCollapsed) return; // Don't allow expanding when collapsed
         setExpandedItems((prev) =>
             prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
         );
@@ -104,7 +107,11 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
     };
 
     return (
-        <aside className={clsx("w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full z-30 relative", className)}>
+        <aside className={clsx(
+            "bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full z-30 relative transition-all duration-300",
+            isCollapsed ? "w-20" : "w-64",
+            className
+        )}>
             <div className="flex-1 overflow-y-auto py-4">
                 <nav className="space-y-1 px-2">
                     {filteredItems.map((item) => (
@@ -113,19 +120,27 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
                                 <div>
                                     <button
                                         onClick={() => toggleExpand(item.title)}
-                                        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                                        title={isCollapsed ? item.title : undefined}
+                                        className={clsx(
+                                            "w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors",
+                                            isCollapsed && "justify-center"
+                                        )}
                                     >
                                         <div className="flex items-center gap-3">
-                                            {item.icon}
-                                            <span>{item.title}</span>
+                                            <div className={clsx("flex-shrink-0", isCollapsed && "mx-auto")}>
+                                                {item.icon}
+                                            </div>
+                                            {!isCollapsed && <span>{item.title}</span>}
                                         </div>
-                                        {expandedItems.includes(item.title) ? (
-                                            <ChevronDown className="w-4 h-4" />
-                                        ) : (
-                                            <ChevronRight className="w-4 h-4" />
+                                        {!isCollapsed && (
+                                            expandedItems.includes(item.title) ? (
+                                                <ChevronDown className="w-4 h-4" />
+                                            ) : (
+                                                <ChevronRight className="w-4 h-4" />
+                                            )
                                         )}
                                     </button>
-                                    {expandedItems.includes(item.title) && (
+                                    {!isCollapsed && expandedItems.includes(item.title) && (
                                         <div className="mt-1 ml-9 space-y-1 border-l-2 border-gray-100 dark:border-gray-700 pl-2">
                                             {item.children.map((child) => {
                                                 // Role-based visibility for specific child items
@@ -152,15 +167,19 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
                             ) : (
                                 <Link
                                     href={item.href || '#'}
+                                    title={isCollapsed ? item.title : undefined}
                                     className={clsx(
                                         "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
                                         isActive(item)
                                             ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                                            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700",
+                                        isCollapsed && "justify-center px-0"
                                     )}
                                 >
-                                    {item.icon}
-                                    <span>{item.title}</span>
+                                    <div className={clsx("flex-shrink-0", isCollapsed && "mx-auto")}>
+                                        {item.icon}
+                                    </div>
+                                    {!isCollapsed && <span>{item.title}</span>}
                                 </Link>
                             )}
                         </div>

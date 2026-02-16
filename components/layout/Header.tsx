@@ -6,11 +6,14 @@ import { useRouter } from 'next/navigation';
 import { Search, Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { clsx } from 'clsx';
+import { useLayout } from './LayoutContext';
+import { Menu } from 'lucide-react';
 
 export function Header({ settings, user }: { settings?: any, user?: any }) {
     const { data: session } = useSession();
     const router = useRouter();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const { isCollapsed, toggleSidebar } = useLayout();
 
     // Use passed user object (from DB) or session fallback
     const displayUser = user || session?.user;
@@ -27,14 +30,17 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
 
     return (
         <header className="h-[60px] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center z-40 relative">
-            {/* Logo Section - Matches Sidebar Width (w-64), auto-fits any logo size */}
-            <div className="w-64 flex-shrink-0 h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900/50 overflow-hidden">
+            {/* Logo Section - Matches Sidebar Width (w-64/w-20), auto-fits any logo size */}
+            <div className={clsx(
+                "flex-shrink-0 h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900/50 overflow-hidden transition-all duration-300",
+                isCollapsed ? "w-20" : "w-64"
+            )}>
                 <Link href="/dashboard" className="flex items-center justify-center w-full h-full">
                     {logoUrl ? (
                         <img
                             src={logoUrl}
                             alt="Logo"
-                            style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }}
+                            style={{ width: '100%', height: '100%', objectFit: isCollapsed ? 'contain' : 'fill', display: 'block', padding: isCollapsed ? '8px' : '0' }}
                         />
                     ) : (
                         <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
@@ -44,11 +50,22 @@ export function Header({ settings, user }: { settings?: any, user?: any }) {
                 </Link>
             </div>
 
-            {/* Application Name Section - Next to Logo (w-64) */}
-            <div className="w-64 flex-shrink-0 flex items-center justify-start h-full pl-4">
-                <span className="text-xl font-bold text-gray-900 dark:text-white truncate text-left">
-                    {applicationName}
-                </span>
+            {/* Toggle & Application Name Section */}
+            <div className={clsx(
+                "flex-shrink-0 flex items-center justify-start h-full pl-4 gap-4 transition-all duration-300",
+                isCollapsed ? "w-48" : "w-64"
+            )}>
+                <button
+                    onClick={toggleSidebar}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                    <Menu className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+                {!isCollapsed && (
+                    <span className="text-xl font-bold text-gray-900 dark:text-white truncate text-left">
+                        {applicationName}
+                    </span>
+                )}
             </div>
 
             {/* Header Content */}
