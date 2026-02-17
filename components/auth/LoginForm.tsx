@@ -55,6 +55,11 @@ export default function LoginForm() {
             if (result.twoFactorRequired) {
                 // Show 2FA code input
                 setStep('2fa');
+                // Update URL to signal to SessionTimeout that we are in MFA mode
+                const url = new URL(window.location.href);
+                url.searchParams.set('mfa', 'true');
+                window.history.pushState({}, '', url.toString());
+
                 setTimeout(() => codeInputRef.current?.focus(), 100);
             } else {
                 // No 2FA — complete login directly
@@ -134,6 +139,11 @@ export default function LoginForm() {
         setError(null);
         setReconfigSent(false);
         setReconfigMessage(null);
+
+        // Clear MFA flag from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mfa');
+        window.history.pushState({}, '', url.toString());
     };
 
     return (

@@ -279,3 +279,59 @@ export async function updateUser(userId: string, formData: FormData) {
         return { error: error.message };
     }
 }
+
+export async function deleteUser(userId: string) {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') {
+        return { error: 'Unauthorized' };
+    }
+
+    try {
+        // Safety check: Cannot delete the last remaining Super Admin
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { role: true, status: true }
+        });
+
+        if (user?.role === 'ADMIN') {
+            const activeAdminCount = await prisma.user.count({
+                where: {
+                    role: 'ADMIN',
+                    status: 'ACTIVE',
+                    id: { not: userId }
+                }
+            });
+
+            if (activeAdminCount === 0) {
+                return { error: 'Action Denied: You cannot delete the last remaining Super Admin.' };
+            }
+        }
+
+        await prisma.user.delete({
+            where: { id: userId }
+        });
+
+        revalidatePath('/settings/database');
+        return { success: true, message: 'User deleted successfully' };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+export async function deleteInvite(inviteId: string) {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') {
+        return { error: 'Unauthorized' };
+    }
+
+    try {
+        await prisma.invite.delete({
+            where: { id: inviteId }
+        });
+
+        revalidatePath('/settings/database');
+        return { success: true, message: 'Invite deleted successfully' };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}

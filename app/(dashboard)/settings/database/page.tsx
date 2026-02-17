@@ -1,8 +1,20 @@
 import { getDatabaseInfo } from '@/lib/actions/database';
+import { auth } from '@/lib/auth';
 import { Database, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import DatabaseSync from '@/components/admin/settings/DatabaseSync';
 
 export default async function DatabaseSettingsPage() {
     const info = await getDatabaseInfo();
+    const session = await auth();
+
+    if ('error' in info) {
+        return (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg flex items-center gap-3 text-red-800 dark:text-red-200">
+                <AlertCircle className="w-5 h-5" />
+                <p>Failed to load database information: {info.error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -75,6 +87,8 @@ export default async function DatabaseSettingsPage() {
                             </dl>
                         </div>
                     </div>
+
+                    <DatabaseSync />
                 </div>
             </div>
         </div>

@@ -14,8 +14,18 @@ import { Button } from '@/components/ui/button';
 import { Search, Edit, Shield, Ban, CheckCircle, RefreshCw, Loader2, Copy } from 'lucide-react';
 import InviteUserDialog from './InviteUserDialog';
 import EditUserDialog from './EditUserDialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import StatusConfirmationDialog from './StatusConfirmationDialog';
-import { resendInvite } from '@/lib/actions/admin';
+import { resendInvite, deleteInvite, deleteUser } from '@/lib/actions/admin';
+import { Trash2, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const GROUP_COLORS = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-800',
@@ -47,10 +57,14 @@ const getGroupColor = (name: string) => {
 };
 
 export default function UserTable({ users, invites, groups, inviteUserAction, isSystemAdmin, canInvite }: any) {
+    const router = useRouter();
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<any>(null);
     const [statusUser, setStatusUser] = useState<any>(null);
     const [resendingId, setResendingId] = useState<string | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<{ id: string; email: string; type: 'USER' | 'INVITE' } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
     const handleResend = async (inviteId: string) => {
         setResendingId(inviteId);
@@ -65,6 +79,29 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
             alert('An error occurred');
         } finally {
             setResendingId(null);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!itemToDelete || deleteConfirmText !== 'DELETE') return;
+
+        setIsDeleting(true);
+        try {
+            const result = itemToDelete.type === 'USER'
+                ? await deleteUser(itemToDelete.id)
+                : await deleteInvite(itemToDelete.id);
+
+            if (result.success) {
+                router.refresh();
+            } else {
+                alert(result.error || `Failed to delete ${itemToDelete.type.toLowerCase()}`);
+            }
+        } catch (e) {
+            alert('An error occurred');
+        } finally {
+            setIsDeleting(false);
+            setItemToDelete(null);
+            setDeleteConfirmText('');
         }
     };
 
@@ -171,9 +208,19 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                                         )}
                                     </TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)}>
-                                            <Edit className="w-4 h-4 text-gray-500 hover:text-indigo-600" />
-                                        </Button>
+                                        <div className="flex justify-end gap-2 items-center">
+                                            <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)}>
+                                                <Edit className="w-4 h-4 text-gray-500 hover:text-indigo-600" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-gray-400 hover:text-red-600"
+                                                onClick={() => setItemToDelete({ id: user.id, email: user.email, type: 'USER' })}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -218,6 +265,15 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                                                     <RefreshCw className="w-4 h-4 text-gray-500 hover:text-indigo-600" />
                                                 )}
                                             </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setItemToDelete({ id: invite.id, email: invite.email, type: 'INVITE' })}
+                                                className="text-gray-400 hover:text-red-600"
+                                                title="Delete Invitation"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -249,6 +305,46 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                     open={!!statusUser}
                     onOpenChange={(open) => !open && setStatusUser(null)}
                 />
+            )}
+
+            {/* Deletion Confirmation Dialog */}
+            {itemToDelete && (
+                <Dialog open={!!itemToDelete} onOpenChange={(open: boolean) => !open && setItemToDelete(null)}>
+                    <DialogContent className="sm:max-w-md bg-white dark:bg-gray-800 dark:text-white">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-red-600">
+                                <AlertTriangle className="w-5 h-5" />
+                                Delete {itemToDelete.type === 'USER' ? 'User' : 'Invitation'}
+                            </DialogTitle>
+                            <DialogDescription className="dark:text-gray-400">
+                                This will permanently remove <span className="font-bold text-gray-900 dark:text-white">{itemToDelete.email}</span>.
+                                {itemToDelete.type === 'USER' && " All associated permissions and access will be revoked."}
+                                This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                To confirm, please type <span className="font-bold">DELETE</span> below.
+                            </p>
+                            <Input
+                                value={deleteConfirmText}
+                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                placeholder="Type DELETE to confirm"
+                                className="dark:bg-gray-900"
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setItemToDelete(null)}>Cancel</Button>
+                            <Button
+                                variant="destructive"
+                                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                                onClick={handleDelete}
+                            >
+                                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : `Delete ${itemToDelete.type === 'USER' ? 'User' : 'Invitation'}`}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 import { auth } from "@/lib/auth";
+import { SessionTimeout } from "@/components/layout/SessionTimeout";
 
 export default async function RootLayout({
   children,
@@ -34,6 +36,9 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full flex flex-col`}
       >
         <Providers session={session}>
+          <Suspense fallback={null}>
+            <SessionTimeout />
+          </Suspense>
           {children}
         </Providers>
       </body>

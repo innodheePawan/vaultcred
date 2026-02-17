@@ -56,7 +56,6 @@ export default async function DashboardLayout({
     return (
         <LayoutProvider>
             <div className="h-screen flex flex-col overflow-hidden">
-                <SessionTimeout timeoutMs={600000} />
                 {/* Pass currentUser which contains profileImage */}
                 <Header settings={settings} user={currentUser} />
                 <div className="flex flex-1 overflow-hidden">

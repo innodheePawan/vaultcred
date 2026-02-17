@@ -183,9 +183,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                         where: { id: token.id as string },
                         select: { twoFactorEnabled: true },
                     });
-                    if (dbUser) {
-                        token.twoFactorEnabled = dbUser.twoFactorEnabled;
+
+                    // GHOST SESSION PROTECTION:
+                    // If user was deleted from DB but session persists in cookie
+                    if (!dbUser) {
+                        return null as any;
                     }
+
+                    token.twoFactorEnabled = dbUser.twoFactorEnabled;
                 } catch (e) {
                     // If DB is unavailable, keep existing token value
                 }

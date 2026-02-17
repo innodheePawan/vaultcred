@@ -31,7 +31,7 @@ const authHandler = auth((req) => {
     }
 
     // 2. 2FA Enforcement
-    if (isLoggedIn && !twoFactorEnabled && !isSetup2fa && !isSignout && !isApi && !isSetup) {
+    if (isLoggedIn && !twoFactorEnabled && !isSetup2fa && !isSignout && !isApi && !isSetup && !isRoot) {
         return NextResponse.redirect(new URL('/setup-2fa', req.url));
     }
 
