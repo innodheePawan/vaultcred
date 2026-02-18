@@ -9,79 +9,97 @@ interface SessionTimeoutProps {
     timeoutMs?: number; // Default to 10 minutes (600000 ms)
 }
 
-export function SessionTimeout({ timeoutMs = 600000 }: SessionTimeoutProps) {
+export function SessionTimeout({ timeoutMs = 900000 }: SessionTimeoutProps) {
     const { data: session, status } = useSession();
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const countdownRef = useRef<NodeJS.Timeout | null>(null);
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [timeLeft, setTimeLeft] = useState<number>(timeoutMs);
+    const lastActivityRef = useRef<number>(Date.now());
 
-    // Determine effective timeout: 3 mins for setup/login/reconfig, 10 mins otherwise
+    // Determine effective timeout
     const isMfaLogin = pathname.startsWith('/login') && searchParams.get('mfa') === 'true';
+    // For 2FA setup flow, we might want a shorter separate timeout, but keeping existing logic:
     const isRestrictedRoute = pathname.startsWith('/setup-2fa') || isMfaLogin || pathname.includes('/reconfigure-2fa');
-
     const effectiveTimeout = isRestrictedRoute ? 180000 : timeoutMs;
 
     useEffect(() => {
-        // Run if authenticated OR on restricted unauthenticated route (like MFA login phase)
+        // Run if authenticated OR on restricted unauthenticated route
         const canRun = status === 'authenticated' || (status === 'unauthenticated' && isRestrictedRoute);
         if (!canRun) return;
 
-        const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+        // Function to check if we should logout
+        const checkTimer = () => {
+            const now = Date.now();
+            const elapsed = now - lastActivityRef.current;
+            const remaining = effectiveTimeout - elapsed;
 
-        const resetTimer = (isInitial = false) => {
-            // If it's a restricted route and NOT the initial load, don't reset the timer on activity
-            // This ensures the 3-minute timeout is consolidated for the entire activity
-            if (isRestrictedRoute && !isInitial) return;
-
-            // Clear existing timeout
-            if (timerRef.current) clearTimeout(timerRef.current);
-            if (countdownRef.current) clearInterval(countdownRef.current);
-
-            // Set the absolute logout timer
-            timerRef.current = setTimeout(async () => {
-                try {
-                    // Only log if we have a session
-                    if (status === 'authenticated') {
-                        const { logUserLogout } = await import('@/lib/actions/login-activity');
-                        await logUserLogout();
-                    }
-                } catch (e) {
-                    console.error("Auto-logout log failed", e);
-                } finally {
-                    // For MFA login, returning to /login clears the mfa query and state
-                    signOut({ callbackUrl: '/login' });
-                }
-            }, effectiveTimeout);
-
-            // Initialize visual countdown
-            setTimeLeft(effectiveTimeout);
-            countdownRef.current = setInterval(() => {
-                setTimeLeft((prev) => Math.max(0, prev - 1000));
-            }, 1000);
+            if (remaining <= 0) {
+                // Time expired
+                handleLogout();
+            } else {
+                setTimeLeft(remaining);
+            }
         };
 
-        // Initialize with isInitial = true
-        resetTimer(true);
+        const handleLogout = async () => {
+            try {
+                if (status === 'authenticated') {
+                    // Try to log the logout reason, but don't block
+                    const { logUserLogout } = await import('@/lib/actions/login-activity');
+                    await logUserLogout();
+                }
+            } catch (e) {
+                console.error("Auto-logout log failed", e);
+            } finally {
+                signOut({ callbackUrl: '/login' });
+            }
+        };
 
-        // Add event listeners (these will call resetTimer with isInitial = false)
-        events.forEach(event => {
-            window.addEventListener(event, () => resetTimer(false));
-        });
+        const updateActivity = () => {
+            // Only update activity if we are NOT in a restricted route (restricted routes have fixed expirations usually?)
+            // OR if the requirement is "activity keeps session alive". 
+            // Previous logic: "If it's a restricted route and NOT the initial load, don't reset the timer on activity"
+            if (isRestrictedRoute) {
+                // For restricted routes, we DO NOT update lastActivity on user events.
+                // We only set it once on mount (or explicit reset).
+                return;
+            }
+            lastActivityRef.current = Date.now();
+        };
+
+        // Events to detect activity
+        const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+        const onUserActivity = () => updateActivity();
+
+        // 1. Set initial activity timestamp
+        lastActivityRef.current = Date.now();
+
+        // 2. Setup Polling Interval (Check every 1 second)
+        const intervalId = setInterval(checkTimer, 1000);
+
+        // 3. Setup Listeners
+        events.forEach(event => window.addEventListener(event, onUserActivity));
+
+        // 4. Handle Visibility Change (Tab focus) - Check immediately when user returns
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                checkTimer();
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
 
         return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-            if (countdownRef.current) clearInterval(countdownRef.current);
-            events.forEach(event => {
-                window.removeEventListener(event, () => resetTimer(false));
-            });
+            clearInterval(intervalId);
+            events.forEach(event => window.removeEventListener(event, onUserActivity));
+            document.removeEventListener('visibilitychange', onVisibilityChange);
         };
     }, [status, effectiveTimeout, isRestrictedRoute]);
 
     // Format time for UI (MM:SS)
-    const minutes = Math.floor(timeLeft / 60000);
-    const seconds = Math.floor((timeLeft % 60000) / 1000);
+    // Prevent negative display
+    const displayTime = Math.max(0, timeLeft);
+    const minutes = Math.floor(displayTime / 60000);
+    const seconds = Math.floor((displayTime % 60000) / 1000);
     const timeDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     // Only show the badge for the specific routes requested

@@ -37,7 +37,7 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           <Suspense fallback={null}>
-            <SessionTimeout />
+            <SessionTimeout timeoutMs={900000} />
           </Suspense>
           {children}
         </Providers>

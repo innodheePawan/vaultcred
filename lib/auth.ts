@@ -222,6 +222,6 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     },
     session: {
         strategy: "jwt",
-        maxAge: 600, // 10 minutes
+        maxAge: 86400, // 24 hours (Client Idle Timer handles the 15m inactivity logout)
     },
 });
