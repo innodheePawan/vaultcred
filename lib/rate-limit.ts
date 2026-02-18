@@ -49,18 +49,18 @@ export function rateLimit(
     // No entry or expired — create new
     if (!entry || now > entry.resetAt) {
         store.set(key, { count: 1, resetAt: now + windowMs });
-        console.log(`[RateLimit] New entry for ${key}. Count: 1/${limit}`);
+
         return { allowed: true, retryAfterMs: 0, remaining: limit - 1 };
     }
 
     // Under the limit
     if (entry.count < limit) {
         entry.count++;
-        console.log(`[RateLimit] Update for ${key}. Count: ${entry.count}/${limit}`);
+
         return { allowed: true, retryAfterMs: 0, remaining: limit - entry.count };
     }
 
-    console.log(`[RateLimit] BLOCKED for ${key}. Count: ${entry.count}/${limit}`);
+
 
     // Over the limit
     const retryAfterMs = entry.resetAt - now;

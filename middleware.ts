@@ -22,32 +22,75 @@ const authHandler = auth((req) => {
 
     // Auth Session
     const isLoggedIn = !!req.auth;
-    const twoFactorEnabled = (req.auth?.user as any)?.twoFactorEnabled;
+    const user = req.auth?.user as any;
+
+    // Use optional chaining and defaults to avoid undefined issues in middleware
+    const twoFactorEnabled = user?.twoFactorEnabled ?? false;
+    const isExternal = user?.isExternal ?? false;
+    const accessExpiresAt = user?.accessExpiresAt; // ISO string
+
     const isRoot = path === '/';
+    const isDashboard = path.startsWith('/dashboard');
+    const isVendorAccess = path.startsWith('/vendor/access');
 
     // 1. Logged in user accessing login page
     if (isLoggedIn && isLogin) {
+        if (isExternal) {
+            return NextResponse.redirect(new URL('/credentials', req.url));
+        }
         return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
+    // 1b. External User Expiry Check
+    if (isLoggedIn && isExternal && accessExpiresAt) {
+        const expiryDate = new Date(accessExpiresAt);
+        if (expiryDate < new Date()) {
+
+            return NextResponse.redirect(new URL('/signout', req.url));
+        }
+    }
+
+    // 1c. External User Restricted Access (Strictly Admin/Settings)
+    // External vendors can access /credentials (their new landing) and its sub-routes.
+    const restrictedBasePaths = ['/admin', '/settings'];
+    const isAttemptingRestricted = restrictedBasePaths.some(p => path.startsWith(p));
+
+    if (isLoggedIn && isExternal && isAttemptingRestricted) {
+        return NextResponse.redirect(new URL('/credentials', req.url));
+    }
+
     // 2. 2FA Enforcement
+    // Strictly enforce 2FA for all logged-in users who haven't set it up yet.
+    // Exceptions: setup-2fa page itself, signout, internal next/api assets, and the root/setup paths.
     if (isLoggedIn && !twoFactorEnabled && !isSetup2fa && !isSignout && !isApi && !isSetup && !isRoot) {
+
         return NextResponse.redirect(new URL('/setup-2fa', req.url));
     }
 
     // 3. Prevent access to setup-2fa if already enabled
     if (isLoggedIn && twoFactorEnabled && isSetup2fa) {
+        if (isExternal) {
+            return NextResponse.redirect(new URL('/credentials', req.url));
+        }
         return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
     // 4. Protect private routes
     if (!isLoggedIn && !isPublicAuth && !isApi && !isSetup && !isRoot && !isSetup2fa) {
-        return NextResponse.redirect(new URL('/login', req.url));
+        // Avoid redirect loop if already at /login (though isLogin check above handles it)
+        if (!isLogin) {
+            return NextResponse.redirect(new URL('/login', req.url));
+        }
     }
 
-    // 5. Block /setup if system is already configured (since we passed the pre-auth checks)
-    if (isSetup && !isSetup2fa) {
-        return NextResponse.redirect(new URL('/dashboard', req.url));
+    // 5. Block /setup if system is already configured
+    if (isSetup && !isSetup2fa && !isApi) {
+        if (isLoggedIn) {
+            if (isExternal) {
+                return NextResponse.redirect(new URL('/vendor/access', req.url));
+            }
+            return NextResponse.redirect(new URL('/dashboard', req.url));
+        }
     }
 });
 

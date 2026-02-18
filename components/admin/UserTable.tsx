@@ -56,7 +56,7 @@ const getGroupColor = (name: string) => {
     return GROUP_COLORS[index];
 };
 
-export default function UserTable({ users, invites, groups, inviteUserAction, isSystemAdmin, canInvite }: any) {
+export default function UserTable({ users, invites, groups, credentials, inviteUserAction, isSystemAdmin, canInvite }: any) {
     const router = useRouter();
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<any>(null);
@@ -131,7 +131,7 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                 <div className="w-full sm:w-auto">
                     {/* Only show Invite button if authorized (System Admin or Scoped Admin) */}
                     {inviteUserAction && (canInvite || isSystemAdmin) && (
-                        <InviteUserDialog groups={groups} action={inviteUserAction} />
+                        <InviteUserDialog groups={groups} credentials={credentials} action={inviteUserAction} />
                     )}
                 </div>
             </div>
@@ -161,8 +161,20 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                                                 {user.name?.[0] || user.email[0].toUpperCase()}
                                             </div>
                                             <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name || 'Unknown'}</div>
-                                                <div className="text-sm text-gray-500">{user.email}</div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                    {user.name || 'Unknown'}
+                                                    {user.isExternal && (
+                                                        <span className="px-1.5 py-0.5 text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800 font-bold uppercase tracking-tight">
+                                                            External
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-gray-500 flex flex-col">
+                                                    <span>{user.email}</span>
+                                                    {user.isExternal && user.vendorName && (
+                                                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium">Vendor: {user.vendorName}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -234,8 +246,20 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                                                 <Shield className="w-5 h-5" />
                                             </div>
                                             <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">Invited User</div>
-                                                <div className="text-sm text-gray-500">{invite.email}</div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                    Invited User
+                                                    {invite.isExternal && (
+                                                        <span className="px-1.5 py-0.5 text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800 font-bold uppercase tracking-tight">
+                                                            External
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-gray-500 flex flex-col">
+                                                    <span>{invite.email}</span>
+                                                    {invite.isExternal && invite.vendorName && (
+                                                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium">Vendor: {invite.vendorName}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -293,6 +317,7 @@ export default function UserTable({ users, invites, groups, inviteUserAction, is
                 <EditUserDialog
                     user={editingUser}
                     groups={groups}
+                    credentials={credentials}
                     open={!!editingUser}
                     onOpenChange={(open) => !open && setEditingUser(null)}
                 />

@@ -130,6 +130,14 @@ export async function createCredential(prevState: any, formData: FormData) {
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const accessContext = await getUserAccessContext(session.user.id!);
 
+    // STRICT: Backend Safeguard for External View-Only
+    const isExternal = (session.user as any).isExternal;
+    const externalAccessType = (session.user as any).externalAccessType;
+
+    if (isExternal && externalAccessType === 'VIEW') {
+        return { error: 'Unauthorized: External vendors with VIEW access cannot create credentials.' };
+    }
+
     if (!data.isPersonal) {
         // Shared Credential Validation
         if (data.category) {
@@ -142,7 +150,8 @@ export async function createCredential(prevState: any, formData: FormData) {
                 return { error: `Unauthorized: Invalid Environment '${data.environment}' for your role.` };
             }
         }
-        if (!accessContext.isAdmin && !canAccess(accessContext, data.category || null, data.environment || null, 'CREATE')) {
+
+        if (accessContext.role !== 'ADMIN' && !canAccess(accessContext, data.category || null, data.environment || null, 'CREATE')) {
             return { error: 'Unauthorized: You do not have permission to create credentials here.' };
         }
     }
@@ -277,6 +286,7 @@ export async function getCredentials(params?: {
     // 1. Get User IAM Context
     const accessContext = await getUserAccessContext(session.user.id!);
 
+
     // 2. Build Permission Filters
     // Rule: Personal credentials are STRICTLY visible only to the creator.
     // Rule: Shared credentials are visible to Admins OR via RBAC.
@@ -287,17 +297,29 @@ export async function getCredentials(params?: {
         ]
     };
 
-    if (accessContext.isAdmin) {
+    // Add Direct Allowed Credential IDs (Granular Sharing)
+    if (accessContext.allowedCredentialIds.length > 0) {
+        where.OR.push({ id: { in: accessContext.allowedCredentialIds } });
+    }
+
+    if (accessContext.role === 'ADMIN') {
         // Admin sees all SHARED items
         where.OR.push({ isPersonal: false });
+    } else if (accessContext.isExternal) {
+        // EXTERNAL USER: STRICT VISIBILITY
+        // They ONLY see:
+        // 1. Their own created items (covered above)
+        // 2. Items explicitly shared with them (covered above via allowedCredentialIds)
+        // They DO NOT see items based on "Scoping Permissions" (Category/Env).
+        // That scope is effectively "Write-Only" or "Blind Create" permission in this context.
     } else {
-        // Regular User: Check RBAC for SHARED items
+        // INTERNAL USER: Check RBAC for SHARED items
         const orConditions: any[] = [];
         const { permissions } = accessContext;
 
         const hasSubstantiveAccess = (set?: Set<string>) => {
             if (!set) return false;
-            return set.has('READ') || set.has('EDIT') || set.has('CREATE') || set.has('ADMIN') || set.has('AUDIT');
+            return set.has('READ') || set.has('EDIT') || set.has('CREATE') || set.has('ADMIN') || set.has('AUDIT') || (set as any).has('DOWNLOAD');
         };
 
         if (hasSubstantiveAccess(permissions['*']?.['*'])) {
@@ -418,7 +440,7 @@ export async function getCredentialById(id: string) {
 
     // IAM Access Check
     const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'READ');
+    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'READ', credential.id);
 
     // Allow creator to always access (optional, but typical)
     const isOwner = credential.createdById === session.user.id;
@@ -427,7 +449,7 @@ export async function getCredentialById(id: string) {
         if (!isOwner) return null; // STRICT: Only owner sees personal
     } else {
         // Shared
-        if (!accessContext.isAdmin && !isOwner && !hasAccess) return null;
+        if (accessContext.role !== 'ADMIN' && !isOwner && !hasAccess) return null;
     }
 
     await logAudit({
@@ -523,10 +545,10 @@ export async function deleteCredential(id: string) {
 
     // Check permission logic
     const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'ADMIN'); // Need Admin or Owner
+    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'ADMIN', credential.id); // Need Admin or Owner
     const isOwner = credential.createdById === session.user.id;
 
-    if (!isOwner && !accessContext.isAdmin && !hasAccess) {
+    if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {
         return { error: 'Unauthorized' };
     }
 
@@ -578,10 +600,10 @@ export async function updateCredential(id: string, prevState: any, formData: For
     // PERMISSIONS
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'EDIT');
+    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'EDIT', credential.id);
     const isOwner = credential.createdById === session.user.id; // Corrected from ownerId
 
-    if (!isOwner && !accessContext.isAdmin && !hasAccess) {
+    if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {
         return { error: 'Unauthorized' };
     }
 

@@ -28,6 +28,14 @@ export async function getUsersAndInvites() {
             createdAt: true,
             lastLogin: true,
             twoFactorEnabled: true,
+            // External Vendor Fields
+            isExternal: true,
+            vendorName: true,
+            externalAccessType: true,
+            accessExpiresAt: true,
+            allowedCategories: true,
+            allowedEnvironments: true,
+            allowedCredentialIds: true,
             userGroups: {
                 include: { group: true }
             }
@@ -74,6 +82,29 @@ export async function getAllGroups() {
     });
 }
 
+export async function getAllCredentialsSummary() {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+
+    const ctx = await getUserAccessContext(session.user.id);
+    const hasAdminAccess = canAccess(ctx, null, null, 'ADMIN');
+
+    if (session.user.role !== 'ADMIN' && !hasAdminAccess) return [];
+
+    // Only fetch necessary fields for the dropdown
+    return prisma.credentialMaster.findMany({
+        where: { isPersonal: false },
+        select: {
+            id: true,
+            name: true,
+            type: true,
+            category: true,
+            environment: true
+        },
+        orderBy: { name: 'asc' }
+    });
+}
+
 export async function inviteUser(prevState: any, formData: FormData) {
     const session = await auth();
     if (!session?.user?.id) return { error: 'Unauthorized' };
@@ -111,10 +142,40 @@ export async function inviteUser(prevState: any, formData: FormData) {
         if (env) scopedEnvs = env;
     }
 
-    if (!email) return { error: 'Email is required' };
+    const isExternal = formData.get('isExternal') === 'on';
+    const vendorName = formData.get('vendorName') as string;
+    const externalAccessType = formData.get('externalAccessType') as string;
+    const accessExpiresAtRaw = formData.get('accessExpiresAt') as string;
+    const accessExpiresAt = accessExpiresAtRaw ? new Date(accessExpiresAtRaw) : null;
+    const credentialIds = formData.getAll('credentialIds') as string[];
+
+    if (isExternal) {
+        if (!vendorName) return { error: 'Vendor Name is required for external access' };
+        if (!accessExpiresAt) return { error: 'Expiry Date is required for external access' };
+
+        // If external, they must have EITHER Scope (Cat/Env) OR specific Credentials
+        const hasScope = scopedCats || scopedEnvs;
+        const hasSpecificCreds = credentialIds.length > 0;
+
+        if (!hasScope && !hasSpecificCreds) {
+            return { error: 'External vendors require either specific scope access (Category, Environment) or specific Credential selection.' };
+        }
+    }
 
     try {
-        const invite = await createInvite(email, session.user.id!, targetGroupIds, role, scopedCats, scopedEnvs);
+        const invite = await createInvite(
+            email,
+            session.user.id!,
+            targetGroupIds,
+            role,
+            scopedCats,
+            scopedEnvs,
+            isExternal,
+            externalAccessType,
+            accessExpiresAt,
+            vendorName,
+            credentialIds
+        );
 
         const { isSmtpConfigured } = await import('@/lib/email');
         const smtpOk = await isSmtpConfigured();
@@ -177,6 +238,13 @@ export async function resendInvite(inviteId: string) {
             };
         }
 
+        // Refresh expiration date
+        const newExpiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours from now
+        await prisma.invite.update({
+            where: { id: inviteId },
+            data: { expiresAt: newExpiresAt }
+        });
+
         await import('@/lib/email').then(mod =>
             mod.sendInviteEmail(invite.email, invite.token, session.user.name || 'Admin')
         );
@@ -194,51 +262,82 @@ export async function updateUser(userId: string, formData: FormData) {
     }
 
     const status = formData.get('status') as string;
-    const groupIds = formData.getAll('groups') as string[];
 
     try {
-        // Logic Update for Scoped Roles
-        // Check for 'systemRole' in formData. 
-        // If 'SUPER_ADMIN' -> role = ADMIN, clear groups.
-        // If 'GROUP' -> role = USER, assign single group with scopes.
+        const existingUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { isExternal: true, role: true }
+        });
 
-        const systemRole = formData.get('systemRole') as string; // 'SUPER_ADMIN' | 'GROUP'
-        // Fallback for legacy calls or missing field? Default to GROUP logic if groupId present.
+        if (!existingUser) return { error: 'User not found' };
 
-        let newRole = 'USER';
+        let updateData: any = { status };
         let groupsToAssign: { groupId: string; categories: string | null; environments: string | null }[] = [];
 
-        if (systemRole === 'SUPER_ADMIN') {
-            newRole = 'ADMIN';
-            // No groups needed for Super Admin as per strictly "Role" based access
-            // But maybe we want to track them? For now, following plan: Super Admin has global access via role.
+        if (existingUser.isExternal) {
+            // EXTERNAL VENDOR UPDATE
+            const vendorName = formData.get('vendorName') as string;
+            const accessExpiresAtRaw = formData.get('accessExpiresAt') as string;
+            const externalAccessType = formData.get('externalAccessType') as string;
+
+            // For external, scopes are stored on the User model directly as per schema
+            const allowedCategories = formData.get('scopedCategories') as string;
+            const allowedEnvironments = formData.get('scopedEnvironments') as string;
+            const allowedCredentialIds = formData.getAll('credentialIds') as string[];
+
+            if (!vendorName) return { error: 'Vendor Name is required.' };
+            if (!accessExpiresAtRaw) return { error: 'Expiry Date is required.' };
+
+            updateData = {
+                ...updateData,
+                vendorName,
+                accessExpiresAt: new Date(accessExpiresAtRaw),
+                externalAccessType,
+                allowedCategories: allowedCategories || null,
+                allowedEnvironments: allowedEnvironments || null,
+                allowedCredentialIds: allowedCredentialIds.length > 0 ? allowedCredentialIds.join(',') : null
+            };
+
+            // External users stay as USER role
+            updateData.role = 'USER';
+
         } else {
-            // Group Based
-            const groupId = formData.get('groupId') as string;
-            const categories = formData.get('scopedCategories') as string;
-            const environments = formData.get('scopedEnvironments') as string;
+            // INTERNAL USER UPDATE
+            const systemRole = formData.get('systemRole') as string; // 'SUPER_ADMIN' | 'GROUP'
+            let newRole = 'USER';
 
-            if (groupId) {
-                groupsToAssign.push({
-                    groupId,
-                    categories: categories || null,
-                    environments: environments || null
-                });
-            }
-        }
+            if (systemRole === 'SUPER_ADMIN') {
+                newRole = 'ADMIN';
+            } else {
+                // Group Based
+                const groupId = formData.get('groupId') as string;
+                const categories = formData.get('scopedCategories') as string;
+                const environments = formData.get('scopedEnvironments') as string;
 
-        if (newRole !== 'ADMIN' || status !== 'ACTIVE') {
-            // Check if there are ANY OTHER active admins
-            const activeAdminCount = await prisma.user.count({
-                where: {
-                    role: 'ADMIN',
-                    status: 'ACTIVE',
-                    id: { not: userId }
+                if (groupId) {
+                    groupsToAssign.push({
+                        groupId,
+                        categories: categories || null,
+                        environments: environments || null
+                    });
                 }
-            });
+            }
 
-            if (activeAdminCount === 0) {
-                return { error: 'Action Denied: You cannot deactivate or demote the last remaining Super Admin.' };
+            updateData.role = newRole;
+
+            // Safety check: Cannot deactivate/demote last Super Admin
+            if ((newRole !== 'ADMIN' || status !== 'ACTIVE') && existingUser.role === 'ADMIN') {
+                const activeAdminCount = await prisma.user.count({
+                    where: {
+                        role: 'ADMIN',
+                        status: 'ACTIVE',
+                        id: { not: userId }
+                    }
+                });
+
+                if (activeAdminCount === 0) {
+                    return { error: 'Action Denied: You cannot deactivate or demote the last remaining Super Admin.' };
+                }
             }
         }
 
@@ -246,22 +345,27 @@ export async function updateUser(userId: string, formData: FormData) {
             // Update User details
             await tx.user.update({
                 where: { id: userId },
-                data: { role: newRole, status }
+                data: updateData
             });
 
-            // Update Groups (Wipe and Recreate)
-            await tx.userGroupMapping.deleteMany({ where: { userId } });
+            // Update Groups (Wipe and Recreate) - ONLY IF INTERNAL
+            // External users don't use the UserGroupMapping table for scopes in this design (stored on User model)
+            // But we should wipe any existing group mappings if they were somehow present, to be clean.
+            // OR if we are switching from Internal -> External (not supported yet)
 
-            if (groupsToAssign.length > 0) {
-                await tx.userGroupMapping.createMany({
-                    data: groupsToAssign.map(g => ({
-                        userId,
-                        groupId: g.groupId,
-                        scopedCategories: g.categories,
-                        scopedEnvironments: g.environments,
-                        assignedBy: session.user.id!
-                    }))
-                });
+            if (!existingUser.isExternal) {
+                await tx.userGroupMapping.deleteMany({ where: { userId } });
+                if (groupsToAssign.length > 0) {
+                    await tx.userGroupMapping.createMany({
+                        data: groupsToAssign.map(g => ({
+                            userId,
+                            groupId: g.groupId,
+                            scopedCategories: g.categories,
+                            scopedEnvironments: g.environments,
+                            assignedBy: session.user.id!
+                        }))
+                    });
+                }
             }
         });
 

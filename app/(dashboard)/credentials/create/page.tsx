@@ -37,6 +37,7 @@ export default async function CreateCredentialPage(props: { searchParams: Promis
                     initialData={type ? { type } : undefined}
                     allowedCategories={ctx.allowedCategories}
                     allowedEnvironments={ctx.allowedEnvironments}
+                    isExternal={(session.user as any).isExternal}
                 />
             </div>
         </div>

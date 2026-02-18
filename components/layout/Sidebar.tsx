@@ -62,8 +62,14 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
 
     // Use server-passed role (immediate) or client-side session role (fallback/update)
     const userRole = initialRole || session?.user?.role;
+    const isExternal = (session?.user as any)?.isExternal ?? false;
 
     const filteredItems = MENU_ITEMS.filter(item => {
+        // If external, ONLY show Credentials
+        if (isExternal) {
+            return item.title === 'Credentials';
+        }
+
         if (item.title === 'Admin') {
             // Show if explicit prop is true OR if session role is ADMIN (fallback)
             return showAdminMenu || (userRole === 'ADMIN');

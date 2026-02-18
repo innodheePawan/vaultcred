@@ -9,8 +9,11 @@ export default async function SetupTwoFactorPage() {
         redirect('/login');
     }
 
-    // If 2FA is already enabled, redirect to dashboard
+    // If 2FA is already enabled, redirect appropriately
     if ((session.user as any).twoFactorEnabled) {
+        if ((session.user as any).isExternal) {
+            redirect('/vendor/access');
+        }
         redirect('/dashboard');
     }
 

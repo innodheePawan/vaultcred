@@ -59,7 +59,11 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
 
             setStep('done');
             setTimeout(() => {
-                window.location.href = '/dashboard';
+                if (user?.isExternal) {
+                    window.location.href = '/vendor/access';
+                } else {
+                    window.location.href = '/dashboard';
+                }
             }, 1500);
         });
     };

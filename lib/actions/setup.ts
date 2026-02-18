@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import util from 'util';
+import os from 'os';
 import { seedRoles } from '@/scripts/seed-roles';
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
@@ -134,10 +135,11 @@ export async function syncDatabase() {
         // Detached spawn doesn't always survive in Lambda after return.
         // We add --skip-generate to speed up the push if schema is already compiled.
         const child = spawn(prismaPath, ['db', 'push', '--accept-data-loss', '--skip-generate'], {
-            env: { ...process.env, DATABASE_URL: dbUrl, HOME: '/tmp' },
+            env: { ...process.env, DATABASE_URL: dbUrl, HOME: os.tmpdir() },
             cwd: process.cwd(),
             detached: true,
-            stdio: 'pipe'
+            stdio: 'pipe',
+            shell: true
         });
 
         // Capture output

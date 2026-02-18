@@ -27,7 +27,7 @@ export async function logAudit(data: {
     try {
         // Skip logging if Database is not configured (Setup Mode)
         if (!process.env.DATABASE_URL) {
-            console.log('[Audit] Skipped log (DB not configured):', data.action);
+
             return;
         }
 
@@ -97,16 +97,16 @@ export async function getAuditLogs({
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
 
     // Debug Access
-    console.log('[Audit] Checking access for:', session.user.id);
+
 
     let ctx;
     ctx = await getUserAccessContext(session.user.id);
 
-    console.log('[Audit] Context:', JSON.stringify(ctx, null, 2));
+
 
     // Check for 'AUDIT' permission or Admin status
-    if (!ctx.isAdmin && !canAccess(ctx, null, null, 'AUDIT')) {
-        console.error('[Audit] Access Denied');
+    if (ctx.role !== 'ADMIN' && !canAccess(ctx, null, null, 'AUDIT')) {
+
         return { error: 'Unauthorized: Insufficient permissions to view Audit Logs' };
     }
 
@@ -114,7 +114,7 @@ export async function getAuditLogs({
     const where: any = {};
 
     // Scope Restriction for Non-Admins
-    if (!ctx.isAdmin) {
+    if (ctx.role !== 'ADMIN') {
         const credFilter: any = {};
         // If not '*', restrict to allowed list. If list is empty, effectively blocks access (in: []).
         if (!ctx.allowedCategories.includes('*')) {

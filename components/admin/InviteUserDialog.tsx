@@ -13,7 +13,7 @@ import {
 import { Plus } from 'lucide-react';
 import InviteUserForm from '@/components/admin/InviteUserForm';
 
-export default function InviteUserDialog({ groups, action }: { groups: any[], action: any }) {
+export default function InviteUserDialog({ groups, credentials, action }: { groups: any[], credentials: any[], action: any }) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -32,7 +32,7 @@ export default function InviteUserDialog({ groups, action }: { groups: any[], ac
                     </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
-                    <InviteUserForm groups={groups} action={action} />
+                    <InviteUserForm groups={groups} credentials={credentials} action={action} />
                 </div>
             </DialogContent>
         </Dialog>

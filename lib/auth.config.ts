@@ -24,6 +24,11 @@ export const authConfig = {
                 return false;
             }
 
+            // Force External Users to /credentials if they try to access /dashboard
+            if (isLoggedIn && (auth.user as any)?.isExternal && nextUrl.pathname.startsWith('/dashboard')) {
+                return Response.redirect(new URL('/credentials', nextUrl));
+            }
+
             if (isProtected) {
                 if (isLoggedIn) {
 
@@ -37,6 +42,10 @@ export const authConfig = {
 
             // Redirect logged-in users away from login page
             if (isLoggedIn && nextUrl.pathname.startsWith('/login')) {
+                const isExternal = (auth?.user as any)?.isExternal;
+                if (isExternal) {
+                    return Response.redirect(new URL('/credentials', nextUrl));
+                }
                 return Response.redirect(new URL('/dashboard', nextUrl));
             }
 
@@ -47,7 +56,43 @@ export const authConfig = {
                 token.role = (user as any).role;
                 token.id = (user as any).id;
                 token.twoFactorEnabled = (user as any).twoFactorEnabled;
+                token.isExternal = (user as any).isExternal;
+                token.accessExpiresAt = (user as any).accessExpiresAt || null;
+                token.vendorName = (user as any).vendorName || null;
+                token.externalAccessType = (user as any).externalAccessType || null;
             }
+
+            // DB-specific enrichment (refreshing state) - helps with middleware consistency
+            if (token?.id) {
+                try {
+                    const { prisma } = await import('@/lib/prisma');
+                    const dbUser = await prisma.user.findUnique({
+                        where: { id: token.id as string },
+                        select: {
+                            id: true,
+                            twoFactorEnabled: true,
+                            status: true,
+                            isExternal: true,
+                            externalAccessType: true,
+                            accessExpiresAt: true,
+                            vendorName: true,
+                            role: true,
+                        },
+                    }) as any;
+
+                    if (dbUser && dbUser.status === 'ACTIVE') {
+                        token.twoFactorEnabled = dbUser.twoFactorEnabled;
+                        token.isExternal = dbUser.isExternal;
+                        token.externalAccessType = dbUser.externalAccessType;
+                        token.accessExpiresAt = dbUser.accessExpiresAt?.toISOString() || null;
+                        token.vendorName = dbUser.vendorName;
+                        token.role = dbUser.role;
+                    }
+                } catch (e) {
+                    // DB error in middleware/edge is common, safely continue with existing token
+                }
+            }
+
             return token;
         },
         async session({ session, token }) {
@@ -56,6 +101,14 @@ export const authConfig = {
                 session.user.id = token.id as string;
                 // @ts-ignore
                 session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
+                // @ts-ignore
+                session.user.isExternal = token.isExternal as boolean;
+                // @ts-ignore
+                session.user.accessExpiresAt = token.accessExpiresAt as string | null;
+                // @ts-ignore
+                session.user.vendorName = token.vendorName as string | null;
+                // @ts-ignore
+                session.user.externalAccessType = token.externalAccessType as string | null;
             }
             return session;
         }

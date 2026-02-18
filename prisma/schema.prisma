@@ -38,6 +38,15 @@ model User {
   updatedAt     DateTime  @updatedAt
   lastLogin     DateTime? @map("last_login")
 
+  // External Vendor Sharing Fields
+  isExternal           Boolean   @default(false) @map("is_external")
+  externalAccessType   String?   @map("external_access_type") // VIEW, CREATE
+  accessExpiresAt      DateTime? @map("access_expires_at")
+  vendorName           String?   @map("vendor_name")
+  allowedCredentialIds String?   @map("allowed_credential_ids") @db.Text
+  allowedCategories    String?   @map("allowed_categories") @db.Text
+  allowedEnvironments   String?   @map("allowed_environments") @db.Text
+
   // Relations
   createdCredentials      CredentialMaster[] @relation("CreatedBy")
   modifiedCredentials     CredentialMaster[] @relation("ModifiedBy")
@@ -87,6 +96,13 @@ model Invite {
   
   targetScopedCategories    String?   @map("target_scoped_categories") @db.Text
   targetScopedEnvironments  String?   @map("target_scoped_environments") @db.Text
+
+  // External Vendor Fields
+  isExternal           Boolean   @default(false) @map("is_external")
+  externalAccessType   String?   @map("external_access_type") // VIEW, CREATE
+  accessExpiresAt      DateTime? @map("access_expires_at")
+  vendorName           String?   @map("vendor_name")
+  targetCredentialIds  String?   @map("target_credential_ids") @db.Text
 
   @@map("user_invites")
 }

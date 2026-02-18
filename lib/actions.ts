@@ -140,6 +140,11 @@ export async function registerUser(token: string, formData: FormData) {
         return { error: 'Invalid name or password (min 6 chars)' };
     }
 
+    const confirmPassword = formData.get('confirmPassword') as string;
+    if (password !== confirmPassword) {
+        return { error: 'Passwords do not match.' };
+    }
+
     try {
         await acceptInvite(token, name, password);
 

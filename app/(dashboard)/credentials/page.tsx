@@ -90,7 +90,30 @@ export default async function CredentialsPage(props: {
     });
 
     const createLink = type ? `/credentials/create?type=${type}` : '/credentials/create';
-    const canCreate = accessContext.isAdmin || canAccess(accessContext, category || null, environment || null, 'CREATE');
+
+    // Strict External Vendor Check
+    // If they are External and their type is 'VIEW', they cannot create, period.
+    // regardless of granular permissions (which might be leftover or misconfigured).
+    const isExternal = (session.user as any).isExternal;
+    const isExternalViewOnly = isExternal && (session.user as any).externalAccessType === 'VIEW';
+
+    let canCreate = false;
+
+    if (isExternalViewOnly) {
+        canCreate = false;
+    } else if (accessContext.role === 'ADMIN') {
+        canCreate = true;
+    } else {
+        if (category || environment) {
+            // Specific Context Check (User is filtering by Cat/Env)
+            canCreate = canAccess(accessContext, category || null, environment || null, 'CREATE');
+        } else {
+            // Generic Check: Does the user have CREATE permission for ANY category/env?
+            canCreate = Object.values(accessContext.permissions).some(envMap =>
+                Object.values(envMap).some(perms => perms.has('CREATE'))
+            );
+        }
+    }
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4">
@@ -153,7 +176,7 @@ export default async function CredentialsPage(props: {
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {credentials.map((cred: any) => {
-                                const hasReadPerm = accessContext.isAdmin || cred.createdById === session.user?.id || canAccess(accessContext, cred.category, cred.environment, 'READ');
+                                const hasReadPerm = accessContext.role === 'ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, cred.category, cred.environment, 'READ', cred.id);
 
                                 return (
                                     <tr key={cred.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">

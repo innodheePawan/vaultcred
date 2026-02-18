@@ -1,9 +1,10 @@
-import { getUsersAndInvites, getAllGroups, inviteUser } from '@/lib/actions/admin';
+import { getUsersAndInvites, getAllGroups, inviteUser, getAllCredentialsSummary } from '@/lib/actions/admin';
 import UserTable from '@/components/admin/UserTable';
 
 export default async function UserManagementPage() {
     const { users, invites, isSystemAdmin, canInvite } = await getUsersAndInvites();
     const groups = await getAllGroups();
+    const credentials = await getAllCredentialsSummary();
 
     return (
         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -22,6 +23,7 @@ export default async function UserManagementPage() {
                 users={users}
                 invites={invites}
                 groups={groups}
+                credentials={credentials}
                 inviteUserAction={inviteUser}
                 isSystemAdmin={isSystemAdmin}
                 canInvite={canInvite}

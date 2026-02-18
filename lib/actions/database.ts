@@ -66,20 +66,46 @@ export async function checkDatabaseDrift() {
     }
 
     const { exec } = await import('child_process');
+    const path = await import('path');
     const util = await import('util');
     const execPromise = util.promisify(exec);
 
     try {
-        // --exit-code returns 1 if there is drift
-        await execPromise('npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --exit-code');
+        const schemaPath = path.resolve(process.cwd(), 'prisma/schema.prisma');
+        // direction: from DB to Schema. If Schema is ahead, it will show "Add Column"
+        const cmd = `npx prisma migrate diff --from-schema-datasource "${schemaPath}" --to-schema-datamodel "${schemaPath}" --exit-code`;
+
+        await execPromise(cmd, { env: { ...process.env } });
         return { drift: false };
     } catch (error: any) {
-        // If it throws, it usually means exit code 1 (drift) or actual command error
-        if (error.code === 1) {
+        // Prisma migrate diff --exit-code returns:
+        // 0: No changes
+        // 1: Error
+        // 2: Drift detected (sync required)
+
+        const stdout = error.stdout || "";
+        const stderr = error.stderr || "";
+        const message = error.message || "";
+        const combinedOutput = `${stdout}\n${stderr}\n${message}`;
+
+        console.log(`[Drift Check] Code: ${error.code}`);
+
+        // Code 2 is the official Prisma exit code for "Drift Detected"
+        if (error.code === 2) {
+            console.log("[Drift Check] Official drift detected (Code 2).");
             return { drift: true };
         }
-        console.error("Drift check failed:", error);
-        return { drift: false, error: error.message };
+
+        // Fallback: If it exited with Code 1 but still outputted drift info
+        if (combinedOutput.includes('[*] Changed the') || combinedOutput.includes('[+] Added')) {
+            console.log("[Drift Check] Drift detected in output strings despite error.");
+            return { drift: true, error: "Drift detected (environment error encountered).", code: error.code };
+        }
+
+        // Real errors (Code 1 or other system errors)
+        const errMsg = stderr || message || "Unknown error during drift check";
+        console.error("[Drift Check] Real Error:", errMsg);
+        return { drift: false, error: errMsg, code: error.code };
     }
 }
 

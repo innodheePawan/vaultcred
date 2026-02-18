@@ -21,6 +21,10 @@ declare module "next-auth" {
             name?: string | null;
             role: string;
             twoFactorEnabled: boolean;
+            isExternal: boolean;
+            accessExpiresAt: string | null;
+            vendorName: string | null;
+            externalAccessType: string | null;
         }
     }
 }
@@ -30,6 +34,10 @@ declare module "@auth/core/jwt" {
         role: string;
         id: string;
         twoFactorEnabled: boolean;
+        isExternal: boolean;
+        accessExpiresAt: string | null;
+        vendorName: string | null;
+        externalAccessType: string | null;
     }
 }
 
@@ -42,7 +50,7 @@ async function getUser(email: string): Promise<User | null> {
         });
         return user;
     } catch (error) {
-        console.log('Failed to fetch user from DB:', error);
+
         return null;
     }
 }
@@ -58,10 +66,11 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                 if (parsedCredentials.success) {
                     const { email, password } = parsedCredentials.data;
+
                     const user = await getUser(email);
 
                     if (!user) {
-                        console.log('[Auth] No user found');
+
                         await logLoginActivity({
                             email,
                             outcome: 'FAILURE',
@@ -73,8 +82,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                         return null;
                     }
 
+
+
                     if (user.status !== 'ACTIVE') {
-                        console.log(`[Auth] Blocked login for inactive user: ${email}`);
+
                         await logLoginActivity({
                             email,
                             outcome: 'BLOCKED',
@@ -87,11 +98,13 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     }
 
                     if (!user.passwordHash) {
+
                         return null;
                     }
 
                     const passwordsMatch = await verifyPassword(password, user.passwordHash);
                     if (!passwordsMatch) {
+
                         await logLoginActivity({
                             email,
                             outcome: 'FAILURE',
@@ -102,6 +115,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                         });
                         return null;
                     }
+
+
 
                     // 2FA Verification
                     // @ts-ignore - Prisma types may be stale
@@ -144,7 +159,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                                 return null;
                             }
                         } catch (error) {
-                            console.error('[Auth] 2FA Verify Error:', error);
+
                             return null;
                         }
                     }
@@ -162,6 +177,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                         ...user,
                         // @ts-ignore
                         twoFactorEnabled: user.twoFactorEnabled,
+                        // @ts-ignore
+                        isExternal: user.isExternal,
+                        // @ts-ignore
+                        accessExpiresAt: user.accessExpiresAt?.toISOString() || null,
+                        // @ts-ignore
+                        vendorName: user.vendorName,
+                        // @ts-ignore
+                        externalAccessType: user.externalAccessType,
                     };
                 }
 
@@ -170,57 +193,30 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         }),
     ],
     callbacks: {
-        async jwt({ token, user }) {
-            if (user) {
-                token.role = (user as User).role;
-                token.id = (user as User).id;
-                token.twoFactorEnabled = (user as any).twoFactorEnabled;
-            } else if (token.id) {
-                // Refresh twoFactorEnabled from DB on every token refresh
-                // so that enabling/disabling 2FA takes effect immediately
-                try {
-                    const dbUser = await prisma.user.findUnique({
-                        where: { id: token.id as string },
-                        select: { twoFactorEnabled: true },
-                    });
-
-                    // GHOST SESSION PROTECTION:
-                    // If user was deleted from DB but session persists in cookie
-                    if (!dbUser) {
-                        return null as any;
-                    }
-
-                    token.twoFactorEnabled = dbUser.twoFactorEnabled;
-                } catch (e) {
-                    // If DB is unavailable, keep existing token value
-                }
+        async jwt({ token, user, trigger }) {
+            // Use the shared JWT logic from authConfig which handles DB refresh
+            if (authConfig.callbacks?.jwt) {
+                token = await authConfig.callbacks.jwt({ token, user, trigger } as any);
             }
             return token;
         },
         async session({ session, token }) {
-            if (token && session.user) {
-                session.user.role = token.role as string;
-                session.user.id = token.id as string;
-                session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
+            // Apply common session enrichment from authConfig
+            if (authConfig.callbacks?.session) {
+                session = await (authConfig.callbacks.session as any)({ session, token });
             }
             return session;
         },
         async redirect({ url, baseUrl }) {
+            // Use the dynamic redirect logic
             const { getBaseUrl } = await import("@/lib/utils/url");
             const dynamicBaseUrl = await getBaseUrl();
-
-            // Allow relative paths
             if (url.startsWith("/")) return `${dynamicBaseUrl}${url}`;
-
-            // Allow redirects to the same origin
             try {
                 const urlObj = new URL(url);
                 const baseUrlObj = new URL(dynamicBaseUrl);
                 if (urlObj.origin === baseUrlObj.origin) return url;
-            } catch (e) {
-                // If invalid URL, fallback
-            }
-
+            } catch (e) { }
             return dynamicBaseUrl;
         }
     },

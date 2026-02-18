@@ -2,36 +2,33 @@ import { prisma } from '@/lib/prisma';
 
 export type Permission = 'READ' | 'EDIT' | 'CREATE' | 'DOWNLOAD' | 'ADMIN' | 'AUDIT';
 
-export type UserAccessContext = {
-    isAdmin: boolean;
-    allowedCategories: string[]; // '*' for all
-    allowedEnvironments: string[]; // '*' for all
+export interface UserAccessContext {
+    userId: string;
+    role: string;
+    allowedCategories: string[];
+    allowedEnvironments: string[];
     // Map of Category -> Environment -> PermissionSet
     permissions: Record<string, Record<string, Set<Permission>>>;
-};
+    allowedCredentialIds: string[];
+    isExternal: boolean;
+}
 
 /**
  * Fetches and aggregates all permissions for a user based on their User Groups and Access Groups.
- * Returns a context object optimized for checking access.
  */
 export async function getUserAccessContext(userId: string): Promise<UserAccessContext> {
-    // Setup Admin now exists in DB, no mock handling needed.
-
-    let user = null;
-    try {
-        user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: {
-                userGroups: {
-                    include: {
-                        group: {
-                            include: {
-                                access: {
-                                    include: {
-                                        accessGroup: {
-                                            include: {
-                                                policies: true
-                                            }
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+            userGroups: {
+                include: {
+                    group: {
+                        include: {
+                            access: {
+                                include: {
+                                    accessGroup: {
+                                        include: {
+                                            policies: true
                                         }
                                     }
                                 }
@@ -40,43 +37,47 @@ export async function getUserAccessContext(userId: string): Promise<UserAccessCo
                     }
                 }
             }
-        });
-    } catch (error) {
-        console.error("Failed to fetch user permissions (DB Error):", error);
-        // Fallback: Non-admin, empty permissions. Allows UI to render (safety net)
-        return {
-            isAdmin: false,
-            allowedCategories: [],
-            allowedEnvironments: [],
-            permissions: {}
-        };
-    }
+        }
+    });
 
     if (!user) {
-        console.warn(`[Permissions] User ${userId} not found in DB. Returning guest context.`);
         return {
-            isAdmin: false,
+            userId: userId,
+            role: 'GUEST',
             allowedCategories: [],
             allowedEnvironments: [],
-            permissions: {}
+            permissions: {},
+            allowedCredentialIds: [],
+            isExternal: false
         };
     }
 
     if (user.role === 'ADMIN') {
         return {
-            isAdmin: true,
+            userId: user.id,
+            role: 'ADMIN',
             allowedCategories: ['*'],
             allowedEnvironments: ['*'],
-            permissions: {} // Admins bypass detailed checks
+            permissions: {}, // Admins bypass detailed checks
+            allowedCredentialIds: ['*'], // Admin sees all
+            isExternal: false
         };
     }
 
     const context: UserAccessContext = {
-        isAdmin: false,
+        userId: user.id,
+        role: user.role,
         allowedCategories: [],
         allowedEnvironments: [],
-        permissions: {}
+        permissions: {},
+        allowedCredentialIds: (user as any).allowedCredentialIds ? (user as any).allowedCredentialIds.split(',').filter(Boolean) : [],
+        isExternal: (user as any).isExternal || false
     };
+
+    const isExternal = (user as any).isExternal;
+    const externalType = (user as any).externalAccessType; // VIEW, CREATE
+
+
 
     // Helper: Add permission to the map
     const addPermission = (category: string, env: string, perm: string) => {
@@ -93,21 +94,22 @@ export async function getUserAccessContext(userId: string): Promise<UserAccessCo
                 const policyEnv = policy.environment || '*';
 
                 // Get Scopes from Mapping
-                const scopeCats = groupMapping.scopedCategories ? groupMapping.scopedCategories.split(',') : ['*'];
-                const scopeEnvs = groupMapping.scopedEnvironments ? groupMapping.scopedEnvironments.split(',') : ['*'];
+                let scopeCats = groupMapping.scopedCategories ? groupMapping.scopedCategories.split(',').filter(Boolean) : (isExternal ? [] : ['*']);
+                let scopeEnvs = groupMapping.scopedEnvironments ? groupMapping.scopedEnvironments.split(',').filter(Boolean) : (isExternal ? [] : ['*']);
 
-                // Logic: Intersection of Policy & Scope.
-                // If Policy is ALL ('*'), effective access is the SCOPE.
-                // If Policy is Specific (e.g. 'App'), and Scope is ALL ('*'), effective is 'App'.
-                // If Policy is Specific ('App'), and Scope is Specific ('App'), effective is 'App'.
-                // If Policy is 'App' and Scope is 'Infra', NO MATCH -> No Permission granted.
+                // SPECIAL OVERRIDE for External: 
+                // If they have a Group but NO direct scopes (Category/Env), we treat them as having '*' scope 
+                // if they are NOT strictly scoped (legacy or wide access).
+                if (isExternal && scopeCats.length === 0 && scopeEnvs.length === 0) {
+                    scopeCats = ['*'];
+                    scopeEnvs = ['*'];
+                }
 
-                // Helper to check intersection
                 const intersect = (pol: string, scopes: string[]) => {
-                    if (scopes.includes('*')) return pol; // Scope allows all, so Policy dictates limit.
-                    if (pol === '*') return scopes; // Policy allows all, so Scopes dictate limit.
-                    if (scopes.includes(pol)) return pol; // Overlap found.
-                    return null; // No overlap.
+                    if (scopes.includes('*')) return pol;
+                    if (pol === '*') return scopes;
+                    if (scopes.includes(pol)) return pol;
+                    return null;
                 };
 
                 const effectiveCat = intersect(policyCat, scopeCats);
@@ -119,9 +121,20 @@ export async function getUserAccessContext(userId: string): Promise<UserAccessCo
 
                     for (const c of finalCats) {
                         for (const e of finalEnvs) {
-                            addPermission(c, e, policy.permission);
+                            let permToGrant = policy.permission;
 
-                            // Add to allowed lists (Used for UI filters/dropdowns?)
+                            // Enforce External Type Limits
+                            if (isExternal) {
+                                if (externalType === 'VIEW' && !['READ', 'DOWNLOAD'].includes(permToGrant)) {
+                                    continue;
+                                }
+                                if (externalType === 'CREATE' && !['READ', 'DOWNLOAD', 'CREATE'].includes(permToGrant)) {
+                                    continue;
+                                }
+                            }
+
+                            addPermission(c, e, permToGrant);
+
                             if (c === '*' && !context.allowedCategories.includes('*')) context.allowedCategories.push('*');
                             else if (c !== '*' && !context.allowedCategories.includes(c)) context.allowedCategories.push(c);
 
@@ -134,6 +147,27 @@ export async function getUserAccessContext(userId: string): Promise<UserAccessCo
         }
     }
 
+    // SPECIAL: Inject direct Creation Scopes for External Vendors (if no matching group policies)
+    if (isExternal && externalType === 'CREATE') {
+        const directCats = (user as any).allowedCategories ? (user as any).allowedCategories.split(',').filter(Boolean) : [];
+        const directEnvs = (user as any).allowedEnvironments ? (user as any).allowedEnvironments.split(',').filter(Boolean) : [];
+
+
+
+        for (const cat of directCats) {
+            for (const env of directEnvs) {
+                // External creates get 'CREATE' and 'READ' on their scope
+                addPermission(cat, env, 'CREATE');
+                addPermission(cat, env, 'READ');
+
+                if (!context.allowedCategories.includes(cat)) context.allowedCategories.push(cat);
+                if (!context.allowedEnvironments.includes(env)) context.allowedEnvironments.push(env);
+            }
+        }
+    }
+
+
+
     return context;
 }
 
@@ -144,30 +178,41 @@ export function canAccess(
     context: UserAccessContext,
     targetCategory: string | null,
     targetEnvironment: string | null,
-    requiredPermission: Permission
+    requiredPermission: Permission,
+    credentialId?: string
 ): boolean {
-    if (context.isAdmin) return true;
+    if (context.role === 'ADMIN') return true;
 
-    // Use default if null
+    // Direct Credential Check (Granular Sharing)
+    if (credentialId && context.allowedCredentialIds.includes(credentialId)) {
+        // External vendors: STRICTLY READ-ONLY for shared items.
+        // Even if their "Access Type" is CREATE, they cannot edit/delete shared specific items.
+        // They can only edit/delete items they created (checked via isOwner in caller).
+        if (context.isExternal) {
+            // Allow VIEW, READ, DOWNLOAD. Deny EDIT, DELETE, CREATE (on this specific item logic).
+            if (['READ', 'DOWNLOAD'].includes(requiredPermission)) {
+                return true;
+            }
+            return false;
+        }
+
+        // Internal users: Implicitly allow access if ID is in allowed list.
+        // TODO: Refine this for Internal if we want granular ID assignment to imply specific permissions.
+        // For now, assuming granular assignment implies generalized access.
+        return true;
+    }
+
     const cat = targetCategory || 'Uncategorized';
     const env = targetEnvironment || 'General';
 
-    // Helper to check precise permission in a set
     const hasPerm = (set: Set<Permission> | undefined) => {
         if (!set) return false;
         return set.has(requiredPermission) || set.has('ADMIN');
     };
 
-    // Check specific specific
     if (context.permissions[cat]?.[env] && hasPerm(context.permissions[cat][env])) return true;
-
-    // Check specific category, ALL env
     if (context.permissions[cat]?.['*'] && hasPerm(context.permissions[cat]['*'])) return true;
-
-    // Check ALL category, specific env
     if (context.permissions['*']?.[env] && hasPerm(context.permissions['*'][env])) return true;
-
-    // Check ALL category, ALL env
     if (context.permissions['*']?.['*'] && hasPerm(context.permissions['*']['*'])) return true;
 
     return false;

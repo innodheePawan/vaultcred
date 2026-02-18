@@ -99,6 +99,23 @@ export default function RegisterInviteForm({ token, email }: { token: string, em
                 <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
             </div>
 
+            <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Confirm Password
+                </label>
+                <div className="mt-1">
+                    <input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        autoComplete="new-password"
+                        required
+                        minLength={6}
+                        className="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2"
+                    />
+                </div>
+            </div>
+
             {state?.error && (
                 <div className="rounded-md bg-red-50 p-4">
                     <div className="flex">

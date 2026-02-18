@@ -47,6 +47,7 @@ export default async function EditCredentialPage(props: { params: Promise<{ id: 
                     isEdit={true}
                     allowedCategories={ctx.allowedCategories}
                     allowedEnvironments={ctx.allowedEnvironments}
+                    isExternal={ctx.isExternal}
                 />
             </div>
         </div>

@@ -15,9 +15,17 @@ type CredentialFormProps = {
     isEdit?: boolean;
     allowedCategories?: string[]; // passed from server
     allowedEnvironments?: string[]; // passed from server
+    isExternal?: boolean; // New prop
 };
 
-export default function CredentialForm({ action, initialData, isEdit = false, allowedCategories = ['*'], allowedEnvironments = ['*'] }: CredentialFormProps) {
+export default function CredentialForm({
+    action,
+    initialData,
+    isEdit = false,
+    allowedCategories = ['*'],
+    allowedEnvironments = ['*'],
+    isExternal = false
+}: CredentialFormProps) {
     const [type, setType] = useState(initialData?.type || 'PASSWORD');
     const [isPersonal, setIsPersonal] = useState(initialData?.isPersonal || false);
 
@@ -142,14 +150,22 @@ export default function CredentialForm({ action, initialData, isEdit = false, al
                         id="category"
                         name="category"
                         defaultValue={initialData?.category || filteredCategories[0]}
-                        disabled={isPersonal || filteredCategories.length === 0}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                        // Don't disable if it's the only option, just let it be. Or if disabled, we MUST pass hidden.
+                        // Better UX: If 1 option, just show it. If we disable, we lose the value in FormData.
+                        // Strategy: Keep enabled but if only 1, user can't change it anyway.
+                        // Actually, if we want to enforce it visually as locked, we can disable but add hidden.
+                        disabled={isPersonal || filteredCategories.length <= 1}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-80"
                     >
-                        {/* If filtered list is empty (and not personal), maybe show a placeholder? */}
                         {filteredCategories.map(c => (
                             <option key={c} value={c}>{c}</option>
                         ))}
                     </select>
+                    {/* HIDDEN INPUT IF DISABLED (Only 1 option and NOT Personal) */}
+                    {!isPersonal && filteredCategories.length <= 1 && filteredCategories[0] && (
+                        <input type="hidden" name="category" value={filteredCategories[0]} />
+                    )}
+
                     {filteredCategories.length === 0 && !isPersonal && (
                         <p className="text-xs text-red-500 mt-1">No allowed categories.</p>
                     )}
@@ -163,13 +179,18 @@ export default function CredentialForm({ action, initialData, isEdit = false, al
                         id="environment"
                         name="environment"
                         defaultValue={initialData?.environment || filteredEnvironments[0]}
-                        disabled={isPersonal || filteredEnvironments.length === 0}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                        disabled={isPersonal || filteredEnvironments.length <= 1}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-80"
                     >
                         {filteredEnvironments.map(e => (
                             <option key={e} value={e}>{e === 'QA' ? 'QA / Staging' : (e === 'Dev' ? 'Development' : 'Production')}</option>
                         ))}
                     </select>
+                    {/* HIDDEN INPUT IF DISABLED */}
+                    {!isPersonal && filteredEnvironments.length <= 1 && filteredEnvironments[0] && (
+                        <input type="hidden" name="environment" value={filteredEnvironments[0]} />
+                    )}
+
                     {filteredEnvironments.length === 0 && !isPersonal && (
                         <p className="text-xs text-red-500 mt-1">No allowed environments.</p>
                     )}
@@ -188,30 +209,32 @@ export default function CredentialForm({ action, initialData, isEdit = false, al
                     />
                 </div>
 
-                <div className="md:col-span-2 flex items-center space-x-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
-                    <div className="flex items-center h-5">
-                        <input
-                            id="isPersonal"
-                            name="isPersonal"
-                            type="checkbox"
-                            value="true"
-                            checked={isPersonal}
-                            onChange={(e) => setIsPersonal(e.target.checked)}
-                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                        />
+                {!isExternal && (
+                    <div className="md:col-span-2 flex items-center space-x-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
+                        <div className="flex items-center h-5">
+                            <input
+                                id="isPersonal"
+                                name="isPersonal"
+                                type="checkbox"
+                                value="true"
+                                checked={isPersonal}
+                                onChange={(e) => setIsPersonal(e.target.checked)}
+                                className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                            />
+                        </div>
+                        <div className="ml-3">
+                            <label htmlFor="isPersonal" className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                Personal Credential
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                    Private
+                                </span>
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                If checked, this credential will be <strong>hidden from everyone else</strong>, including Admins. Only you can access it.
+                            </p>
+                        </div>
                     </div>
-                    <div className="ml-3">
-                        <label htmlFor="isPersonal" className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            Personal Credential
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                                Private
-                            </span>
-                        </label>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            If checked, this credential will be <strong>hidden from everyone else</strong>, including Admins. Only you can access it.
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6"></div>

@@ -64,7 +64,7 @@ export async function bulkImportCredentials(csvData: BulkRow[]): Promise<BulkRes
 
     // Only Super Admin or Admin with full scope access
     const ctx = await getUserAccessContext(session.user.id);
-    if (!ctx.isAdmin) {
+    if (ctx.role !== 'ADMIN') {
         return { total: 0, success: 0, failed: 0, skipped: 0, errors: [{ row: 0, name: '', error: 'Only Super Admin users can perform bulk imports.' }] };
     }
 

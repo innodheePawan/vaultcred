@@ -44,9 +44,9 @@ export default async function DashboardLayout({
         try {
             const ctx = await getUserAccessContext(session.user.id);
             // Settings: Strictly Super Admin
-            showSettings = ctx.isAdmin;
+            showSettings = ctx.role === 'ADMIN';
             // Admin Menu: Super Admin OR Scoped Admin OR Auditor
-            showAdminMenu = ctx.isAdmin || canAccess(ctx, null, null, 'ADMIN') || canAccess(ctx, null, null, 'AUDIT');
+            showAdminMenu = ctx.role === 'ADMIN' || canAccess(ctx, null, null, 'ADMIN') || canAccess(ctx, null, null, 'AUDIT');
         } catch (e) {
             // User might be invalid or DB issue
             console.error("Failed to load access context:", e);

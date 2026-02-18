@@ -13,7 +13,12 @@ export async function createInvite(
     targetGroupIds: string[],
     role: string = 'USER',
     scopedCategories: string | null = null,
-    scopedEnvironments: string | null = null
+    scopedEnvironments: string | null = null,
+    isExternal: boolean = false,
+    externalAccessType: string | null = null,
+    accessExpiresAt: Date | null = null,
+    vendorName: string | null = null,
+    targetCredentialIds: string[] = []
 ) {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -50,8 +55,13 @@ export async function createInvite(
             // @ts-ignore
             targetScopedCategories: scopedCategories,
             // @ts-ignore
-            targetScopedEnvironments: scopedEnvironments
-        }
+            targetScopedEnvironments: scopedEnvironments,
+            isExternal,
+            externalAccessType,
+            accessExpiresAt,
+            vendorName,
+            targetCredentialIds: targetCredentialIds.length > 0 ? targetCredentialIds.join(',') : null
+        } as any
     });
 
     // Send invitation email
@@ -108,7 +118,14 @@ export async function acceptInvite(token: string, name: string, passwordPlain: s
                 status: 'ACTIVE',
                 role: invite.role,
                 inviteToken: token, // Link for audit
-            }
+                isExternal: (invite as any).isExternal,
+                externalAccessType: (invite as any).externalAccessType,
+                accessExpiresAt: (invite as any).accessExpiresAt,
+                vendorName: (invite as any).vendorName,
+                allowedCredentialIds: (invite as any).targetCredentialIds,
+                allowedCategories: (invite as any).targetScopedCategories,
+                allowedEnvironments: (invite as any).targetScopedEnvironments
+            } as any
         });
 
         // 2. Mark Invite as Accepted

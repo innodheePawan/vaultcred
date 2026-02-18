@@ -67,12 +67,30 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         AND: []
     };
 
-    if (!accessContext.isAdmin) {
-        if (!accessContext.allowedCategories.includes('*')) {
-            sharedWhere.AND.push({ category: { in: accessContext.allowedCategories } });
+    if (accessContext.role !== 'ADMIN') {
+        const orConditions: any[] = [];
+
+        // Scope based
+        if (!accessContext.allowedCategories.includes('*') || !accessContext.allowedEnvironments.includes('*')) {
+            const scope: any = {};
+            if (!accessContext.allowedCategories.includes('*')) scope.category = { in: accessContext.allowedCategories };
+            if (!accessContext.allowedEnvironments.includes('*')) scope.environment = { in: accessContext.allowedEnvironments };
+            orConditions.push(scope);
+        } else if (accessContext.allowedCategories.includes('*') && accessContext.allowedEnvironments.includes('*')) {
+            // If they have all categories/environments, no extra filter needed for scope
+            // but we'll handle below
         }
-        if (!accessContext.allowedEnvironments.includes('*')) {
-            sharedWhere.AND.push({ environment: { in: accessContext.allowedEnvironments } });
+
+        // Granular based
+        if (accessContext.allowedCredentialIds.length > 0) {
+            orConditions.push({ id: { in: accessContext.allowedCredentialIds } });
+        }
+
+        if (orConditions.length > 0) {
+            sharedWhere.OR = orConditions;
+        } else if (!accessContext.allowedCategories.includes('*') || !accessContext.allowedEnvironments.includes('*')) {
+            // No direct creds and no global scope - restricted
+            sharedWhere.OR = [{ category: 'none' }]; // effectively none
         }
     }
 

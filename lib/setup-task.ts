@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import os from 'os';
 
 export interface SetupTaskStatus {
     taskId: string;
@@ -10,7 +11,7 @@ export interface SetupTaskStatus {
     endTime?: string;
 }
 
-const STATUS_FILE = path.join('/tmp', 'setup_progress.json');
+const STATUS_FILE = path.join(os.tmpdir(), 'vaultcred_setup_progress.json');
 
 export async function getTaskStatus(): Promise<SetupTaskStatus> {
     try {
