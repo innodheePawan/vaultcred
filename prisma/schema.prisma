@@ -50,6 +50,7 @@ model User {
   // Relations
   createdCredentials      CredentialMaster[] @relation("CreatedBy")
   modifiedCredentials     CredentialMaster[] @relation("ModifiedBy")
+  createdOneTimeSecrets   OneTimeSecret[]    @relation("CreatedOneTimeSecret")
   auditLogs               AuditLog[]         @relation("PerformedBy")
   invitesSent             Invite[]           @relation("InvitedBy")
   
@@ -447,4 +448,26 @@ model LoginLogArchive {
   @@index([archiveBatchId])
   @@index([email])
   @@map("security_login_logs_archive")
+}
+
+model OneTimeSecret {
+  id            String   @id @default(uuid()) @map("secret_id")
+  name          String?  // Optional reference name
+  secretData    String   @map("secret_data") @db.Text // Encrypted
+  token         String   @unique // The secure access token
+
+  expiresAt     DateTime @map("expires_at")
+  maxViews      Int      @map("max_views")
+  currentViews  Int      @default(0) @map("current_views")
+
+  status        String   @default("ACTIVE") // ACTIVE, REVOKED, EXPIRED
+
+  sharedVia     String   @map("shared_via") // LINK, EMAIL
+  recipientEmail String? @map("recipient_email")
+
+  createdById   String   @map("created_by")
+  createdBy     User     @relation("CreatedOneTimeSecret", fields: [createdById], references: [id])
+  createdAt     DateTime @default(now()) @map("created_on")
+
+  @@map("one_time_secrets")
 }

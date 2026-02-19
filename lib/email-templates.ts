@@ -213,3 +213,79 @@ export function getTwoFactorReconfigureEmailTemplate(props: TwoFactorReconfigure
 </html>
     `.trim();
 }
+
+interface OneTimeSecretTemplateProps {
+    appName: string;
+    logoUrl: string | null;
+    secretLink: string;
+    email: string; // Recipient
+    senderName?: string;
+    message?: string;
+    expiresAt: string;
+    viewLimit: number;
+}
+
+export function getOneTimeSecretEmailTemplate(props: OneTimeSecretTemplateProps): string {
+    const { appName, logoUrl, secretLink, email, senderName, message, expiresAt, viewLimit } = props;
+
+    const senderDisplay = senderName ? `<strong>${senderName}</strong>` : 'A user';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>${getBaseStyles()}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                ${getLogoHtml(logoUrl, appName)}
+            </div>
+            
+            <h2 style="color: #111827; margin-top: 0;">Secure Secret Shared</h2>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                ${senderDisplay} has shared a secure One-Time Secret with you.
+            </p>
+
+            ${message ? `
+            <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 16px 0; font-style: italic; color: #4B5563;">
+                "${message}"
+            </div>
+            ` : ''}
+            
+            <p style="color: #374151; line-height: 1.6;">
+                Click the button below to view the secret. 
+            </p>
+            
+            <div style="text-align: center; padding: 24px 0;">
+                <a href="${secretLink}" class="btn">View Secret</a>
+            </div>
+            
+            <p class="muted">
+                If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            <p style="word-break: break-all; color: #4F46E5; font-size: 13px;">
+                ${secretLink}
+            </p>
+            
+            <div style="text-align: left; background-color: #FEF3C7; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                <p style="color: #92400E; margin: 0; font-size: 14px;">
+                    ⚠️ <strong>Security Notice:</strong> 
+                    This link will expire on <strong>${expiresAt}</strong> or after <strong>${viewLimit} view(s)</strong>, whichever comes first.
+                </p>
+            </div>
+            
+            <div class="footer">
+                <p>This is an automated message. Please do not reply.</p>
+                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+}

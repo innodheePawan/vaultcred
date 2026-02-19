@@ -36,6 +36,11 @@ const MENU_ITEMS: MenuItem[] = [
         ],
     },
     {
+        title: 'One-Time Secrets',
+        href: '/one-time-secrets',
+        icon: <Lock className="w-5 h-5" />,
+    },
+    {
         title: 'Admin',
         icon: <Shield className="w-5 h-5" />,
         children: [

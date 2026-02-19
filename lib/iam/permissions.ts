@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 
-export type Permission = 'READ' | 'EDIT' | 'CREATE' | 'DOWNLOAD' | 'ADMIN' | 'AUDIT';
+export type Permission = 'READ' | 'EDIT' | 'CREATE' | 'DOWNLOAD' | 'ADMIN' | 'AUDIT' | 'CREATE_ONE_TIME';
 
 export interface UserAccessContext {
     userId: string;

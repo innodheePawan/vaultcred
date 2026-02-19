@@ -3,7 +3,7 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/crypto';
-import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate } from '@/lib/email-templates';
+import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate, getOneTimeSecretEmailTemplate } from '@/lib/email-templates';
 
 /**
  * Sends an invite activation email.
@@ -257,4 +257,42 @@ export async function sendTestEmail(toEmail: string) {
     `;
 
     return sendEmail(toEmail, `[${appName}] SMTP Test — Configuration Verified`, html);
+}
+
+/**
+ * Sends a One-Time Secret email.
+ */
+export async function sendOneTimeSecretEmail(
+    email: string,
+    token: string,
+    senderName: string,
+    message: string | undefined,
+    expiresAt: Date,
+    viewLimit: number
+) {
+    const baseUrl = await getBaseUrl();
+    const secretLink = `${baseUrl}/share/${token}`;
+
+    const settings = await prisma.systemSettings.findFirst();
+    const appName = settings?.applicationName || 'CRED Secure';
+    const logoUrl = settings?.logoUrl || null;
+
+    // formatting date
+    const formattedDate = expiresAt.toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
+
+    const html = getOneTimeSecretEmailTemplate({
+        appName,
+        logoUrl,
+        secretLink,
+        email,
+        senderName,
+        message,
+        expiresAt: formattedDate,
+        viewLimit
+    });
+
+    return sendEmail(email, `${senderName} shared a secure secret with you`, html);
 }

@@ -18,7 +18,8 @@ const authHandler = auth((req) => {
     const isReconfigure2fa = path.startsWith('/reconfigure-2fa');
     const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
     const isEnvValue_auth = path.startsWith('/env-value');
-    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa;
+    const isShare = path.startsWith('/share');
+    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa || isShare;
 
     // Auth Session
     const isLoggedIn = !!req.auth;
