@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { encrypt } from '@/lib/crypto';
 import { logAudit } from '@/lib/actions/audit';
 import { getUserAccessContext } from '@/lib/iam/permissions';
-import { join } from 'path';
+import { join, basename } from 'path';
 import { mkdir } from 'fs/promises';
 
 type BulkRow = Record<string, string>;
@@ -181,7 +181,8 @@ export async function bulkImportCredentials(csvData: BulkRow[]): Promise<BulkRes
                 } else if (type === 'FILE') {
                     const uploadDir = join(process.cwd(), 'secure_uploads');
                     await mkdir(uploadDir, { recursive: true });
-                    const filePath = join(uploadDir, `${master.id}_${row.fileName.trim()}`);
+                    const sanitizedName = basename(row.fileName.trim()).replace(/[^a-zA-Z0-9._-]/g, '_');
+                    const filePath = join(uploadDir, `${master.id}_${sanitizedName}`);
 
                     await tx.credFile.create({
                         data: {

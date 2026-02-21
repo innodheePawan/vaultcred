@@ -3,12 +3,14 @@
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/utils/password';
+import { validatePassword } from '@/lib/utils/password-policy';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { decrypt } from '@/lib/crypto';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
-import { headers } from 'next/headers';
+import { getClientIp } from '@/lib/utils/ip';
 import { logAudit } from '@/lib/actions/audit';
 import { logLoginActivity } from '@/lib/actions/login-activity';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * Request a password reset email.
@@ -17,8 +19,13 @@ import { logLoginActivity } from '@/lib/actions/login-activity';
 export async function requestPasswordReset(emailRaw: string, formData?: FormData) {
     const email = emailRaw ? emailRaw.trim().toLowerCase() : '';
     try {
-        const headersList = await headers();
-        const ip = headersList.get('x-forwarded-for') || 'unknown';
+        const ip = await getClientIp();
+
+        // IP-level rate limit: max 10 reset requests per IP per 15 min
+        const ipLimit = rateLimit(`pwd-reset-ip:${ip}`, 10, 15 * 60 * 1000);
+        if (!ipLimit.allowed) {
+            return { error: 'Too many requests. Please try again later.' };
+        }
 
         // 1. Check Security State (IP Blocks, User Locks)
         const security = await getSecurityState(email, ip);
@@ -201,8 +208,7 @@ export async function validateResetToken(token: string) {
  * Verify 2FA code during password reset flow.
  */
 export async function verifyResetTwoFactor(token: string, code: string) {
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
     try {
         // Validate token first
         const tokenResult = await validateResetToken(token);
@@ -266,8 +272,7 @@ export async function resetPassword(
     newPassword: string,
     twoFactorCode?: string
 ) {
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
     try {
         // Validate token
         const tokenResult = await validateResetToken(token);
@@ -287,9 +292,10 @@ export async function resetPassword(
             }
         }
 
-        // Validate password strength
-        if (newPassword.length < 8) {
-            return { error: 'Password must be at least 8 characters.' };
+        // Validate password strength (enterprise policy)
+        const passwordCheck = validatePassword(newPassword);
+        if (!passwordCheck.valid) {
+            return { error: passwordCheck.error };
         }
 
         // Hash and update

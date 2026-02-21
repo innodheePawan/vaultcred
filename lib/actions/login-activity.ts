@@ -27,7 +27,7 @@ export type LogActivityParams = {
 export async function logLoginActivity(params: LogActivityParams) {
     try {
         const headersList = await headers();
-        const ip = params.ipAddress || headersList.get('x-forwarded-for') || 'unknown';
+        const ip = params.ipAddress || headersList.get('x-real-ip') || headersList.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
         const ua = params.userAgent || headersList.get('user-agent') || 'unknown';
 
         // Derived Risk Level logic if not provided

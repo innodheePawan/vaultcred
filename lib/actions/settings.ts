@@ -114,6 +114,9 @@ export async function updateGeneralSettings(prevState: any, formData: FormData) 
         if (removeLogo) {
             logoUrl = null;
         } else if (logoFile && logoFile.size > 0) {
+            if (logoFile.size > 500 * 1024) {
+                return { error: 'Logo file is too large. Maximum size allowed is 500KB.' };
+            }
             // Buffer conversion
             const arrayBuffer = await logoFile.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);

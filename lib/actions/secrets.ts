@@ -25,9 +25,10 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
     const session = await auth();
     if (!session?.user) return { error: 'Unauthorized' };
 
-    // Permission check for authorized users would go here if not open to all
-    // For now assuming all logged-in users can create secrets as per requirements "Authorized Users"
-    // Ideally check for 'CREATE_ONE_TIME' permission if fully implemented in UI gate.
+    // Block External Users from creating One-Time Secrets
+    if (session.user.role === 'EXTERNAL') {
+        return { error: 'Unauthorized: External users cannot create one-time secrets.' };
+    }
 
     const { secretData, name, maxViews, ttlHours, sharedVia, recipientEmail, recipientMessage } = input;
 
@@ -80,9 +81,13 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
  */
 export async function getMySecrets() {
     const session = await auth();
-    if (!session?.user) return [];
+    if (!session?.user) return { error: 'Unauthorized' };
 
-    const isAdmin = session.user.role === 'ADMIN'; // Or check Super Admin if role distinguishes
+    if (session.user.role === 'EXTERNAL') {
+        return { error: 'Unauthorized' };
+    }
+
+    const isAdmin = session.user.role === 'ADMIN';
 
     const where = isAdmin ? {} : { createdById: session.user.id };
 

@@ -97,13 +97,10 @@ export async function getUserAccessContext(userId: string): Promise<UserAccessCo
                 let scopeCats = groupMapping.scopedCategories ? groupMapping.scopedCategories.split(',').filter(Boolean) : (isExternal ? [] : ['*']);
                 let scopeEnvs = groupMapping.scopedEnvironments ? groupMapping.scopedEnvironments.split(',').filter(Boolean) : (isExternal ? [] : ['*']);
 
-                // SPECIAL OVERRIDE for External: 
-                // If they have a Group but NO direct scopes (Category/Env), we treat them as having '*' scope 
-                // if they are NOT strictly scoped (legacy or wide access).
-                if (isExternal && scopeCats.length === 0 && scopeEnvs.length === 0) {
-                    scopeCats = ['*'];
-                    scopeEnvs = ['*'];
-                }
+                // SPECIAL OVERRIDE REMOVED: 
+                // To enforce the Principle of Least Privilege, External Vendors with no explicit
+                // scopes (Category/Environment) will strictly receive an empty scope array ([]).
+                // They will ONLY be able to access specific allowedCredentialIds explicitly shared with them.
 
                 const intersect = (pol: string, scopes: string[]) => {
                     if (scopes.includes('*')) return pol;

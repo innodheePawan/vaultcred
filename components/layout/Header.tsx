@@ -133,9 +133,11 @@ export function Header({ settings, user, publicView = false }: { settings?: any,
                                         <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
                                             <User className="h-4 w-4" /> Profile
                                         </Link>
-                                        <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
-                                            <Settings className="h-4 w-4" /> Settings
-                                        </Link>
+                                        {displayUser?.role !== 'EXTERNAL' && (
+                                            <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
+                                                <Settings className="h-4 w-4" /> Settings
+                                            </Link>
+                                        )}
                                         <button
                                             onClick={async () => {
                                                 const { logUserLogout } = await import('@/lib/actions/login-activity');

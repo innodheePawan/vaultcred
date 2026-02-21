@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/lib/utils/password';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
 import { logAudit } from '@/lib/actions/audit';
-import { headers } from 'next/headers';
+import { getClientIp } from '@/lib/utils/ip';
 import { logLoginActivity } from '@/lib/actions/login-activity';
 
 /**
@@ -23,8 +23,7 @@ export async function preLoginCheck(
         return { error: 'Email and password are required.' };
     }
 
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
 
     // 1. Check Security State (IP Blocks, User Locks, Captcha)
     const security = await getSecurityState(email, ip);

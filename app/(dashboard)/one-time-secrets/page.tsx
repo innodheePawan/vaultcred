@@ -38,6 +38,13 @@ export default function OneTimeSecretsPage() {
     const fetchSecrets = async () => {
         setLoading(true);
         const data = await getMySecrets();
+
+        // If the user is external, getMySecrets returns an error object, check for it
+        if (data && 'error' in data && data.error === 'Unauthorized') {
+            router.push('/dashboard');
+            return;
+        }
+
         // @ts-ignore
         setSecrets(data);
         setLoading(false);

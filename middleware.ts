@@ -53,7 +53,7 @@ const authHandler = auth((req) => {
 
     // 1c. External User Restricted Access (Strictly Admin/Settings)
     // External vendors can access /credentials (their new landing) and its sub-routes.
-    const restrictedBasePaths = ['/admin', '/settings'];
+    const restrictedBasePaths = ['/admin', '/settings', '/one-time-secrets'];
     const isAttemptingRestricted = restrictedBasePaths.some(p => path.startsWith(p));
 
     if (isLoggedIn && isExternal && isAttemptingRestricted) {

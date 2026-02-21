@@ -1,0 +1,13 @@
+﻿app/(dashboard)/credentials/[id]/page.tsx(72,25): error TS2322: Type 'void' is not assignable to type 'ReactNode'.
+app/(dashboard)/credentials/[id]/page.tsx(73,73): error TS18047: 'session' is possibly 'null'.
+app/(dashboard)/credentials/[id]/page.tsx(74,46): error TS18047: 'session' is possibly 'null'.
+app/(dashboard)/credentials/[id]/page.tsx(75,49): error TS18047: 'session' is possibly 'null'.
+app/(dashboard)/credentials/[id]/page.tsx(114,64): error TS18047: 'session' is possibly 'null'.
+app/(dashboard)/credentials/[id]/page.tsx(115,68): error TS18047: 'session' is possibly 'null'.
+components/admin/UserTable.tsx(322,36): error TS7006: Parameter 'open' implicitly has an 'any' type.
+lib/actions/sharing.ts(47,44): error TS2339: Property 'credentialAccess' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/actions/sharing.ts(58,22): error TS2339: Property 'credentialAccess' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/actions/sharing.ts(72,13): error TS2353: Object literal may only specify known properties, and 'performedById' does not exist in type '{ action: string; details?: string | undefined; credentialId?: string | undefined; oldValue?: string | undefined; newValue?: string | undefined; userId?: string | undefined; isPersonal?: boolean | undefined; }'.
+lib/actions/sharing.ts(96,22): error TS2339: Property 'credentialAccess' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/actions/sharing.ts(111,13): error TS2353: Object literal may only specify known properties, and 'performedById' does not exist in type '{ action: string; details?: string | undefined; credentialId?: string | undefined; oldValue?: string | undefined; newValue?: string | undefined; userId?: string | undefined; isPersonal?: boolean | undefined; }'.
+scripts/verify-secrets.ts(22,17): error TS2353: Object literal may only specify known properties, and 'password' does not exist in type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.

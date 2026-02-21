@@ -52,6 +52,10 @@ export const authConfig = {
             return true;
         },
         async jwt({ token, user }) {
+            // Server-Side Heartbeat for Session Timeout (15 minutes = 900,000 ms)
+            const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
+            const now = Date.now();
+
             if (user) {
                 token.role = (user as any).role;
                 token.id = (user as any).id;
@@ -60,6 +64,14 @@ export const authConfig = {
                 token.accessExpiresAt = (user as any).accessExpiresAt || null;
                 token.vendorName = (user as any).vendorName || null;
                 token.externalAccessType = (user as any).externalAccessType || null;
+                token.lastActivity = now; // Initialize heartbeat on login
+            } else if (token.lastActivity) {
+                // Check if session has expired due to inactivity
+                if (now - (token.lastActivity as number) > SESSION_TIMEOUT_MS) {
+                    return null; // Return null to destroy the token and force unauthenticated state
+                }
+                // Refresh heartbeat
+                token.lastActivity = now;
             }
 
             // DB-specific enrichment (refreshing state) - helps with middleware consistency

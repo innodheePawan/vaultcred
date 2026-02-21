@@ -65,17 +65,20 @@ export async function checkDatabaseDrift() {
         return { error: 'Unauthorized', drift: false };
     }
 
-    const { exec } = await import('child_process');
+    const { execFile } = await import('child_process');
     const path = await import('path');
     const util = await import('util');
-    const execPromise = util.promisify(exec);
+    const execFilePromise = util.promisify(execFile);
 
     try {
         const schemaPath = path.resolve(process.cwd(), 'prisma/schema.prisma');
-        // direction: from DB to Schema. If Schema is ahead, it will show "Add Column"
-        const cmd = `npx prisma migrate diff --from-schema-datasource "${schemaPath}" --to-schema-datamodel "${schemaPath}" --exit-code`;
-
-        await execPromise(cmd, { env: { ...process.env } });
+        // Use execFile (no shell) to prevent command injection
+        await execFilePromise('npx', [
+            'prisma', 'migrate', 'diff',
+            '--from-schema-datasource', schemaPath,
+            '--to-schema-datamodel', schemaPath,
+            '--exit-code'
+        ], { env: { ...process.env } });
         return { drift: false };
     } catch (error: any) {
         // Prisma migrate diff --exit-code returns:

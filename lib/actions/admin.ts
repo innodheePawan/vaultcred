@@ -390,6 +390,11 @@ export async function deleteUser(userId: string) {
         return { error: 'Unauthorized' };
     }
 
+    // Prevent admin from deleting their own account
+    if (userId === session.user.id) {
+        return { error: 'You cannot delete your own account.' };
+    }
+
     try {
         // Safety check: Cannot delete the last remaining Super Admin
         const user = await prisma.user.findUnique({

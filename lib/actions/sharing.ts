@@ -9,6 +9,9 @@ export async function searchUsers(query: string) {
     const session = await auth();
     if (!session?.user) return [];
 
+    // External users cannot search for internal users
+    if ((session.user as any).isExternal) return [];
+
     if (!query || query.length < 2) return [];
 
     const users = await prisma.user.findMany({
@@ -19,7 +22,8 @@ export async function searchUsers(query: string) {
             ],
             AND: [
                 { id: { not: session.user.id } },
-                { status: 'ACTIVE' }
+                { status: 'ACTIVE' },
+                { isExternal: false } // Don't expose external vendors in search results
             ]
         },
         take: 5,

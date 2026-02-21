@@ -50,9 +50,10 @@ export async function logAudit(data: {
             }
         }
 
-        // Get IP Address
+        // Get IP Address safely (prevent basic X-Forwarded-For spoofing if Behind proper proxy)
         const headersList = await headers();
-        const ip = headersList.get('x-forwarded-for') || 'unknown';
+        // x-real-ip is typically set directly by load balancers (Nginx/AWS) and is much harder to spoof
+        const ip = headersList.get('x-real-ip') || headersList.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
 
         // Create Log
         await prisma.auditLog.create({

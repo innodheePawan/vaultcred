@@ -20,6 +20,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [showManualEntry, setShowManualEntry] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const appStoreLinks = {
@@ -235,28 +236,39 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                         </div>
                     </div>
 
-                    {/* Manual Secret */}
-                    <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                            Or enter this code manually:
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <code className="flex-1 font-mono text-sm bg-white dark:bg-gray-900 px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white select-all break-all">
-                                {secret}
-                            </code>
-                            <button
-                                onClick={copySecret}
-                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                title="Copy secret"
-                            >
-                                {copied ? (
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                ) : (
-                                    <Copy className="w-5 h-5" />
-                                )}
-                            </button>
-                        </div>
+                    {/* Manual Secret — toggle-reveal for mobile users who can't scan */}
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={() => setShowManualEntry(!showManualEntry)}
+                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                        >
+                            {showManualEntry ? 'Hide manual entry code' : "Can't scan the QR code? (e.g. on mobile)"}
+                        </button>
                     </div>
+                    {showManualEntry && secret && (
+                        <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700 animate-in fade-in duration-300">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                Copy this code and paste it into your authenticator app:
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <code className="flex-1 font-mono text-sm bg-white dark:bg-gray-900 px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white select-all break-all">
+                                    {secret}
+                                </code>
+                                <button
+                                    onClick={copySecret}
+                                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    title="Copy secret"
+                                >
+                                    {copied ? (
+                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                    ) : (
+                                        <Copy className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Verification Code Input */}
                     <div>

@@ -11,7 +11,24 @@ import { hash } from 'bcryptjs';
 
 const execPromise = util.promisify(exec);
 
+/**
+ * Security Guard: Ensures setup actions are only callable during initial setup
+ * or by authenticated ADMIN users.
+ */
+async function requireSetupOrAdmin() {
+    const rawSetupMode = process.env.SETUP_MODE || process.env.NEXT_PUBLIC_SETUP_MODE || 'false';
+    const isSetupMode = String(rawSetupMode).trim().toLowerCase() === 'true';
+    if (isSetupMode) return; // Allow during initial setup wizard
+
+    const { auth } = await import('@/lib/auth');
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+        throw new Error('Unauthorized: Admin access required.');
+    }
+}
+
 export async function prepareEnvironment(formData: FormData) {
+    await requireSetupOrAdmin();
     const dbHost = formData.get('dbHost') as string;
     const dbUser = formData.get('dbUser') as string;
     const dbPassword = formData.get('dbPassword') as string;
@@ -118,6 +135,7 @@ import { updateTaskStatus, appendTaskLog, getTaskStatus, clearTaskStatus } from 
  * PHASE 2: Sync Database Schema (Asynchronous with Polling)
  */
 export async function syncDatabase() {
+    await requireSetupOrAdmin();
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
 
@@ -139,7 +157,6 @@ export async function syncDatabase() {
             cwd: process.cwd(),
             detached: true,
             stdio: 'pipe',
-            shell: true
         });
 
         // Capture output
@@ -187,6 +204,7 @@ export async function getSyncStatusAction() {
  * HELPER: Verify which tables exist in the database
  */
 export async function verifyTablesAction() {
+    await requireSetupOrAdmin();
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -210,6 +228,7 @@ export async function verifyTablesAction() {
  * PHASE 4.1: Seed Roles
  */
 export async function seedRolesAction() {
+    await requireSetupOrAdmin();
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -231,6 +250,7 @@ export async function seedRolesAction() {
  * PHASE 4.2: Seed Super Admin
  */
 export async function seedSuperAdminAction(email: string, passwordRaw: string) {
+    await requireSetupOrAdmin();
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -273,6 +293,7 @@ export async function seedSuperAdminAction(email: string, passwordRaw: string) {
  * PHASE 4.3: Seed Branding & Settings
  */
 export async function seedBrandingAction() {
+    await requireSetupOrAdmin();
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -310,6 +331,7 @@ export async function seedBrandingAction() {
  * Order respects foreign key constraints.
  */
 export async function purgeDatabase() {
+    await requireSetupOrAdmin();
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -381,6 +403,7 @@ export async function configureSystem(formData: FormData) {
  * Tests connection
  */
 export async function testDbConnection() {
+    await requireSetupOrAdmin();
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) return { error: 'DATABASE_URL not configured' };
     const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -400,6 +423,7 @@ export async function testDbConnection() {
  * Diagnostic tool to check environment capabilities
  */
 export async function performDiagnostics() {
+    await requireSetupOrAdmin();
     const results: any = {
         timestamp: new Date().toISOString(),
         nodeVersion: process.version,

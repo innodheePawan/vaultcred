@@ -6,6 +6,7 @@ import { encrypt, decrypt } from '@/lib/crypto';
 import { OTP } from 'otplib';
 import QRCode from 'qrcode';
 import { headers } from 'next/headers';
+import { getClientIp } from '@/lib/utils/ip';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
 import { logAudit } from '@/lib/actions/audit';
 import { logLoginActivity } from '@/lib/actions/login-activity';
@@ -26,8 +27,7 @@ export async function requestTwoFactorResetDuringLogin(formData: FormData) {
         return { error: 'Email and password are required.' };
     }
 
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
 
     // 1. Check Security State (IP Blocks, User Locks)
     const security = await getSecurityState(email, ip);
@@ -195,8 +195,7 @@ export async function generateTwoFactorSetup() {
     }
 
     // 1. Check IP Security
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
     const security = await getSecurityState(null, ip);
 
     if (security.isIpPermanentBlocked) {
@@ -232,7 +231,7 @@ export async function generateTwoFactorSetup() {
         return {
             success: true,
             qrCode: qrCodeDataUrl,
-            secret,
+            secret, // Needed for mobile users who can't scan QR on the same device
         };
     } catch (error) {
         console.error('[2FA] Generate setup error:', error);
@@ -249,8 +248,7 @@ export async function enableTwoFactor(code: string) {
         return { error: 'Not authenticated' };
     }
 
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
     const security = await getSecurityState(null, ip);
 
     if (security.isIpPermanentBlocked || security.isIpBlocked) {
@@ -332,8 +330,7 @@ export async function disableTwoFactor(code: string) {
         return { error: 'Not authenticated' };
     }
 
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
     const security = await getSecurityState(null, ip);
 
     if (security.isIpPermanentBlocked || security.isIpBlocked) {

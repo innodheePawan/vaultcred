@@ -12,6 +12,16 @@ export async function updateUserProfile(formData: FormData) {
     const name = formData.get('name') as string;
     const profileImage = formData.get('profileImage') as string; // Expecting Base64 string
 
+    // Security: Prevent massive base64 payloads (DoS/OOM protection)
+    if (profileImage && profileImage.length > 0) {
+        // A base64 string's size in bytes is roughly (length * (3/4)) - padding
+        const approximateByteSize = profileImage.length * 0.75;
+        const MAX_SIZE_BYTES = 500 * 1024; // 500 KB limit for profile avatars
+        if (approximateByteSize > MAX_SIZE_BYTES) {
+            return { error: 'Profile image is too large. Maximum size allowed is 500KB.' };
+        }
+    }
+
     if (!name || name.trim().length === 0) {
         return { error: 'Name is required' };
     }
