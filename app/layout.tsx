@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CRED Secure | Enterprise Credential Management",
+  title: "CredSecure | Enterprise Credential Management",
   description: "Secure, enterprise-grade credential management",
 };
 

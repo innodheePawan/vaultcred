@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
+import { logger } from '@/lib/utils/logger';
 
 export type LoginOutcome = 'SUCCESS' | 'FAILURE' | 'BLOCKED' | 'LOGOUT';
 export type LoginCategory = 'AUTHENTICATION' | 'MFA' | 'ACCOUNT_STATUS';
@@ -51,12 +52,23 @@ export async function logLoginActivity(params: LogActivityParams) {
                 ipAddress: ip,
                 userAgent: ua,
                 riskLevel: riskLevel,
-                // geoCountry could be added here via a library or external API if needed
                 geoCountry: null
             }
         });
-    } catch (error) {
-        console.error('[Login History] Failed to log activity:', error);
+
+        // SOC 2 Structured JSON Audit Logging sent to stdout for SIEM ingestion
+        logger.audit({
+            event: 'LOGIN_ACTIVITY',
+            email: params.email,
+            outcome: params.outcome,
+            category: params.category,
+            reasonCode: params.reasonCode,
+            authMethod: params.authMethod,
+            ipAddress: ip,
+            riskLevel: riskLevel
+        });
+    } catch (error: any) {
+        logger.error({ event: 'LOGIN_HISTORY_ERROR', message: error.message || 'Failed to log activity' });
     }
 }
 
@@ -76,8 +88,8 @@ export async function logUserLogout() {
             reasonMessage: 'User signed out successfully.',
             authMethod: 'SESSION'
         });
-    } catch (error) {
-        console.error('[Logout] Failed to log logout:', error);
+    } catch (error: any) {
+        logger.error({ event: 'USER_LOGOUT_ERROR', message: error.message || 'Failed to log logout' });
     }
 }
 
@@ -123,8 +135,8 @@ export async function getLoginLogs(params: {
             page,
             totalPages: Math.ceil(total / limit)
         };
-    } catch (error) {
-        console.error('[Login History] Error fetching logs:', error);
+    } catch (error: any) {
+        logger.error({ event: 'FETCH_LOGS_ERROR', message: error.message || 'Error fetching logs' });
         return { logs: [], total: 0, page: 1, totalPages: 0 };
     }
 }
@@ -195,7 +207,7 @@ export async function archiveLoginLogs() {
                 },
                 create: {
                     id: 1,
-                    applicationName: 'CRED Secure',
+                    applicationName: 'CredSecure',
                     lastLoginArchivedAt: new Date(),
                     lastArchiveBatchId: batchId
                 }
@@ -204,8 +216,8 @@ export async function archiveLoginLogs() {
 
         revalidatePath('/admin/security-events');
         return { success: true, message: `Successfully archived ${logsToArchive.length} records.`, count: logsToArchive.length };
-    } catch (error) {
-        console.error('[Login History] Archival error:', error);
+    } catch (error: any) {
+        logger.error({ event: 'ARCHIVE_LOGS_ERROR', message: error.message || 'Archival error' });
         return { success: false, error: 'Failed to archive records.' };
     }
 }

@@ -14,10 +14,17 @@ export default function GeneralSettingsForm({ initialSettings }: { initialSettin
     const [state, formAction, isPending] = useActionState(updateGeneralSettings, initialState as any);
     const [logoPreview, setLogoPreview] = useState<string | null>(initialSettings.logoUrl);
     const [removeLogo, setRemoveLogo] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setLocalError(null);
         const file = e.target.files?.[0];
         if (file) {
+            if (file.size > 1 * 1024 * 1024) {
+                setLocalError("File size exceeds 1MB limit. Please choose a smaller file.");
+                e.target.value = '';
+                return;
+            }
             setRemoveLogo(false);
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -31,10 +38,10 @@ export default function GeneralSettingsForm({ initialSettings }: { initialSettin
         <form action={formAction} className="space-y-6 max-w-2xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
 
             {/* Feedback Messages */}
-            {state?.error && (
+            {(state?.error || localError) && (
                 <div className="p-4 bg-red-50 text-red-700 rounded-md flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{state.error}</span>
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <span>{localError || state?.error}</span>
                 </div>
             )}
             {state?.message && (
@@ -141,7 +148,7 @@ export default function GeneralSettingsForm({ initialSettings }: { initialSettin
                             </div>
                             <input type="hidden" name="removeLogo" value={removeLogo ? 'true' : 'false'} />
                             <p className="mt-2 text-xs text-gray-500">
-                                PNG, JPG, or SVG up to 500KB.
+                                PNG, JPG, or SVG up to 1MB.
                             </p>
                         </div>
                     </div>

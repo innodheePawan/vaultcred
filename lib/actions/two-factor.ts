@@ -8,7 +8,6 @@ import QRCode from 'qrcode';
 import { headers } from 'next/headers';
 import { getClientIp } from '@/lib/utils/ip';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
-import { logAudit } from '@/lib/actions/audit';
 import { logLoginActivity } from '@/lib/actions/login-activity';
 import { sendTwoFactorReconfigureEmail } from '@/lib/email';
 import crypto from 'crypto';
@@ -77,12 +76,6 @@ export async function requestTwoFactorResetDuringLogin(formData: FormData) {
         // 4. Send Email
         await sendTwoFactorReconfigureEmail(email, token);
 
-        await logAudit({
-            action: 'LOGIN_2FA_RESET_REQUEST',
-            details: 'Requested 2FA reset from login screen',
-            userId: user.id
-        });
-
         return { success: true, message: 'Reconfiguration email sent! Please check your inbox.' };
     } catch (error) {
         console.error('[2FA] Login reset request error:', error);
@@ -114,12 +107,6 @@ export async function requestTwoFactorReconfiguration() {
         });
 
         await sendTwoFactorReconfigureEmail(session.user.email, token);
-
-        await logAudit({
-            action: 'REQUEST_2FA_RECONFIG',
-            details: 'Requested 2FA reconfiguration email',
-            userId: session.user.id
-        });
 
         return { success: true, message: 'Reconfiguration email sent! Please check your inbox.' };
     } catch (error) {
@@ -166,12 +153,6 @@ export async function resetTwoFactorWithToken(token: string) {
                 data: { used: true }
             })
         ]);
-
-        await logAudit({
-            action: 'RESET_2FA_TOKEN',
-            details: '2FA reset successfully using email token',
-            userId: user.id
-        });
 
         return { success: true, message: '2FA has been reset. You can now set up a new device.' };
     } catch (error) {
@@ -222,7 +203,7 @@ export async function generateTwoFactorSetup() {
         // Generate otpauth URI
         const otpauthUri = otp.generateURI({
             secret,
-            issuer: 'CRED Secure',
+            issuer: 'CredSecure',
             label: session.user.email,
         });
 
@@ -296,12 +277,6 @@ export async function enableTwoFactor(code: string) {
             where: { id: session.user.id },
             // @ts-ignore
             data: { twoFactorEnabled: true },
-        });
-
-        await logAudit({
-            action: 'SETUP_2FA',
-            details: 'Two-Factor Authentication enabled successfully',
-            userId: session.user.id
         });
 
         await logLoginActivity({
@@ -388,12 +363,6 @@ export async function disableTwoFactor(code: string) {
                 twoFactorEnabled: false,
                 twoFactorSecret: null,
             },
-        });
-
-        await logAudit({
-            action: 'DISABLE_2FA',
-            details: 'Two-Factor Authentication was disabled',
-            userId: session.user.id
         });
 
         await logLoginActivity({

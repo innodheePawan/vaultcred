@@ -22,7 +22,7 @@ export default async function DashboardLayout({
     try {
         settings = await getSystemSettings();
     } catch (e) {
-        settings = { applicationName: 'CRED Secure', logoUrl: null };
+        settings = { applicationName: 'CredSecure', logoUrl: null };
     }
     const session = await auth();
 

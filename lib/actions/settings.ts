@@ -10,12 +10,12 @@ import { verifyConnection } from '@/lib/email';
 export async function getSystemSettings() {
     try {
         // Safe check for prisma instance
-        if (!prisma) return { applicationName: 'CRED Secure', companyName: 'Innodhee Services Pvt Ltd', logoUrl: null };
+        if (!prisma) return { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd', logoUrl: null };
 
         let settings = await prisma.systemSettings.findFirst();
         if (!settings) {
             settings = await prisma.systemSettings.create({
-                data: { applicationName: 'CRED Secure', companyName: 'Innodhee Services Pvt Ltd' }
+                data: { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd' }
             });
         }
 
@@ -28,7 +28,7 @@ export async function getSystemSettings() {
     } catch (error) {
         // Log the specific error to help with debugging (e.g. 500 error cause)
         console.error("Failed to fetch system settings (DB Error):", error);
-        return { applicationName: 'CRED Secure', companyName: 'Innodhee Services Pvt Ltd', logoUrl: null };
+        return { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd', logoUrl: null };
     }
 }
 

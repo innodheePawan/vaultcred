@@ -13,7 +13,7 @@ export default async function PublicShareLayout({
     try {
         settings = await getSystemSettings();
     } catch (e) {
-        settings = { applicationName: 'CRED Secure', logoUrl: null };
+        settings = { applicationName: 'CredSecure', logoUrl: null };
     }
 
     return (

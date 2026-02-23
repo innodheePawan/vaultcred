@@ -72,13 +72,21 @@ export async function checkDatabaseDrift() {
 
     try {
         const schemaPath = path.resolve(process.cwd(), 'prisma/schema.prisma');
-        // Use execFile (no shell) to prevent command injection
-        await execFilePromise('npx', [
+        const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
+        // On Windows, the shell is required to resolve npx.cmd from the PATH.
+        // We restrict this to Windows to maintain execFile's security benefits on Linux/macOS.
+        const useShell = process.platform === 'win32';
+
+        await execFilePromise(npxCommand, [
             'prisma', 'migrate', 'diff',
             '--from-schema-datasource', schemaPath,
             '--to-schema-datamodel', schemaPath,
             '--exit-code'
-        ], { env: { ...process.env } });
+        ], {
+            env: { ...process.env },
+            shell: useShell
+        });
         return { drift: false };
     } catch (error: any) {
         // Prisma migrate diff --exit-code returns:

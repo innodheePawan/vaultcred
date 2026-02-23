@@ -3,12 +3,17 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true, // Optional: if type errors persist despite compile success (Next.js sometimes weird)
+    ignoreBuildErrors: false,
   },
   serverExternalPackages: ['@prisma/client'],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '5mb',
+    },
+  },
   async headers() {
     return [
       {

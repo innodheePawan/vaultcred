@@ -165,7 +165,7 @@ export default function ShareSecretPage() {
             </div>
 
             <p className="mt-8 text-xs text-gray-400 text-center">
-                Powered by CRED Secure
+                Powered by CredSecure
             </p>
         </div>
     );

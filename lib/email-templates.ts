@@ -1,5 +1,5 @@
 /**
- * Branded HTML email templates for CRED Secure.
+ * Branded HTML email templates for CredSecure.
  * Uses inline styles for maximum email client compatibility.
  */
 

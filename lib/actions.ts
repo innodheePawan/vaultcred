@@ -8,6 +8,7 @@ import { randomBytes } from 'crypto';
 import { logAudit } from '@/lib/actions/audit';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
 import { headers } from 'next/headers';
+import { getClientIp } from '@/lib/utils/ip';
 
 export async function authenticate(
     prevState: any,
@@ -16,8 +17,7 @@ export async function authenticate(
     const emailRaw = formData.get('email') as string;
     const email = emailRaw ? emailRaw.trim().toLowerCase() : '';
 
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
 
     // 1. Check Security State (IP Blocks, User Locks)
     const security = await getSecurityState(email, ip);
@@ -115,8 +115,7 @@ export async function registerUser(token: string, formData: FormData) {
     const name = formData.get('name') as string;
     const password = formData.get('password') as string;
 
-    const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = await getClientIp();
 
     // 1. Check Security State (IP Blocks)
     const security = await getSecurityState(null, ip);

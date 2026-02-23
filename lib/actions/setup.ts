@@ -305,7 +305,7 @@ export async function seedBrandingAction() {
             update: { logoUrl: '/logo.png' },
             create: {
                 id: 1,
-                applicationName: 'CRED Secure',
+                applicationName: 'CredSecure',
                 companyName: 'Innodhee Services Pvt Ltd',
                 logoUrl: '/logo.png'
             }

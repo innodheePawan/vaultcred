@@ -8,7 +8,7 @@ import { sendPasswordResetEmail } from '@/lib/email';
 import { decrypt } from '@/lib/crypto';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
 import { getClientIp } from '@/lib/utils/ip';
-import { logAudit } from '@/lib/actions/audit';
+
 import { logLoginActivity } from '@/lib/actions/login-activity';
 import { rateLimit } from '@/lib/rate-limit';
 

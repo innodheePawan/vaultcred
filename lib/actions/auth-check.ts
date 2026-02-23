@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/lib/utils/password';
 import { getSecurityState, recordFailure, recordSuccess } from '@/lib/security';
-import { logAudit } from '@/lib/actions/audit';
+
 import { getClientIp } from '@/lib/utils/ip';
 import { logLoginActivity } from '@/lib/actions/login-activity';
 
@@ -132,10 +132,11 @@ export async function preLoginCheck(
             return { error: 'Invalid email or password.' };
         }
 
-        // Credentials valid — reset failure state for this phase
+        // Credentials valid — reset failure counter so 2FA failures are
+        // tracked independently (CAPTCHA will re-trigger after 3 bad 2FA codes).
         await recordSuccess(email, ip);
 
-        // Credentials valid — check if 2FA is required
+        // Check if 2FA is required
         return {
             success: true,
             // @ts-ignore

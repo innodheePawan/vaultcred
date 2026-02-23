@@ -53,7 +53,10 @@ export default function LoginForm() {
             }
 
             if (result.twoFactorRequired) {
-                // Show 2FA code input
+                // Show 2FA code input — reset CAPTCHA state so credentials-phase
+                // challenge doesn't carry over. 2FA failures are tracked independently.
+                setShowCaptcha(false);
+                setCaptchaVerified(false);
                 setStep('2fa');
                 // Update URL to signal to SessionTimeout that we are in MFA mode
                 const url = new URL(window.location.href);
@@ -276,8 +279,15 @@ export default function LoginForm() {
                         />
                     </div>
 
+                    {showCaptcha && (
+                        <SecurityChallenge
+                            verified={captchaVerified}
+                            onVerify={setCaptchaVerified}
+                        />
+                    )}
+
                     <button
-                        disabled={isPending || twoFactorCode.length !== 6}
+                        disabled={isPending || twoFactorCode.length !== 6 || (showCaptcha && !captchaVerified)}
                         type="submit"
                         className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-colors"
                     >

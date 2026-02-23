@@ -28,7 +28,7 @@ export function Header({ settings, user, publicView = false }: { settings?: any,
     const userName = displayUser?.name || 'User';
     const userEmail = displayUser?.email || '';
 
-    const applicationName = settings?.applicationName || 'CRED Secure';
+    const applicationName = settings?.applicationName || 'CredSecure';
     const logoUrl = settings?.logoUrl;
 
     return (
