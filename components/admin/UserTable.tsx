@@ -319,7 +319,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                     groups={groups}
                     credentials={credentials}
                     open={!!editingUser}
-                    onOpenChange={(open) => !open && setEditingUser(null)}
+                    onOpenChange={(open: boolean) => !open && setEditingUser(null)}
                 />
             )}
 
@@ -328,7 +328,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                 <StatusConfirmationDialog
                     user={statusUser}
                     open={!!statusUser}
-                    onOpenChange={(open) => !open && setStatusUser(null)}
+                    onOpenChange={(open: boolean) => !open && setStatusUser(null)}
                 />
             )}
 

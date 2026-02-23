@@ -69,105 +69,66 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
                     </div>
                     <div className="mt-4 flex md:mt-0 md:ml-4 gap-3">
                         {/* Action Buttons: Only visible if Admin, Owner, or Internal with Permission */}
-                        {(() => {
-                            const isOwner = credential.createdById === (session.user as any).id;
-                            const isAdmin = (session.user as any).role === 'ADMIN';
-                            const isExternal = (session.user as any).isExternal;
-
-                            // External Users can ONLY edit/delete if they match ownership exactly.
-                            // Internal Users can edit if Admin, Owner, or have explicit EDIT permission.
+                        {(async () => {
+                            // Calculates permissions. Self-contained to avoid polluting scope.
+                            const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+                            const ctx = await getUserAccessContext(session?.user?.id as string);
+                            const isOwner = credential.createdById === session?.user?.id;
+                            const isAdmin = ctx.role === 'ADMIN';
+                            const isExternal = ctx.isExternal;
 
                             let canEdit = false;
-                            if (isAdmin || isOwner) {
-                                canEdit = true;
-                            } else if (isExternal) {
-                                canEdit = false; // Not Owner = No Edit for Externals
-                            } else {
-                                // Internal Non-Owner
-                                // We need to re-check specific EDIT permission here if we want to support it.
-                                // Since we already checked 'READ' in getCredentialById to even see the page,
-                                // we should verify 'EDIT' for this specific button.
-                                // For now, we'll import `canAccess` client-side? No, this is a server component.
-                                // We need proper context.
-                                // Let's stick to the Plan: Use the accessContext logic if feasible, or simplify.
-                                // Note: getUserAccessContext logic is available in getCredentialById internal flow but not exposed directly in returned object.
-                                // We should assume if they are viewing it, they have READ. 
-                                // To check EDIT, we could re-run the check or trust the granular logic.
-                                // Given the urgency, let's strictly enforce Owner/Admin for now, or fetch context.
+                            if (isAdmin || isOwner) canEdit = true;
+                            else if (isExternal) canEdit = false;
+                            else canEdit = canAccess(ctx, credential.category, credential.environment, 'EDIT', credential.id);
+
+                            if (canEdit) {
+                                return (
+                                    <>
+                                        <Link href={`/credentials/${credential.id}/edit`}>
+                                            <Button variant="outline">Edit</Button>
+                                        </Link>
+                                        <DeleteCredentialButton id={credential.id} />
+                                    </>
+                                );
                             }
-
-                            // Re-fetching context to be sure for Internal RBAC
-                            // Ideally passed from getCredentialById, but that function returns the credential object.
-                            // We will do a quick check here. This page is async server component so it's fine.
+                            return null;
                         })()}
-
-                        {/* 
-                           Simplified rendering logic directly in JSX for readability. 
-                           Since we can't easily wait for async in inline IIFE without clutter, 
-                           let's use the explicit logic block before return or just implemented inline.
-                        */}
                     </div>
-                    {/* IMPLEMENTATION: Refactoring to use scoped variable calculated before return */}
-                    {(async () => {
-                        // Calculates permissions. Self-contained to avoid polluting scope.
-                        const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-                        const ctx = await getUserAccessContext(session.user.id!);
-                        const isOwner = credential.createdById === session.user.id;
-                        const isAdmin = ctx.role === 'ADMIN';
-                        const isExternal = ctx.isExternal;
-
-                        let canEdit = false;
-                        if (isAdmin || isOwner) canEdit = true;
-                        else if (isExternal) canEdit = false;
-                        else canEdit = canAccess(ctx, credential.category, credential.environment, 'EDIT', credential.id);
-
-                        if (canEdit) {
-                            return (
-                                <>
-                                    <Link href={`/credentials/${credential.id}/edit`}>
-                                        <Button variant="outline">Edit</Button>
-                                    </Link>
-                                    <DeleteCredentialButton id={credential.id} />
-                                </>
-                            );
-                        }
-                        return null;
-                    })()}
                 </div>
-            </div>
 
-            {/* Content */}
-            <div className="px-6 py-6">
-                {credential.description && (
-                    <div className="mb-8">
-                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Description / Notes</h3>
-                        <div className="prose dark:prose-invert text-gray-900 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
-                            {credential.description}
+                {/* Content */}
+                <div className="px-6 py-6">
+                    {credential.description && (
+                        <div className="mb-8">
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Description / Notes</h3>
+                            <div className="prose dark:prose-invert text-gray-900 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
+                                {credential.description}
+                            </div>
                         </div>
+                    )}
+
+                    <div>
+                        <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Secrets & Details</h3>
+                        <CredentialSecrets type={credential.type} data={credential.details} />
                     </div>
-                )}
-
-                <div>
-                    <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Secrets & Details</h3>
-                    <CredentialSecrets type={credential.type} data={credential.details} />
-                </div>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-600">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Created by <span className="font-medium text-gray-900 dark:text-white">{credential.createdBy.name}</span>
-                    {credential.createdBy.email && ` (${credential.createdBy.email})`} on {formatDate(credential.createdOn)}
                 </div>
 
-                <ShareSettings
-                    credentialId={credential.id}
-                    shares={[]} /* accessList not implemented yet */
-                    ownerId={credential.createdById}
-                    currentUserId={(await auth())?.user?.id}
-                />
+                <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-600">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Created by <span className="font-medium text-gray-900 dark:text-white">{credential.createdBy.name}</span>
+                        {credential.createdBy.email && ` (${credential.createdBy.email})`} on {formatDate(credential.createdOn)}
+                    </div>
+
+                    <ShareSettings
+                        credentialId={credential.id}
+                        shares={[]} /* accessList not implemented yet */
+                        ownerId={credential.createdById}
+                        currentUserId={(await auth())?.user?.id}
+                    />
+                </div>
             </div>
         </div>
-
     );
 }
 

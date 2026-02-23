@@ -32,7 +32,7 @@ export default function ShareSettings({ credentialId, shares, ownerId, currentUs
     const handleShare = (userId: string) => {
         startTransition(async () => {
             const result = await shareCredential(credentialId, userId);
-            if (result.success) {
+            if ('success' in result && result.success) {
                 setQuery('');
                 setResults([]);
                 router.refresh();
@@ -47,7 +47,7 @@ export default function ShareSettings({ credentialId, shares, ownerId, currentUs
 
         startTransition(async () => {
             const result = await unshareCredential(credentialId, userId);
-            if (result.success) {
+            if ('success' in result && result.success) {
                 router.refresh();
             } else {
                 alert(result.error);
