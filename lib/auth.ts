@@ -146,7 +146,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                                 token: twoFactorCode,
                                 secret,
                             });
-                            const isValid = result && result.valid;
+                            // otplib verify returns boolean directly, but some wrappers return { valid: boolean }
+                            const isValid = typeof result === 'boolean' ? result : (result && (result as any).valid);
                             if (!isValid) {
                                 await logLoginActivity({
                                     email,

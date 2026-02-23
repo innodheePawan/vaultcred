@@ -255,7 +255,7 @@ export async function enableTwoFactor(code: string) {
             secret,
         });
 
-        const isValid = result && result.valid;
+        const isValid = typeof result === 'boolean' ? result : (result && (result as any).valid);
 
         if (!isValid) {
             await recordFailure(session.user.email, ip);
@@ -338,7 +338,7 @@ export async function disableTwoFactor(code: string) {
             secret,
         });
 
-        const isValid = result && result.valid;
+        const isValid = typeof result === 'boolean' ? result : (result && (result as any).valid);
 
         if (!isValid) {
             await recordFailure(session.user.email, ip);
