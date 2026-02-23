@@ -13,23 +13,20 @@ interface Reconfigure2FAPageProps {
 export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) {
     const { token } = use(params);
     const router = useRouter();
-    const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
+    const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
     const [message, setMessage] = useState('');
 
-    useEffect(() => {
-        const verifyAndReset = async () => {
-            const result = await resetTwoFactorWithToken(token);
-            if (result.error) {
-                setStatus('error');
-                setMessage(result.error);
-            } else {
-                setStatus('success');
-                setMessage(result.message || '2FA has been successfully reset.');
-            }
-        };
-
-        verifyAndReset();
-    }, [token]);
+    const handleConfirm = async () => {
+        setStatus('verifying');
+        const result = await resetTwoFactorWithToken(token);
+        if (result.error) {
+            setStatus('error');
+            setMessage(result.error);
+        } else {
+            setStatus('success');
+            setMessage(result.message || '2FA has been successfully reset.');
+        }
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
@@ -40,6 +37,7 @@ export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) 
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">2FA Reconfiguration</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {status === 'idle' && 'Ready to reset your Two-Factor Authentication'}
                         {status === 'verifying' && 'Verifying your request...'}
                         {status === 'success' && 'Reset successful!'}
                         {status === 'error' && 'Reset failed'}
@@ -47,6 +45,20 @@ export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) 
                 </div>
 
                 <div className="px-6 py-4 text-center space-y-4">
+                    {status === 'idle' && (
+                        <div className="py-8">
+                            <p className="text-gray-700 dark:text-gray-300 mb-6">
+                                Please confirm that you want to reset and remove your current Two-Factor Authentication device.
+                            </p>
+                            <Button
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                                onClick={handleConfirm}
+                            >
+                                Confirm 2FA Reset
+                            </Button>
+                        </div>
+                    )}
+
                     {status === 'verifying' && (
                         <div className="flex flex-col items-center py-8">
                             <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-2" />
