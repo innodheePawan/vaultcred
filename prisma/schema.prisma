@@ -373,6 +373,17 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+model TwoFactorResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_on")
+
+  @@map("two_factor_reset_tokens")
+}
+
 model LoginLog {
   id                String   @id @default(uuid()) @map("log_id")
   email             String
