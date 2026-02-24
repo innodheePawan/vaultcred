@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { Database, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import DatabaseSync from '@/components/admin/settings/DatabaseSync';
 
+export const maxDuration = 60;
+
 export default async function DatabaseSettingsPage() {
     const info = await getDatabaseInfo();
     const session = await auth();

@@ -9,10 +9,6 @@ import { seedRoles } from '@/scripts/seed-roles';
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
-// Extend the max duration of server actions in this file to 60 seconds 
-// (Default on Vercel/Amplify is usually 15s which causes the container to terminate)
-export const maxDuration = 60;
-
 const execPromise = util.promisify(exec);
 
 /**

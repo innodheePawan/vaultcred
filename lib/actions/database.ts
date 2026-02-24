@@ -3,10 +3,6 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
-// Extend the max duration of server actions in this file to 60 seconds 
-// (Default on Vercel/Amplify is usually 15s which causes Prisma to timeout)
-export const maxDuration = 60;
-
 export async function getDatabaseInfo() {
     const session = await auth();
     if (session?.user?.role !== 'ADMIN') {
