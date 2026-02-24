@@ -421,3 +421,14 @@ model LoginLogArchive {
   @@index([email])
   @@map("security_login_logs_archive")
 }
+
+// --------------------------------------
+// DUMMY TABLE FOR SYNC TESTING
+// --------------------------------------
+model TestRakeshClaude {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  @@map("test_rakesh_claude_sync")
+}

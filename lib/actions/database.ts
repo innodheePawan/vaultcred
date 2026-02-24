@@ -69,14 +69,50 @@ export async function checkDatabaseDrift() {
     try {
         const { Prisma } = await import('@prisma/client');
 
-        // 1. Extract the exact expected schema directly from Prisma's compiled DMMF engine
-        const models = Prisma.dmmf.datamodel.models;
-        const expectedSchema = models.map(m => ({
-            table: (m.dbName || m.name).toLowerCase(),
-            columns: m.fields
-                .filter((f: any) => f.kind === 'scalar') // Only actual database columns
-                .map((f: any) => (f.dbName || f.name).toLowerCase()) // Respect @map directives
-        }));
+        // 1. Extract the exact expected schema by parsing the raw schema.prisma file directly
+        // This ensures the developer workflow isn't blocked by needing to run `npx prisma generate` first
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const schemaPath = path.join(process.cwd(), 'prisma', 'schema.prisma');
+        const schemaText = await fs.readFile(schemaPath, 'utf-8');
+
+        const expectedSchema: { table: string, columns: string[] }[] = [];
+        const modelBlocks = schemaText.split('model ').slice(1);
+
+        for (const block of modelBlocks) {
+            const lines = block.split('\n');
+            const modelName = lines[0].split(' ')[0].trim();
+
+            // Extract dbName from @@map("name") if it exists, otherwise lowercase model name
+            let tableName = modelName.toLowerCase();
+            const mapMatch = block.match(/@@map\("([^"]+)"\)/);
+            if (mapMatch && mapMatch[1]) {
+                tableName = mapMatch[1].toLowerCase();
+            }
+
+            const columns: string[] = [];
+            for (const line of lines.slice(1)) {
+                const trimmed = line.trim();
+                // Skip empty lines, comments, @@ directives, and relation definitions (which lack DB types)
+                if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('@@') || trimmed.includes('@relation')) {
+                    continue;
+                }
+
+                // Match valid field lines: Name Type @attributes...
+                const parts = trimmed.split(/\s+/);
+                if (parts.length >= 2) {
+                    // It's a scalar column
+                    let colName = parts[0].toLowerCase();
+                    // Check if the column is renamed in DB using @map("name")
+                    const colMapMatch = trimmed.match(/@map\("([^"]+)"\)/);
+                    if (colMapMatch && colMapMatch[1]) {
+                        colName = colMapMatch[1].toLowerCase();
+                    }
+                    columns.push(colName);
+                }
+            }
+            expectedSchema.push({ table: tableName, columns });
+        }
 
         // 2. Query the actual database for existing tables and columns
         const existingColumnsResult = await prisma.$queryRaw<{ table_name: string, column_name: string }[]>`
