@@ -79,25 +79,36 @@ export async function checkDatabaseDrift() {
         // We restrict this to Windows to maintain execFile's security benefits on Linux/macOS.
         const useShell = process.platform === 'win32';
 
-        await execFilePromise(npxCommand, [
-            '--yes',
-            'prisma', 'migrate', 'diff',
-            '--from-schema-datasource', schemaPath,
-            '--to-schema-datamodel', schemaPath,
-            '--exit-code'
-        ], {
-            env: {
-                ...process.env,
-                HOME: os.tmpdir(),
-                npm_config_cache: path.join(os.tmpdir(), '.npm'),
-                PRISMA_TELEMETRY_DISABLED: '1',
-                CHECKPOINT_DISABLE: '1',
-                // Remove Amplify credential listener vars to prevent EADDRINUSE on :9898
-                AWS_CONTAINER_CREDENTIALS_FULL_URI: undefined as any,
-                AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: undefined as any,
-            },
-            shell: useShell
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                const err = new Error("Command timed out after 15 seconds");
+                (err as any).code = "TIMEOUT";
+                reject(err);
+            }, 15000);
         });
+
+        await Promise.race([
+            execFilePromise(npxCommand, [
+                '--yes',
+                'prisma', 'migrate', 'diff',
+                '--from-schema-datasource', schemaPath,
+                '--to-schema-datamodel', schemaPath,
+                '--exit-code'
+            ], {
+                env: {
+                    ...process.env,
+                    HOME: os.tmpdir(),
+                    npm_config_cache: path.join(os.tmpdir(), '.npm'),
+                    PRISMA_TELEMETRY_DISABLED: '1',
+                    CHECKPOINT_DISABLE: '1',
+                    // Remove Amplify credential listener vars to prevent EADDRINUSE on :9898
+                    AWS_CONTAINER_CREDENTIALS_FULL_URI: undefined as any,
+                    AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: undefined as any,
+                },
+                shell: useShell
+            }),
+            timeoutPromise
+        ]);
         return { drift: false };
     } catch (error: any) {
         // Prisma migrate diff --exit-code returns:
