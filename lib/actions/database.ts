@@ -57,7 +57,8 @@ export async function getDatabaseInfo() {
 
 /**
  * Checks if there is any drift between the Prisma schema and the actual database.
- * Returns true if synchronization is required.
+ * Uses direct SQL queries against information_schema instead of spawning child processes.
+ * This approach is immune to AWS Amplify's credential proxy injection issues.
  */
 export async function checkDatabaseDrift() {
     const session = await auth();
@@ -65,124 +66,75 @@ export async function checkDatabaseDrift() {
         return { error: 'Unauthorized', drift: false };
     }
 
-    const { execFile } = await import('child_process');
-    const path = await import('path');
-    const util = await import('util');
-    const os = await import('os');
-    const execFilePromise = util.promisify(execFile);
-
     try {
-        const schemaPath = path.resolve(process.cwd(), 'prisma/schema.prisma');
-        const fsPromises = await import('fs/promises');
-        const proxyScriptContent = `
-const { execSync } = require('child_process');
-const path = require('path');
-const os = require('os');
-function runPrisma() {
-    const args = process.argv.slice(2);
-    const safeEnv = Object.assign({}, process.env);
-    delete safeEnv.NODE_OPTIONS;
-    Object.keys(safeEnv).forEach(key => {
-        if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) delete safeEnv[key];
-    });
-    safeEnv.HOME = os.tmpdir();
-    safeEnv.npm_config_cache = path.join(os.tmpdir(), '.npm');
-    safeEnv.PRISMA_TELEMETRY_DISABLED = '1';
-    safeEnv.CHECKPOINT_DISABLE = '1';
-    const platformNpx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-    const command = \`\${platformNpx} --yes prisma \${args.join(' ')}\`;
-    try {
-        execSync(command, { env: safeEnv, cwd: process.cwd(), stdio: 'inherit' });
-        process.exit(0);
-    } catch (error) {
-        process.exit(error.status || 1);
-    }
-}
-runPrisma();
-`;
-        const proxyScriptPath = path.join(os.tmpdir(), 'prisma-proxy-v2.js');
-        await fsPromises.writeFile(proxyScriptPath, proxyScriptContent, 'utf8');
-        const nodeCommand = 'node';
+        // These are the actual MySQL table names from the Prisma schema's @@map() directives
+        const expectedTables = [
+            'users',
+            'security_ip_blocks',
+            'user_invites',
+            'iam_user_groups',
+            'iam_user_group_mapping',
+            'iam_access_groups',
+            'iam_user_group_access',
+            'iam_access_group_policy',
+            'credential_master',
+            'cred_password',
+            'cred_api_oauth',
+            'cred_key_cert',
+            'cred_token',
+            'cred_file',
+            'cred_secure_note',
+            'audit_log',
+            'expiry_notification',
+            'system_settings',
+            'password_reset_tokens',
+            'two_factor_reset_tokens',
+            'security_login_logs',
+            'security_login_logs_archive',
+            'one_time_secrets',
+        ];
 
-        // We run node directly because it avoids the platform-specific npx.cmd issues,
-        // and the proxy script handles the rest.
-        const useShell = process.platform === 'win32';
+        // Query the actual database for existing tables
+        const existingTables = await prisma.$queryRaw<{ table_name: string }[]>`
+            SELECT TABLE_NAME as table_name
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+        `;
 
-        const timeoutMs = 60000;
-        const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => {
-                const err = new Error(`Command timed out after ${timeoutMs / 1000} seconds`);
-                (err as any).code = "TIMEOUT";
-                reject(err);
-            }, timeoutMs);
-        });
+        const existingTableNames = existingTables.map(
+            (t: any) => (t.table_name || t.TABLE_NAME || Object.values(t)[0]) as string
+        );
 
-        console.log("[Drift Check] Spawning secure Prisma Proxy child process...");
-        const spawnPromise = new Promise<{ code: number | null, stdout: string, stderr: string }>((resolve, reject) => {
-            const { spawn } = require('child_process');
+        // Find missing tables
+        const missingTables = expectedTables.filter(
+            (t) => !existingTableNames.some((et) => et.toLowerCase() === t.toLowerCase())
+        );
 
-            const child = spawn(nodeCommand, [
-                proxyScriptPath,
-                'migrate', 'diff',
-                '--from-schema-datasource', schemaPath,
-                '--to-schema-datamodel', schemaPath,
-                '--exit-code'
-            ], {
-                env: process.env, // Proxy script sanitizes this for us securely
-                shell: useShell
-            });
+        // Find extra tables (in DB but not in schema)
+        const extraTables = existingTableNames.filter(
+            (t) => !expectedTables.some((et) => et.toLowerCase() === t.toLowerCase())
+                && !t.startsWith('_')  // Ignore Prisma internal tables
+        );
 
-            let stdout = "";
-            let stderr = "";
+        const hasDrift = missingTables.length > 0;
 
-            child.stdout.on('data', (data: Buffer) => {
-                const chunk = data.toString();
-                stdout += chunk;
-                console.log(`[Drift Check STDOUT] ${chunk.trim()}`);
-            });
-
-            child.stderr.on('data', (data: Buffer) => {
-                const chunk = data.toString();
-                stderr += chunk;
-                console.error(`[Drift Check STDERR] ${chunk.trim()}`);
-            });
-
-            child.on('error', (err: Error) => reject(err));
-            child.on('close', (code: number) => resolve({ code, stdout, stderr }));
-        });
-
-        const { code, stdout, stderr } = await Promise.race([spawnPromise, timeoutPromise]);
-
-        console.log(`[Drift Check] Code: ${code}`);
-
-        if (code === 2) {
-            console.log("[Drift Check] Official drift detected (Code 2).");
-            return { drift: true };
+        if (hasDrift) {
+            console.log(`[Drift Check] Missing tables: ${missingTables.join(', ')}`);
+            return {
+                drift: true,
+                missingTables,
+                extraTables,
+            };
         }
 
-        const combinedOutput = `${stdout}\n${stderr}`;
-        if (combinedOutput.includes('[*] Changed the') || combinedOutput.includes('[+] Added')) {
-            console.log("[Drift Check] Drift detected in output strings despite error.");
-            return { drift: true, error: "Drift detected (environment error encountered).", code: String(code) };
-        }
-
-        if (code === 0) {
-            return { drift: false };
-        }
-
-        const errMsg = stderr || stdout || "Unknown error during drift check";
-        console.error("[Drift Check] Real Error:", errMsg);
-        return {
-            drift: false,
-            error: errMsg.substring(0, 500),
-            code: String(code || 'UNKNOWN')
-        };
+        console.log('[Drift Check] All expected tables exist. No drift detected.');
+        return { drift: false };
     } catch (error: any) {
-        console.error(`[Drift Check] CATCH BLOCK HIT: ${error?.message || error}`);
+        console.error(`[Drift Check] SQL Error: ${error?.message || error}`);
         return {
             drift: false,
             error: String(error?.message || error).substring(0, 500),
-            code: String(error?.code || 'UNKNOWN')
+            code: 'SQL_ERROR'
         };
     }
 }
