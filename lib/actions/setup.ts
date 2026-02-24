@@ -148,7 +148,35 @@ export async function syncDatabase() {
     });
 
     try {
-        const proxyScriptPath = path.resolve(process.cwd(), 'scripts/prisma-proxy.js');
+        const fsPromises = await import('fs/promises');
+        const proxyScriptContent = `
+const { execSync } = require('child_process');
+const path = require('path');
+const os = require('os');
+function runPrisma() {
+    const args = process.argv.slice(2);
+    const safeEnv = Object.assign({}, process.env);
+    delete safeEnv.NODE_OPTIONS;
+    Object.keys(safeEnv).forEach(key => {
+        if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) delete safeEnv[key];
+    });
+    safeEnv.HOME = os.tmpdir();
+    safeEnv.npm_config_cache = path.join(os.tmpdir(), '.npm');
+    safeEnv.PRISMA_TELEMETRY_DISABLED = '1';
+    safeEnv.CHECKPOINT_DISABLE = '1';
+    const platformNpx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+    const command = \`\${platformNpx} --yes prisma \${args.join(' ')}\`;
+    try {
+        execSync(command, { env: safeEnv, cwd: process.cwd(), stdio: 'inherit' });
+        process.exit(0);
+    } catch (error) {
+        process.exit(error.status || 1);
+    }
+}
+runPrisma();
+`;
+        const proxyScriptPath = path.join(os.tmpdir(), 'prisma-proxy-v2.js');
+        await fsPromises.writeFile(proxyScriptPath, proxyScriptContent, 'utf8');
         const nodeCommand = 'node';
 
         // Detached spawn doesn't always survive in Lambda after return.
