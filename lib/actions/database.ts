@@ -105,29 +105,35 @@ export async function checkDatabaseDrift() {
         // 1: Error
         // 2: Drift detected (sync required)
 
-        const stdout = error.stdout || "";
-        const stderr = error.stderr || "";
-        const message = error.message || "";
-        const combinedOutput = `${stdout}\n${stderr}\n${message}`;
-
-        console.log(`[Drift Check] Code: ${error.code}`);
+        console.log(`[Drift Check] Code: ${error?.code}`);
 
         // Code 2 is the official Prisma exit code for "Drift Detected"
-        if (error.code === 2) {
+        if (error?.code === 2) {
             console.log("[Drift Check] Official drift detected (Code 2).");
             return { drift: true };
         }
 
+        const stdout = String(error?.stdout || "");
+        const stderr = String(error?.stderr || "");
+        const message = String(error?.message || "");
+        const combinedOutput = `${stdout}\n${stderr}\n${message}`;
+
         // Fallback: If it exited with Code 1 but still outputted drift info
         if (combinedOutput.includes('[*] Changed the') || combinedOutput.includes('[+] Added')) {
             console.log("[Drift Check] Drift detected in output strings despite error.");
-            return { drift: true, error: "Drift detected (environment error encountered).", code: error.code };
+            return { drift: true, error: "Drift detected (environment error encountered).", code: String(error?.code) };
         }
 
         // Real errors (Code 1 or other system errors)
         const errMsg = stderr || message || "Unknown error during drift check";
         console.error("[Drift Check] Real Error:", errMsg);
-        return { drift: false, error: errMsg, code: error.code };
+
+        // Return a strictly serialized plain object to avoid Next.js Action crashing
+        return {
+            drift: false,
+            error: errMsg.substring(0, 500), // truncate just in case it's huge
+            code: String(error?.code || 'UNKNOWN')
+        };
     }
 }
 
