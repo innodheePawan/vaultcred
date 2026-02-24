@@ -9,6 +9,10 @@ import { seedRoles } from '@/scripts/seed-roles';
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
+// Extend the max duration of server actions in this file to 60 seconds 
+// (Default on Vercel/Amplify is usually 15s which causes the container to terminate)
+export const maxDuration = 60;
+
 const execPromise = util.promisify(exec);
 
 /**
@@ -150,19 +154,23 @@ export async function syncDatabase() {
     try {
         const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
+        const cleanEnv = { ...process.env };
+        Object.keys(cleanEnv).forEach(key => {
+            if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) {
+                delete cleanEnv[key];
+            }
+        });
+
         // Detached spawn doesn't always survive in Lambda after return.
         // We add --skip-generate to speed up the push if schema is already compiled.
         const child = spawn(npxCommand, ['--yes', 'prisma', 'db', 'push', '--accept-data-loss', '--skip-generate'], {
             env: {
-                ...process.env,
+                ...cleanEnv,
                 DATABASE_URL: dbUrl,
                 HOME: os.tmpdir(),
                 npm_config_cache: path.join(os.tmpdir(), '.npm'),
                 PRISMA_TELEMETRY_DISABLED: '1',
                 CHECKPOINT_DISABLE: '1',
-                // Remove Amplify credential listener vars to prevent EADDRINUSE on :9898
-                AWS_CONTAINER_CREDENTIALS_FULL_URI: undefined as any,
-                AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: undefined as any,
             },
             cwd: process.cwd(),
             detached: true,

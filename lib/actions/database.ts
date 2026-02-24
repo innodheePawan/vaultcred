@@ -3,6 +3,10 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
+// Extend the max duration of server actions in this file to 60 seconds 
+// (Default on Vercel/Amplify is usually 15s which causes Prisma to timeout)
+export const maxDuration = 60;
+
 export async function getDatabaseInfo() {
     const session = await auth();
     if (session?.user?.role !== 'ADMIN') {
@@ -91,6 +95,15 @@ export async function checkDatabaseDrift() {
         console.log("[Drift Check] Spawning child process...");
         const spawnPromise = new Promise<{ code: number | null, stdout: string, stderr: string }>((resolve, reject) => {
             const { spawn } = require('child_process');
+            // Strip all AWS and Amplify variables from the child process to stop 
+            // the Amplify credential proxy from starting and causing EADDRINUSE on 9898.
+            const cleanEnv = { ...process.env };
+            Object.keys(cleanEnv).forEach(key => {
+                if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) {
+                    delete cleanEnv[key];
+                }
+            });
+
             const child = spawn(npxCommand, [
                 '--yes',
                 'prisma', 'migrate', 'diff',
@@ -99,13 +112,11 @@ export async function checkDatabaseDrift() {
                 '--exit-code'
             ], {
                 env: {
-                    ...process.env,
+                    ...cleanEnv,
                     HOME: os.tmpdir(),
                     npm_config_cache: path.join(os.tmpdir(), '.npm'),
                     PRISMA_TELEMETRY_DISABLED: '1',
                     CHECKPOINT_DISABLE: '1',
-                    AWS_CONTAINER_CREDENTIALS_FULL_URI: undefined as any,
-                    AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: undefined as any,
                 },
                 shell: useShell
             });
