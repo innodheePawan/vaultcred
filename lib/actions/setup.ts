@@ -148,15 +148,22 @@ export async function syncDatabase() {
     });
 
     try {
-        const prismaPath = path.resolve(process.cwd(), 'node_modules', '.bin', 'prisma');
+        const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
         // Detached spawn doesn't always survive in Lambda after return.
         // We add --skip-generate to speed up the push if schema is already compiled.
-        const child = spawn(prismaPath, ['db', 'push', '--accept-data-loss', '--skip-generate'], {
-            env: { ...process.env, DATABASE_URL: dbUrl, HOME: os.tmpdir() },
+        const child = spawn(npxCommand, ['--yes', 'prisma', 'db', 'push', '--accept-data-loss', '--skip-generate'], {
+            env: {
+                ...process.env,
+                DATABASE_URL: dbUrl,
+                HOME: os.tmpdir(),
+                npm_config_cache: path.join(os.tmpdir(), '.npm'),
+                PRISMA_TELEMETRY_DISABLED: '1'
+            },
             cwd: process.cwd(),
             detached: true,
             stdio: 'pipe',
+            shell: process.platform === 'win32'
         });
 
         // Capture output

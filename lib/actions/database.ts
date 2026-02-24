@@ -68,6 +68,7 @@ export async function checkDatabaseDrift() {
     const { execFile } = await import('child_process');
     const path = await import('path');
     const util = await import('util');
+    const os = await import('os');
     const execFilePromise = util.promisify(execFile);
 
     try {
@@ -79,12 +80,18 @@ export async function checkDatabaseDrift() {
         const useShell = process.platform === 'win32';
 
         await execFilePromise(npxCommand, [
+            '--yes',
             'prisma', 'migrate', 'diff',
             '--from-schema-datasource', schemaPath,
             '--to-schema-datamodel', schemaPath,
             '--exit-code'
         ], {
-            env: { ...process.env },
+            env: {
+                ...process.env,
+                HOME: os.tmpdir(),
+                npm_config_cache: path.join(os.tmpdir(), '.npm'),
+                PRISMA_TELEMETRY_DISABLED: '1'
+            },
             shell: useShell
         });
         return { drift: false };
