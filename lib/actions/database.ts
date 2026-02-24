@@ -56,16 +56,10 @@ export async function getDatabaseInfo() {
 }
 
 /**
- * Checks if there is any drift between the Prisma schema and the actual database.
- * Uses direct SQL queries against information_schema instead of spawning child processes.
- * This approach is immune to AWS Amplify's credential proxy injection issues.
+ * Internal unauthenticated drift checker.
+ * Safe to call during instrumented server bootstrap where Request headers are missing.
  */
-export async function checkDatabaseDrift() {
-    const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
-        return { error: 'Unauthorized', drift: false };
-    }
-
+export async function internalCheckDatabaseDrift() {
     try {
         const { Prisma } = await import('@prisma/client');
 
@@ -171,6 +165,18 @@ export async function checkDatabaseDrift() {
             code: 'SQL_ERROR'
         };
     }
+}
+
+/**
+ * Checks if there is any drift between the Prisma schema and the actual database.
+ * This is the Next.js Server Action called by the UI, protected by NextAuth.
+ */
+export async function checkDatabaseDrift() {
+    const session = await auth();
+    if (session?.user?.role !== 'ADMIN') {
+        return { error: 'Unauthorized', drift: false };
+    }
+    return internalCheckDatabaseDrift();
 }
 
 /**
