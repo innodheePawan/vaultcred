@@ -67,67 +67,65 @@ export async function checkDatabaseDrift() {
     }
 
     try {
-        // These are the actual MySQL table names from the Prisma schema's @@map() directives
-        const expectedTables = [
-            'users',
-            'security_ip_blocks',
-            'user_invites',
-            'iam_user_groups',
-            'iam_user_group_mapping',
-            'iam_access_groups',
-            'iam_user_group_access',
-            'iam_access_group_policy',
-            'credential_master',
-            'cred_password',
-            'cred_api_oauth',
-            'cred_key_cert',
-            'cred_token',
-            'cred_file',
-            'cred_secure_note',
-            'audit_log',
-            'expiry_notification',
-            'system_settings',
-            'password_reset_tokens',
-            'two_factor_reset_tokens',
-            'security_login_logs',
-            'security_login_logs_archive',
-            'one_time_secrets',
-        ];
+        const { Prisma } = await import('@prisma/client');
 
-        // Query the actual database for existing tables
-        const existingTables = await prisma.$queryRaw<{ table_name: string }[]>`
-            SELECT TABLE_NAME as table_name
-            FROM information_schema.tables
+        // 1. Extract the exact expected schema directly from Prisma's compiled DMMF engine
+        const models = Prisma.dmmf.datamodel.models;
+        const expectedSchema = models.map(m => ({
+            table: (m.dbName || m.name).toLowerCase(),
+            columns: m.fields
+                .filter((f: any) => f.kind === 'scalar') // Only actual database columns
+                .map((f: any) => (f.dbName || f.name).toLowerCase()) // Respect @map directives
+        }));
+
+        // 2. Query the actual database for existing tables and columns
+        const existingColumnsResult = await prisma.$queryRaw<{ table_name: string, column_name: string }[]>`
+            SELECT TABLE_NAME as table_name, COLUMN_NAME as column_name
+            FROM information_schema.columns
             WHERE table_schema = DATABASE()
         `;
 
-        const existingTableNames = existingTables.map(
-            (t: any) => (t.table_name || t.TABLE_NAME || Object.values(t)[0]) as string
-        );
+        // 3. Organize the DB state into a quick lookup map
+        const dbSchema: Record<string, string[]> = {};
+        for (const row of existingColumnsResult) {
+            const t = (row.table_name || (row as any).TABLE_NAME).toLowerCase();
+            const c = (row.column_name || (row as any).COLUMN_NAME).toLowerCase();
+            if (!dbSchema[t]) dbSchema[t] = [];
+            dbSchema[t].push(c);
+        }
 
-        // Find missing tables
-        const missingTables = expectedTables.filter(
-            (t) => !existingTableNames.some((et) => et.toLowerCase() === t.toLowerCase())
-        );
+        // 4. Compare expected vs actual
+        const missingTables: string[] = [];
+        const missingColumns: string[] = [];
 
-        // Find extra tables (in DB but not in schema)
-        const extraTables = existingTableNames.filter(
-            (t) => !expectedTables.some((et) => et.toLowerCase() === t.toLowerCase())
-                && !t.startsWith('_')  // Ignore Prisma internal tables
-        );
+        for (const expected of expectedSchema) {
+            const dbCols = dbSchema[expected.table];
+            if (!dbCols) {
+                missingTables.push(expected.table);
+                continue;
+            }
 
-        const hasDrift = missingTables.length > 0;
+            for (const expectedCol of expected.columns) {
+                if (!dbCols.includes(expectedCol)) {
+                    missingColumns.push(`${expected.table}.${expectedCol}`);
+                }
+            }
+        }
+
+        const hasDrift = missingTables.length > 0 || missingColumns.length > 0;
 
         if (hasDrift) {
-            console.log(`[Drift Check] Missing tables: ${missingTables.join(', ')}`);
+            console.log(`[Drift Check] Drift detected! Missing Tables: ${missingTables.length}, Missing Columns: ${missingColumns.length}`);
+            if (missingColumns.length > 0) console.log(`[Drift Check] Missing specific columns, e.g. ${missingColumns[0]}`);
+
             return {
                 drift: true,
                 missingTables,
-                extraTables,
+                missingColumns,
             };
         }
 
-        console.log('[Drift Check] All expected tables exist. No drift detected.');
+        console.log('[Drift Check] All expected tables AND columns exist. No drift detected.');
         return { drift: false };
     } catch (error: any) {
         console.error(`[Drift Check] SQL Error: ${error?.message || error}`);
