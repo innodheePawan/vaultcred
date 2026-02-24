@@ -87,14 +87,24 @@ export async function internalCheckDatabaseDrift() {
             const columns: string[] = [];
             for (const line of lines.slice(1)) {
                 const trimmed = line.trim();
-                // Skip empty lines, comments, @@ directives, and relation definitions (which lack DB types)
-                if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('@@') || trimmed.includes('@relation')) {
+                // Skip empty lines, comments, and @@ directives
+                if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('@@')) {
                     continue;
                 }
 
-                // Match valid field lines: Name Type @attributes...
                 const parts = trimmed.split(/\s+/);
                 if (parts.length >= 2) {
+                    const type = parts[1];
+                    const isRelation = trimmed.includes('@relation') || type.includes('[]');
+
+                    // Prisma Primitive Scalars allow us to confidently know it's a real DB column 
+                    // (Ignoring relations which are other Model names like 'UserGroup')
+                    const isPrimitive = ['String', 'Int', 'Boolean', 'DateTime', 'Json', 'Float', 'Decimal', 'BigInt', 'Bytes'].some(p => type.startsWith(p));
+
+                    if (isRelation || !isPrimitive) {
+                        continue;
+                    }
+
                     // It's a scalar column
                     let colName = parts[0].toLowerCase();
                     // Check if the column is renamed in DB using @map("name")
