@@ -1,11 +1,10 @@
 'use client';
+export const maxDuration = 60;
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2, Lock } from 'lucide-react';
 import { prepareEnvironment, syncDatabase, seedRolesAction, seedSuperAdminAction, seedBrandingAction, testDbConnection, purgeDatabase, getSyncStatusAction, verifyTablesAction } from '@/lib/actions/setup';
-
-export const maxDuration = 60;
 
 type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_ROLES' | 'SEEDING_ADMIN' | 'SEEDING_BRANDING' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
 

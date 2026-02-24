@@ -38,19 +38,9 @@ model User {
   updatedAt     DateTime  @updatedAt
   lastLogin     DateTime? @map("last_login")
 
-  // External Vendor Sharing Fields
-  isExternal           Boolean   @default(false) @map("is_external")
-  externalAccessType   String?   @map("external_access_type") // VIEW, CREATE
-  accessExpiresAt      DateTime? @map("access_expires_at")
-  vendorName           String?   @map("vendor_name")
-  allowedCredentialIds String?   @map("allowed_credential_ids") @db.Text
-  allowedCategories    String?   @map("allowed_categories") @db.Text
-  allowedEnvironments   String?   @map("allowed_environments") @db.Text
-
   // Relations
   createdCredentials      CredentialMaster[] @relation("CreatedBy")
   modifiedCredentials     CredentialMaster[] @relation("ModifiedBy")
-  createdOneTimeSecrets   OneTimeSecret[]    @relation("CreatedOneTimeSecret")
   auditLogs               AuditLog[]         @relation("PerformedBy")
   invitesSent             Invite[]           @relation("InvitedBy")
   
@@ -97,13 +87,6 @@ model Invite {
   
   targetScopedCategories    String?   @map("target_scoped_categories") @db.Text
   targetScopedEnvironments  String?   @map("target_scoped_environments") @db.Text
-
-  // External Vendor Fields
-  isExternal           Boolean   @default(false) @map("is_external")
-  externalAccessType   String?   @map("external_access_type") // VIEW, CREATE
-  accessExpiresAt      DateTime? @map("access_expires_at")
-  vendorName           String?   @map("vendor_name")
-  targetCredentialIds  String?   @map("target_credential_ids") @db.Text
 
   @@map("user_invites")
 }
@@ -193,7 +176,7 @@ model AccessGroupPolicy {
 
 model CredentialMaster {
   id              String    @id @default(uuid()) @map("credential_id")
-  name            String    @unique @map("credential_name")
+  name            String    @map("credential_name")
   type            String    @map("credential_type") // PASSWORD, API_OAUTH, KEY_CERT, TOKEN, FILE, SECURE_NOTE
   category        String?   // Application, Infra, Integration
   environment     String?   // Dev, QA, Prod
@@ -355,7 +338,7 @@ model ExpiryNotification {
 
 model SystemSettings {
   id              Int      @id @default(1)
-  applicationName String   @default("CredSecure") @map("application_name")
+  applicationName String   @default("CRED Secure") @map("application_name")
   companyName     String   @default("Innodhee Services Pvt Ltd") @map("company_name")
   logoUrl         String?  @map("logo_url") @db.LongText
   themeColor      String?  @map("theme_color")
@@ -388,17 +371,6 @@ model PasswordResetToken {
   createdAt DateTime @default(now()) @map("created_on")
 
   @@map("password_reset_tokens")
-}
-
-model TwoFactorResetToken {
-  id        String   @id @default(uuid())
-  email     String
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_on")
-
-  @@map("two_factor_reset_tokens")
 }
 
 model LoginLog {
@@ -448,26 +420,4 @@ model LoginLogArchive {
   @@index([archiveBatchId])
   @@index([email])
   @@map("security_login_logs_archive")
-}
-
-model OneTimeSecret {
-  id            String   @id @default(uuid()) @map("secret_id")
-  name          String?  // Optional reference name
-  secretData    String   @map("secret_data") @db.Text // Encrypted
-  token         String   @unique // The secure access token
-
-  expiresAt     DateTime @map("expires_at")
-  maxViews      Int      @map("max_views")
-  currentViews  Int      @default(0) @map("current_views")
-
-  status        String   @default("ACTIVE") // ACTIVE, REVOKED, EXPIRED
-
-  sharedVia     String   @map("shared_via") // LINK, EMAIL
-  recipientEmail String? @map("recipient_email")
-
-  createdById   String   @map("created_by")
-  createdBy     User     @relation("CreatedOneTimeSecret", fields: [createdById], references: [id])
-  createdAt     DateTime @default(now()) @map("created_on")
-
-  @@map("one_time_secrets")
 }
