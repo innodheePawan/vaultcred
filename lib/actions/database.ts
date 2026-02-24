@@ -73,10 +73,11 @@ export async function checkDatabaseDrift() {
 
     try {
         const schemaPath = path.resolve(process.cwd(), 'prisma/schema.prisma');
-        const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+        const proxyScriptPath = path.resolve(process.cwd(), 'scripts/prisma-proxy.js');
+        const nodeCommand = 'node';
 
-        // On Windows, the shell is required to resolve npx.cmd from the PATH.
-        // We restrict this to Windows to maintain execFile's security benefits on Linux/macOS.
+        // We run node directly because it avoids the platform-specific npx.cmd issues,
+        // and the proxy script handles the rest.
         const useShell = process.platform === 'win32';
 
         const timeoutMs = 60000;
@@ -88,37 +89,18 @@ export async function checkDatabaseDrift() {
             }, timeoutMs);
         });
 
-        console.log("[Drift Check] Spawning child process...");
+        console.log("[Drift Check] Spawning secure Prisma Proxy child process...");
         const spawnPromise = new Promise<{ code: number | null, stdout: string, stderr: string }>((resolve, reject) => {
             const { spawn } = require('child_process');
-            // Strip all AWS and Amplify variables from the child process to stop 
-            // the Amplify credential proxy from starting and causing EADDRINUSE on 9898.
-            const cleanEnv = { ...process.env };
 
-            // CRUCIAL: Amplify injects a credential proxy into all Node child processes via NODE_OPTIONS.
-            // This proxy crashes on port 9898 EADDRINUSE or NaN. Deleting NODE_OPTIONS stops the injection entirely.
-            delete cleanEnv.NODE_OPTIONS;
-
-            Object.keys(cleanEnv).forEach(key => {
-                if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) {
-                    delete cleanEnv[key];
-                }
-            });
-
-            const child = spawn(npxCommand, [
-                '--yes',
-                'prisma', 'migrate', 'diff',
+            const child = spawn(nodeCommand, [
+                proxyScriptPath,
+                'migrate', 'diff',
                 '--from-schema-datasource', schemaPath,
                 '--to-schema-datamodel', schemaPath,
                 '--exit-code'
             ], {
-                env: {
-                    ...cleanEnv,
-                    HOME: os.tmpdir(),
-                    npm_config_cache: path.join(os.tmpdir(), '.npm'),
-                    PRISMA_TELEMETRY_DISABLED: '1',
-                    CHECKPOINT_DISABLE: '1',
-                },
+                env: process.env, // Proxy script sanitizes this for us securely
                 shell: useShell
             });
 

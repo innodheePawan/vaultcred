@@ -148,31 +148,13 @@ export async function syncDatabase() {
     });
 
     try {
-        const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-
-        const cleanEnv = { ...process.env };
-
-        // CRUCIAL: Amplify injects a credential proxy into all Node child processes via NODE_OPTIONS.
-        // This proxy crashes on port 9898 EADDRINUSE or NaN. Deleting NODE_OPTIONS stops the injection entirely.
-        delete cleanEnv.NODE_OPTIONS;
-
-        Object.keys(cleanEnv).forEach(key => {
-            if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) {
-                delete cleanEnv[key];
-            }
-        });
+        const proxyScriptPath = path.resolve(process.cwd(), 'scripts/prisma-proxy.js');
+        const nodeCommand = 'node';
 
         // Detached spawn doesn't always survive in Lambda after return.
         // We add --skip-generate to speed up the push if schema is already compiled.
-        const child = spawn(npxCommand, ['--yes', 'prisma', 'db', 'push', '--accept-data-loss', '--skip-generate'], {
-            env: {
-                ...cleanEnv,
-                DATABASE_URL: dbUrl,
-                HOME: os.tmpdir(),
-                npm_config_cache: path.join(os.tmpdir(), '.npm'),
-                PRISMA_TELEMETRY_DISABLED: '1',
-                CHECKPOINT_DISABLE: '1',
-            },
+        const child = spawn(nodeCommand, [proxyScriptPath, 'db', 'push', '--accept-data-loss', '--skip-generate'], {
+            env: Object.assign({}, process.env, { DATABASE_URL: dbUrl }), // Proxy script sanitizes this for us securely
             cwd: process.cwd(),
             detached: true,
             stdio: 'pipe',
