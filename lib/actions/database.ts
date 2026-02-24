@@ -79,16 +79,19 @@ export async function checkDatabaseDrift() {
         // We restrict this to Windows to maintain execFile's security benefits on Linux/macOS.
         const useShell = process.platform === 'win32';
 
-        const timeoutPromise = new Promise((_, reject) => {
+        const timeoutMs = 60000;
+        const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => {
-                const err = new Error("Command timed out after 15 seconds");
+                const err = new Error(`Command timed out after ${timeoutMs / 1000} seconds`);
                 (err as any).code = "TIMEOUT";
                 reject(err);
-            }, 15000);
+            }, timeoutMs);
         });
 
-        await Promise.race([
-            execFilePromise(npxCommand, [
+        console.log("[Drift Check] Spawning child process...");
+        const spawnPromise = new Promise<{ code: number | null, stdout: string, stderr: string }>((resolve, reject) => {
+            const { spawn } = require('child_process');
+            const child = spawn(npxCommand, [
                 '--yes',
                 'prisma', 'migrate', 'diff',
                 '--from-schema-datasource', schemaPath,
@@ -101,48 +104,62 @@ export async function checkDatabaseDrift() {
                     npm_config_cache: path.join(os.tmpdir(), '.npm'),
                     PRISMA_TELEMETRY_DISABLED: '1',
                     CHECKPOINT_DISABLE: '1',
-                    // Remove Amplify credential listener vars to prevent EADDRINUSE on :9898
                     AWS_CONTAINER_CREDENTIALS_FULL_URI: undefined as any,
                     AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: undefined as any,
                 },
                 shell: useShell
-            }),
-            timeoutPromise
-        ]);
-        return { drift: false };
-    } catch (error: any) {
-        // Prisma migrate diff --exit-code returns:
-        // 0: No changes
-        // 1: Error
-        // 2: Drift detected (sync required)
+            });
 
-        console.log(`[Drift Check] Code: ${error?.code}`);
+            let stdout = "";
+            let stderr = "";
 
-        // Code 2 is the official Prisma exit code for "Drift Detected"
-        if (error?.code === 2) {
+            child.stdout.on('data', (data: Buffer) => {
+                const chunk = data.toString();
+                stdout += chunk;
+                console.log(`[Drift Check STDOUT] ${chunk.trim()}`);
+            });
+
+            child.stderr.on('data', (data: Buffer) => {
+                const chunk = data.toString();
+                stderr += chunk;
+                console.error(`[Drift Check STDERR] ${chunk.trim()}`);
+            });
+
+            child.on('error', (err: Error) => reject(err));
+            child.on('close', (code: number) => resolve({ code, stdout, stderr }));
+        });
+
+        const { code, stdout, stderr } = await Promise.race([spawnPromise, timeoutPromise]);
+
+        console.log(`[Drift Check] Code: ${code}`);
+
+        if (code === 2) {
             console.log("[Drift Check] Official drift detected (Code 2).");
             return { drift: true };
         }
 
-        const stdout = String(error?.stdout || "");
-        const stderr = String(error?.stderr || "");
-        const message = String(error?.message || "");
-        const combinedOutput = `${stdout}\n${stderr}\n${message}`;
-
-        // Fallback: If it exited with Code 1 but still outputted drift info
+        const combinedOutput = `${stdout}\n${stderr}`;
         if (combinedOutput.includes('[*] Changed the') || combinedOutput.includes('[+] Added')) {
             console.log("[Drift Check] Drift detected in output strings despite error.");
-            return { drift: true, error: "Drift detected (environment error encountered).", code: String(error?.code) };
+            return { drift: true, error: "Drift detected (environment error encountered).", code: String(code) };
         }
 
-        // Real errors (Code 1 or other system errors)
-        const errMsg = stderr || message || "Unknown error during drift check";
-        console.error("[Drift Check] Real Error:", errMsg);
+        if (code === 0) {
+            return { drift: false };
+        }
 
-        // Return a strictly serialized plain object to avoid Next.js Action crashing
+        const errMsg = stderr || stdout || "Unknown error during drift check";
+        console.error("[Drift Check] Real Error:", errMsg);
         return {
             drift: false,
-            error: errMsg.substring(0, 500), // truncate just in case it's huge
+            error: errMsg.substring(0, 500),
+            code: String(code || 'UNKNOWN')
+        };
+    } catch (error: any) {
+        console.error(`[Drift Check] CATCH BLOCK HIT: ${error?.message || error}`);
+        return {
+            drift: false,
+            error: String(error?.message || error).substring(0, 500),
             code: String(error?.code || 'UNKNOWN')
         };
     }
