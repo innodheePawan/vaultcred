@@ -90,7 +90,11 @@ export async function checkDatabaseDrift() {
                 ...process.env,
                 HOME: os.tmpdir(),
                 npm_config_cache: path.join(os.tmpdir(), '.npm'),
-                PRISMA_TELEMETRY_DISABLED: '1'
+                PRISMA_TELEMETRY_DISABLED: '1',
+                CHECKPOINT_DISABLE: '1',
+                // Remove Amplify credential listener vars to prevent EADDRINUSE on :9898
+                AWS_CONTAINER_CREDENTIALS_FULL_URI: undefined as any,
+                AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: undefined as any,
             },
             shell: useShell
         });
