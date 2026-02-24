@@ -423,23 +423,12 @@ model LoginLogArchive {
 }
 
 // --------------------------------------
-// DUMMY TABLE FOR SYNC TESTING
+// FINAL DUMMY TABLE FOR BOOTSTRAP AUTO-SYNC TESTING
 // --------------------------------------
-model TestRakeshClaude {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-
-  @@map("test_rakesh_claude_sync")
-}
-
-// --------------------------------------
-// SECOND DUMMY TABLE FOR BOOTSTRAP AUTO-SYNC TESTING
-// --------------------------------------
-model TestAutoSyncTrigger {
+model FinalTestAutoSync {
   id        String   @id @default(uuid())
   testRun   Int      @default(1)
   updatedAt DateTime @updatedAt
 
-  @@map("test_auto_sync_trigger")
+  @@map("final_test_auto_sync")
 }
