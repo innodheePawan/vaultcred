@@ -432,3 +432,14 @@ model TestRakeshClaude {
 
   @@map("test_rakesh_claude_sync")
 }
+
+// --------------------------------------
+// SECOND DUMMY TABLE FOR BOOTSTRAP AUTO-SYNC TESTING
+// --------------------------------------
+model TestAutoSyncTrigger {
+  id        String   @id @default(uuid())
+  testRun   Int      @default(1)
+  updatedAt DateTime @updatedAt
+
+  @@map("test_auto_sync_trigger")
+}
