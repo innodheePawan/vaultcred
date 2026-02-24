@@ -150,12 +150,13 @@ export async function syncDatabase() {
     try {
         const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
-        const cleanEnv = { ...process.env };
-        Object.keys(cleanEnv).forEach(key => {
-            if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) {
-                delete cleanEnv[key];
-            }
-        });
+        const cleanEnv = {
+            ...process.env,
+            // Assign a randomized high port to prevent EADDRINUSE on 9898 and prevent NaN crash
+            AMPLIFY_CREDENTIAL_PORT: `${Math.floor(Math.random() * 10000) + 20000}`,
+            AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: '/dummy/uri',
+            AWS_CONTAINER_CREDENTIALS_FULL_URI: 'http://127.0.0.1:0/dummy'
+        };
 
         // Detached spawn doesn't always survive in Lambda after return.
         // We add --skip-generate to speed up the push if schema is already compiled.

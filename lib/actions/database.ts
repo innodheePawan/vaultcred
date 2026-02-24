@@ -93,12 +93,13 @@ export async function checkDatabaseDrift() {
             const { spawn } = require('child_process');
             // Strip all AWS and Amplify variables from the child process to stop 
             // the Amplify credential proxy from starting and causing EADDRINUSE on 9898.
-            const cleanEnv = { ...process.env };
-            Object.keys(cleanEnv).forEach(key => {
-                if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) {
-                    delete cleanEnv[key];
-                }
-            });
+            const cleanEnv = {
+                ...process.env,
+                // Assign a randomized high port to prevent EADDRINUSE on 9898 and prevent NaN crash
+                AMPLIFY_CREDENTIAL_PORT: `${Math.floor(Math.random() * 10000) + 20000}`,
+                AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: '/dummy/uri',
+                AWS_CONTAINER_CREDENTIALS_FULL_URI: 'http://127.0.0.1:0/dummy'
+            };
 
             const child = spawn(npxCommand, [
                 '--yes',
