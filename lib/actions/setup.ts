@@ -150,13 +150,17 @@ export async function syncDatabase() {
     try {
         const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
-        const cleanEnv = {
-            ...process.env,
-            // Assign a randomized high port to prevent EADDRINUSE on 9898 and prevent NaN crash
-            AMPLIFY_CREDENTIAL_PORT: `${Math.floor(Math.random() * 10000) + 20000}`,
-            AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: '/dummy/uri',
-            AWS_CONTAINER_CREDENTIALS_FULL_URI: 'http://127.0.0.1:0/dummy'
-        };
+        const cleanEnv = { ...process.env };
+
+        // CRUCIAL: Amplify injects a credential proxy into all Node child processes via NODE_OPTIONS.
+        // This proxy crashes on port 9898 EADDRINUSE or NaN. Deleting NODE_OPTIONS stops the injection entirely.
+        delete cleanEnv.NODE_OPTIONS;
+
+        Object.keys(cleanEnv).forEach(key => {
+            if (key.startsWith('AWS_') || key.startsWith('AMPLIFY_')) {
+                delete cleanEnv[key];
+            }
+        });
 
         // Detached spawn doesn't always survive in Lambda after return.
         // We add --skip-generate to speed up the push if schema is already compiled.
