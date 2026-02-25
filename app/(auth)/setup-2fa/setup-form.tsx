@@ -55,16 +55,13 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                 return;
             }
 
-            // Critical: Update the session so middleware sees the new 2FA status
-            await update({ twoFactorEnabled: true });
-
+            // Workaround for NextAuth Edge Runtime Cookie desync:
+            // Since the user is locked out by middleware until the cookie explicitly states `twoFactorEnabled: true`, 
+            // and `update()` often fails due to heavy browser caching, we destroy the local session and force
+            // them to log in once to perfectly align the NextAuth JWT Cookie with the true database state.
             setStep('done');
             setTimeout(() => {
-                if (user?.isExternal) {
-                    window.location.href = '/vendor/access';
-                } else {
-                    window.location.href = '/dashboard';
-                }
+                window.location.href = '/api/auth/signout?callbackUrl=/login?setup=success';
             }, 1500);
         });
     };
