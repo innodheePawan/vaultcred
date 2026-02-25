@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { generateTwoFactorSetup, enableTwoFactor } from '@/lib/actions/two-factor';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { ShieldCheck, CheckCircle, AlertCircle, Copy, Loader2 } from 'lucide-react';
 
 interface SetupTwoFactorFormProps {
@@ -61,7 +61,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
             // them to log in once to perfectly align the NextAuth JWT Cookie with the true database state.
             setStep('done');
             setTimeout(() => {
-                window.location.href = '/api/auth/signout?callbackUrl=/login?setup=success';
+                signOut({ callbackUrl: '/login?setup=success', redirect: true });
             }, 1500);
         });
     };
