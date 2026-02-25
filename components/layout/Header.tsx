@@ -43,7 +43,7 @@ export function Header({ settings, user, publicView = false }: { settings?: any,
                         <img
                             src={logoUrl}
                             alt="Logo"
-                            style={{ width: '100%', height: '100%', objectFit: (!publicView && isCollapsed) ? 'contain' : 'fill', display: 'block', padding: (!publicView && isCollapsed) ? '8px' : '0' }}
+                            style={{ width: '80%', height: '100%', objectFit: 'fill', display: 'block', padding: '5px' }}
                         />
                     ) : (
                         <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
