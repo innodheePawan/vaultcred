@@ -56,7 +56,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
             }
 
             // Critical: Update the session so middleware sees the new 2FA status
-            await update();
+            await update({ twoFactorEnabled: true });
 
             setStep('done');
             setTimeout(() => {

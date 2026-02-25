@@ -51,7 +51,7 @@ export const authConfig = {
 
             return true;
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             // Server-Side Heartbeat for Session Timeout (15 minutes = 900,000 ms)
             const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
             const now = Date.now();
@@ -65,6 +65,11 @@ export const authConfig = {
                 token.vendorName = (user as any).vendorName || null;
                 token.externalAccessType = (user as any).externalAccessType || null;
                 token.lastActivity = now; // Initialize heartbeat on login
+            } else if (trigger === "update" && session) {
+                // Client-side session override
+                if (session.twoFactorEnabled !== undefined) {
+                    token.twoFactorEnabled = session.twoFactorEnabled;
+                }
             } else if (token.lastActivity) {
                 // Check if session has expired due to inactivity
                 if (now - (token.lastActivity as number) > SESSION_TIMEOUT_MS) {
