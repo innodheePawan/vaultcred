@@ -318,24 +318,17 @@ export default function InviteUserForm({ groups, credentials, action }: { groups
                     {roleType === 'GROUP' && (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Assign Role Group
-                                </label>
-                                <div className="mt-1">
+                                <div className="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Group</label>
                                     <select
-                                        id="groups"
-                                        name="groups"
-                                        className="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2"
-                                        required
+                                        name="targetGroupIds"
+                                        className="w-full text-black p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700"
+                                        defaultValue=""
                                     >
-                                        <option value="" disabled selected>Select a Group</option>
-                                        {groups
-                                            .sort((a, b) => a.name.localeCompare(b.name))
-                                            .map((group) => (
-                                                <option key={group.id} value={group.id}>
-                                                    {group.name}
-                                                </option>
-                                            ))}
+                                        <option value="" disabled>Select a Group</option>
+                                        {groups.map(g => (
+                                            <option key={g.id} value={g.id}>{g.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
