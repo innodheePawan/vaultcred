@@ -34,6 +34,15 @@ model User {
   twoFactorSecret      String?   @map("two_factor_secret") @db.Text
   twoFactorEnabled     Boolean   @default(false) @map("two_factor_enabled")
 
+  // External Vendor Fields
+  isExternal           Boolean   @default(false) @map("is_external")
+  vendorName           String?   @map("vendor_name")
+  externalAccessType   String?   @map("external_access_type") // e.g., 'API', 'PORTAL'
+  accessExpiresAt      DateTime? @map("access_expires_at")
+  allowedCategories    String?   @map("allowed_categories") @db.Text
+  allowedEnvironments  String?   @map("allowed_environments") @db.Text
+  allowedCredentialIds String?   @map("allowed_credential_ids") @db.Text
+
   createdAt     DateTime  @default(now()) @map("created_on")
   updatedAt     DateTime  @updatedAt
   lastLogin     DateTime? @map("last_login")
@@ -46,6 +55,7 @@ model User {
   
   // IAM Relations
   userGroups              UserGroupMapping[]
+  oneTimeSecrets          OneTimeSecret[]
 
   @@map("users")
 }
@@ -442,4 +452,30 @@ model FinalTestAutoSync {
   updatedAt DateTime @updatedAt
 
   @@map("final_test_auto_sync")
+}
+
+// --------------------------------------
+// ONE-TIME SECRETS
+// --------------------------------------
+model OneTimeSecret {
+  id             String    @id @default(uuid()) @map("secret_id")
+  name           String?
+  secretData     String    @map("secret_data") @db.LongText
+  token          String    @unique
+  
+  status         String    @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
+  maxViews       Int       @default(1) @map("max_views")
+  currentViews   Int       @default(0) @map("current_views")
+  expiresAt      DateTime  @map("expires_at")
+  
+  sharedVia      String    @default("LINK") @map("shared_via") // LINK, EMAIL
+  recipientEmail String?   @map("recipient_email")
+  
+  createdById    String    @map("created_by")
+  createdBy      User      @relation(fields: [createdById], references: [id])
+  createdAt      DateTime  @default(now()) @map("created_on")
+
+  @@index([token])
+  @@index([createdById])
+  @@map("one_time_secrets")
 }
