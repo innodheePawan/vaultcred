@@ -98,6 +98,13 @@ model Invite {
   targetScopedCategories    String?   @map("target_scoped_categories") @db.Text
   targetScopedEnvironments  String?   @map("target_scoped_environments") @db.Text
 
+  // External Vendor Invite Fields
+  isExternal           Boolean   @default(false) @map("is_external")
+  vendorName           String?   @map("vendor_name")
+  externalAccessType   String?   @map("external_access_type") // e.g., 'API', 'PORTAL'
+  accessExpiresAt      DateTime? @map("access_expires_at")
+  targetCredentialIds  String?   @map("target_credential_ids") @db.Text
+
   @@map("user_invites")
 }
 
