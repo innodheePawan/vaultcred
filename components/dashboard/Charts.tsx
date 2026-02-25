@@ -121,11 +121,27 @@ export function EnvironmentBarChart({ data }: { data: ChartData[] }) {
         }
     };
 
+    // Define visual sort order (1 = highest priority).
+    // Recharts vertical views plot index 0 at the bottom. 
+    // To show Prod at the top, it must be the LAST element in the array.
+    const orderWeight: Record<string, number> = {
+        'Dev': 1, 'Development': 1,
+        'QA': 2, 'Staging': 2,
+        'Prod': 3, 'Production': 3
+    };
+
+    // Sort descending by weight so Dev (3) -> QA (2) -> Prod (1)
+    const sortedData = [...data].sort((a, b) => {
+        const weightA = orderWeight[a.name] || 99;
+        const weightB = orderWeight[b.name] || 99;
+        return weightB - weightA;
+    });
+
     return (
         <div className="h-full w-full relative">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                    data={data}
+                    data={sortedData}
                     layout="vertical"
                     margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
                 >

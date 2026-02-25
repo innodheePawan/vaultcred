@@ -178,7 +178,24 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                         <Field label="File Type" value={data.fileType} fieldKey="fileType" />
                     </div>
                     {/* Display file content if available (text files) */}
-                    <Field label="File Content" value={data.fileContent} isSecret isMultiline fieldKey="fileContent" />
+                    <div className="mb-4">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">File Content</label>
+                            {data.fileContent && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => downloadFile(data.fileContent, data.fileName || `${data.name ? data.name.replace(/\s+/g, '_') : 'file'}.txt`)}
+                                    className="h-7 text-xs flex items-center gap-1"
+                                    title="Download File"
+                                >
+                                    <Download className="h-3.5 w-3.5" />
+                                    <span>Download</span>
+                                </Button>
+                            )}
+                        </div>
+                        <Field label="" value={data.fileContent} isSecret isMultiline fieldKey="fileContent" />
+                    </div>
                 </>
             )}
         </div>
