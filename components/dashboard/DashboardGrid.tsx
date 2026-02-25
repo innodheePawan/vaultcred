@@ -38,8 +38,14 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
         });
     };
 
-    const totalCredentials = stats.personal.total + stats.shared.total;
-    const totalAtRisk = stats.risk.totalExpired + stats.risk.totalNearExpiry;
+    const totalCredentials = (showPersonal ? stats.personal.total : 0) + stats.shared.total;
+
+    // Calculate precise risk amounts based on whether personal stats should be included
+    const displayExpired = showPersonal ? stats.risk.totalExpired : Math.max(0, stats.risk.totalExpired - stats.personal.expired);
+    const displayNearExpiry = showPersonal ? stats.risk.totalNearExpiry : Math.max(0, stats.risk.totalNearExpiry - stats.personal.expiringSoon);
+
+    const totalAtRisk = displayExpired + displayNearExpiry;
+
     const healthPercent = totalCredentials > 0
         ? Math.round(((totalCredentials - totalAtRisk) / totalCredentials) * 100)
         : 100;
@@ -166,7 +172,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 p-5 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                         <div className="relative flex items-start justify-between">
-                            <AnimatedStat value={stats.risk.totalExpired} label="Expired" sub="Immediate action needed" />
+                            <AnimatedStat value={displayExpired} label="Expired" sub="Immediate action needed" />
                             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <AlertTriangle className="w-6 h-6" />
                             </div>
@@ -183,7 +189,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:-translate-y-0.5 h-36 flex flex-col justify-between">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-110 transition-transform duration-500" />
                         <div className="relative flex items-start justify-between">
-                            <AnimatedStat value={stats.risk.totalNearExpiry} label="Expiring Soon" sub="Within next 60 days" />
+                            <AnimatedStat value={displayNearExpiry} label="Expiring Soon" sub="Within next 60 days" />
                             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <Clock className="w-6 h-6" />
                             </div>
