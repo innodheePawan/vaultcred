@@ -8,6 +8,11 @@ export async function register() {
             const { internalCheckDatabaseDrift } = await import('@/lib/actions/database');
             const driftResult = await internalCheckDatabaseDrift();
 
+            if (driftResult && driftResult.error) {
+                console.error('[Bootstrap] ❌ Drift Check Internal Error:', driftResult.error);
+                return; // Abort sync
+            }
+
             if (driftResult && driftResult.drift) {
                 console.log('[Bootstrap] Schema Drift Detected! Automatically syncing database...');
 

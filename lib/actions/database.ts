@@ -67,7 +67,29 @@ export async function internalCheckDatabaseDrift() {
         // This ensures the developer workflow isn't blocked by needing to run `npx prisma generate` first
         const fs = await import('fs/promises');
         const path = await import('path');
-        const schemaPath = path.join(process.cwd(), 'prisma', 'schema.prisma');
+
+        // AWS Amplify Standalone relocates files, so we loop over potential paths statically
+        let schemaPath = '';
+        const possibleSchemaPaths = [
+            path.join(process.cwd(), 'prisma', 'schema.prisma'), // Standard local path
+            path.join(process.cwd(), 'node_modules', '.prisma', 'client', 'schema.prisma'), // Next.js Traced Prisma Client copy
+            path.join(process.cwd(), '..', 'prisma', 'schema.prisma'), // Hoisted Next.js monorepo root
+            path.join(process.cwd(), '.next', 'server', 'prisma', 'schema.prisma'), // Internal Next.js bundle output
+            path.join(process.cwd(), '..', 'node_modules', '.prisma', 'client', 'schema.prisma') // Hoisted client bundle
+        ];
+
+        for (const sp of possibleSchemaPaths) {
+            const exists = await fs.access(sp).then(() => true).catch(() => false);
+            if (exists) {
+                schemaPath = sp;
+                break;
+            }
+        }
+
+        if (!schemaPath) {
+            schemaPath = path.join(process.cwd(), 'prisma', 'schema.prisma'); // Fallback
+        }
+
         const schemaText = await fs.readFile(schemaPath, 'utf-8');
 
         const expectedSchema: { table: string, columns: string[] }[] = [];
