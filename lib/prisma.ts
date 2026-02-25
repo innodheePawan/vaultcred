@@ -9,9 +9,7 @@ const dbUrl = process.env.DATABASE_URL;
 if (!dbUrl) {
     console.error("❌ [Prisma] DATABASE_URL is undefined. Prisma Client will fail to connect.");
 } else {
-    // Hide credentials in logs
-    const safeUrl = dbUrl.replace(/:[^:@]*@/, ':****@');
-    console.log("✅ [Prisma] Connecting to:", safeUrl);
+    // Hide credentials in logs natively
 }
 
 // Prevent crash on startup if Env Var is missing. 

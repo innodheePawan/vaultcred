@@ -159,6 +159,7 @@ export async function internalCheckDatabaseDrift() {
         // 4. Compare expected vs actual
         const missingTables: string[] = [];
         const missingColumns: string[] = [];
+        const expectedTableNames = expectedSchema.map(e => e.table);
 
         for (const expected of expectedSchema) {
             const dbCols = dbSchema[expected.table];
@@ -174,20 +175,26 @@ export async function internalCheckDatabaseDrift() {
             }
         }
 
-        const hasDrift = missingTables.length > 0 || missingColumns.length > 0;
+        const orphanedTables: string[] = [];
+        for (const dbTableName of Object.keys(dbSchema)) {
+            if (dbTableName === '_prisma_migrations') continue;
+            if (!expectedTableNames.includes(dbTableName)) {
+                orphanedTables.push(dbTableName);
+            }
+        }
+
+        const hasDrift = missingTables.length > 0 || missingColumns.length > 0 || orphanedTables.length > 0;
 
         if (hasDrift) {
-            console.log(`[Drift Check] Drift detected! Missing Tables: ${missingTables.length}, Missing Columns: ${missingColumns.length}`);
-            if (missingColumns.length > 0) console.log(`[Drift Check] Missing specific columns, e.g. ${missingColumns[0]}`);
 
             return {
                 drift: true,
                 missingTables,
                 missingColumns,
+                orphanedTables
             };
         }
 
-        console.log('[Drift Check] All expected tables AND columns exist. No drift detected.');
         return { drift: false };
     } catch (error: any) {
         console.error(`[Drift Check] SQL Error: ${error?.message || error}`);

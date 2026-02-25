@@ -33,7 +33,7 @@ export default async function DashboardLayout({
                 where: { id: session.user.id }
             });
         } catch (e) {
-            console.warn("Failed to fetch current user in layout (DB offline?):", e);
+            // Silently swallow fetch failure on dashboard layout if DB is unreachable
         }
     }
 

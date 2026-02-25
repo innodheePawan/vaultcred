@@ -407,7 +407,7 @@ export async function purgeDatabase() {
     try {
         // Resilient deletion: wrap each in try/catch in case tables don't exist yet
         const safeDelete = async (model: any) => {
-            try { await model.deleteMany({}); } catch (e) { /* console.warn(`Failed to delete from ${model.name}:`, e.message); */ }
+            try { await model.deleteMany({}); } catch (e) { }
         };
 
         // Type-specific credential details

@@ -443,16 +443,6 @@ model LoginLogArchive {
   @@map("security_login_logs_archive")
 }
 
-// --------------------------------------
-// FINAL DUMMY TABLE FOR BOOTSTRAP AUTO-SYNC TESTING
-// --------------------------------------
-model FinalTestAutoSync {
-  id        String   @id @default(uuid())
-  testRun   Int      @default(1)
-  updatedAt DateTime @updatedAt
-
-  @@map("final_test_auto_sync")
-}
 
 // --------------------------------------
 // ONE-TIME SECRETS

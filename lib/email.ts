@@ -83,7 +83,7 @@ async function getTransporter() {
     }
 
     // Fallback: Ethereal test account (dev only)
-    console.warn('[Email] No SMTP configured in SystemSettings. Using Ethereal test account.');
+    // No SMTP configured in SystemSettings. Using Ethereal test account.
     const testAccount = await nodemailer.createTestAccount();
     const transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
