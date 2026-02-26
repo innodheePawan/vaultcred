@@ -36,11 +36,43 @@ export default function CredentialForm({
     const [publicFileName, setPublicFileName] = useState('');
     const [privateFileName, setPrivateFileName] = useState('');
     const [uploadedFileName, setUploadedFileName] = useState('');
+    const [clientError, setClientError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const validateFile = (file: File) => {
+        setClientError(null);
+        if (file.size > 100 * 1024) {
+            setClientError(`File "${file.name}" exceeds the 100KB size limit.`);
+            return false;
+        }
+
+        const isImageMime = file.type.startsWith('image/');
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'heic'];
+
+        if (isImageMime || imageExtensions.includes(ext)) {
+            setClientError(`Image formats are not allowed ("${file.name}").`);
+            return false;
+        }
+
+        return true;
+    };
 
     const handleCredFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (!validateFile(file)) {
+            e.target.value = ''; // Reset input
+            setUploadedFileName('');
+            const nameInput = document.getElementById('fileName') as HTMLInputElement;
+            if (nameInput) nameInput.value = '';
+            const typeInput = document.getElementById('fileType') as HTMLInputElement;
+            if (typeInput) typeInput.value = '';
+            const textarea = document.getElementById('fileContent') as HTMLTextAreaElement;
+            if (textarea) textarea.value = '';
+            return;
+        }
 
         // Auto-populate fileName
         const nameInput = document.getElementById('fileName') as HTMLInputElement;
@@ -66,6 +98,11 @@ export default function CredentialForm({
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (!validateFile(file)) {
+            e.target.value = ''; // Reset input
+            return;
+        }
 
         // Store filename
         if (fieldId === 'publicKey') setPublicFileName(file.name);
@@ -500,6 +537,16 @@ export default function CredentialForm({
                     {isPending ? 'Saving...' : (isEdit ? 'Update Credential' : 'Save Credential')}
                 </Button>
             </div>
+
+            {clientError && (
+                <div className="p-4 bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-md flex flex-col gap-2 border border-orange-200 dark:border-orange-800">
+                    <div className="flex items-center gap-2 font-bold">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>File Upload Error</span>
+                    </div>
+                    <p className="text-sm">{clientError}</p>
+                </div>
+            )}
 
             {state?.error && (
                 <div className="p-4 bg-red-50 text-red-700 rounded-md flex flex-col gap-2">

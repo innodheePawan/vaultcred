@@ -6,7 +6,6 @@ import { ArrowLeft, Clock, Folder, Shield, Calendar, Layers, Globe, EyeOff } fro
 import { formatDate } from '@/lib/utils';
 import CredentialSecrets from '@/components/credentials/CredentialSecrets';
 import DeleteCredentialButton from '@/components/credentials/DeleteButton';
-import ShareSettings from '@/components/credentials/ShareSettings';
 import { auth } from '@/lib/auth';
 
 export default async function CredentialDetailsPage(props: { params: Promise<{ id: string }> }) {
@@ -119,13 +118,6 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
                         Created by <span className="font-medium text-gray-900 dark:text-white">{credential.createdBy.name}</span>
                         {credential.createdBy.email && ` (${credential.createdBy.email})`} on {formatDate(credential.createdOn)}
                     </div>
-
-                    <ShareSettings
-                        credentialId={credential.id}
-                        shares={[]} /* accessList not implemented yet */
-                        ownerId={credential.createdById}
-                        currentUserId={(await auth())?.user?.id}
-                    />
                 </div>
             </div>
         </div>
