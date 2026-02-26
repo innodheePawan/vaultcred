@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
+import { AlertCircle, CheckCircle, Upload, Eye, EyeOff } from 'lucide-react';
 
 const initialState = {
     message: null,
@@ -37,6 +37,10 @@ export default function CredentialForm({
     const [privateFileName, setPrivateFileName] = useState('');
     const [uploadedFileName, setUploadedFileName] = useState('');
     const [clientError, setClientError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showClientSecret, setShowClientSecret] = useState(false);
+    const [showPassphrase, setShowPassphrase] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const validateFile = (file: File) => {
@@ -287,14 +291,34 @@ export default function CredentialForm({
                         </label>
                     </div>
                     <div>
-                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password Username <span className="text-red-500">*</span></label>
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Username <span className="text-red-500">*</span></label>
                         <input type="text" name="username" id="username" required defaultValue={initialData?.details?.username}
                             className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password <span className="text-red-500">*</span></label>
-                        <input type="password" name="password" id="password" required={!isEdit} defaultValue={initialData?.details?.password} placeholder={isEdit ? 'Unchanged' : ''}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
+                        <div className="relative mt-1">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                id="password"
+                                required={!isEdit}
+                                defaultValue={initialData?.details?.password}
+                                placeholder={isEdit ? 'Unchanged' : ''}
+                                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 pr-10 dark:bg-gray-700 dark:text-white"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                                ) : (
+                                    <Eye className="h-4 w-4" aria-hidden="true" />
+                                )}
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label htmlFor="host" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Host / IP (Optional)</label>
@@ -324,8 +348,27 @@ export default function CredentialForm({
                         </div>
                         <div>
                             <label htmlFor="clientSecret" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
-                            <input type="password" name="clientSecret" id="clientSecret" defaultValue={initialData?.details?.clientSecret} placeholder={isEdit ? 'Unchanged' : ''}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
+                            <div className="relative mt-1">
+                                <input
+                                    type={showClientSecret ? "text" : "password"}
+                                    name="clientSecret"
+                                    id="clientSecret"
+                                    defaultValue={initialData?.details?.clientSecret}
+                                    placeholder={isEdit ? 'Unchanged' : ''}
+                                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 pr-10 dark:bg-gray-700 dark:text-white"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowClientSecret(!showClientSecret)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                                >
+                                    {showClientSecret ? (
+                                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" aria-hidden="true" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div>
@@ -420,8 +463,27 @@ export default function CredentialForm({
 
                     <div>
                         <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Passphrase (Optional)</label>
-                        <input type="password" name="passphrase" id="passphrase" defaultValue={initialData?.details?.passphrase} placeholder={isEdit ? 'Unchanged' : ''}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
+                        <div className="relative mt-1">
+                            <input
+                                type={showPassphrase ? "text" : "password"}
+                                name="passphrase"
+                                id="passphrase"
+                                defaultValue={initialData?.details?.passphrase}
+                                placeholder={isEdit ? 'Unchanged' : ''}
+                                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 pr-10 dark:bg-gray-700 dark:text-white"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassphrase(!showPassphrase)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                            >
+                                {showPassphrase ? (
+                                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                                ) : (
+                                    <Eye className="h-4 w-4" aria-hidden="true" />
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
