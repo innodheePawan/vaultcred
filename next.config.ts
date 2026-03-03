@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
     "/**/*": [
       "./node_modules/@prisma/engines/**/*",
       "./node_modules/prisma/query-engine*",
-      "./node_modules/prisma/schema-engine*"
+      "./node_modules/prisma/schema-engine*",
+      "./keys/**/*"
     ]
   }
 };
