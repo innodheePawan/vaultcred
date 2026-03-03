@@ -150,84 +150,9 @@ export default async function middleware(req: any) {
     const isActivationApi = path.startsWith('/api/activate') || path.startsWith('/api/internal/license-state');
     const isHealthEndpoint = path === '/api/health';
 
-    // Check License State
-    let licenseState = 'VALID'; // Default to valid if check fails to prevent hard bricking, unless we actually get UNACTIVATED
-
-    // We only perform the expensive fetch if it's not a pre-allowed asset/api
-    if (!isAsset && !isNextInternal && !isActivationApi && !isHealthEndpoint) {
-        try {
-            const origin = req.nextUrl.origin || 'http://localhost:3000';
-            const stateUrl = new URL('/api/internal/license-state', origin);
-            // Quick 2500ms timeout fetch to ensure middleware doesn't hang (larger for dev environments)
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-            const res = await fetch(stateUrl.toString(), { signal: controller.signal, cache: 'no-store' });
-            clearTimeout(timeoutId);
-
-            if (res.ok) {
-                const data = await res.json();
-                licenseState = data.state || 'UNACTIVATED';
-            }
-        } catch (error) {
-
-            // Fallback strategy: if the internal API is unreachable on boot, we should not block immediately,
-            // but the BRD says "If DB unreachable -> system remains operational...".
-            // So we default to 'VALID' temporarily if fetch throws (e.g., server booting up),
-            // except the BRD actually says the internal API will return UNACTIVATED if Engine fails completely.
-        }
-    }
-
-    // Apply strict routing rules
-    if (licenseState === 'UNACTIVATED' || licenseState === 'COMPROMISED') {
-        const isAllowed = isActivation || isActivationApi || isAsset || isNextInternal || isHealthEndpoint || path === '/';
-
-        if (!isAllowed) {
-            if (isApi) {
-                return new NextResponse(
-                    JSON.stringify({ error: `System is ${licenseState}. Access restricted.` }),
-                    { status: 403, headers: { 'Content-Type': 'application/json' } }
-                );
-            }
-            const url = req.nextUrl.clone();
-            url.pathname = '/activation';
-            return NextResponse.redirect(url);
-        }
-    }
-
-    if (licenseState === 'LOCKED') {
-        const isAllowed = isActivation || isActivationApi || isAsset || isNextInternal || isHealthEndpoint || path.startsWith('/login');
-
-        if (!isAllowed) {
-            // Check if authenticated user is SUPERUSER
-            const isLoggedIn = !!req?.auth;
-            const userRole = (req?.auth?.user as any)?.role;
-            const isSuperUser = isLoggedIn && userRole === 'SUPERUSER';
-
-            if (!isSuperUser) {
-                if (isApi) {
-                    return new NextResponse(
-                        JSON.stringify({ error: `License is LOCKED. Access restricted.` }),
-                        { status: 403, headers: { 'Content-Type': 'application/json' } }
-                    );
-                }
-                const url = req.nextUrl.clone();
-                url.pathname = '/activation';
-                return NextResponse.redirect(url);
-            }
-        }
-    }
-
-    if (licenseState === 'VALID' || licenseState === 'GRACE') {
-        if (isActivation && !isActivationApi) {
-            const hasSessionToken = req.cookies.has('next-auth.session-token') || req.cookies.has('__Secure-next-auth.session-token');
-            if (!hasSessionToken) {
-                const url = req.nextUrl.clone();
-                url.pathname = '/login';
-                return NextResponse.redirect(url);
-            }
-        }
-    }
+    // C. NORMAL AUTH FLOW
+    // Server Components (layouts and pages) handle robust License Enforcement natively via Node.js Prisma
+    // This bypasses AWS Edge HTTP loopback issues.
 
     // C. NORMAL AUTH FLOW
     return (authHandler as any)(req);
