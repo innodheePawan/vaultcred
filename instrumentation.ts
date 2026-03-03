@@ -27,6 +27,18 @@ export async function register() {
             } else {
                 // Database schema is already in sync.
             }
+
+            // --- License State Evaluation (Boot-Time) ---
+            try {
+                const { getLicenseState } = await import('@/lib/license-enforcement');
+                console.log('[Bootstrap] 🔒 Evaluatng License State...');
+                // Force a refresh to read the DB, decrypt, and re-verify the signature
+                const licenseInfo = await getLicenseState(true);
+                console.log(`[Bootstrap] ℹ️ Initial License State: ${licenseInfo.state}`);
+            } catch (licenseError) {
+                console.error('[Bootstrap] ⚠️ Non-fatal error during license evaluation:', licenseError);
+            }
+
         } catch (error) {
             console.error('[Bootstrap] ❌ Fatal Error during automatic database sync sequence:', error);
         }

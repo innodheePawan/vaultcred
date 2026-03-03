@@ -11,6 +11,8 @@ import { Suspense } from 'react';
 import { getSystemSettings } from "@/lib/actions/settings";
 import { prisma } from "@/lib/prisma"; // Added prisma to fetch user directly
 import { LayoutProvider } from "@/components/layout/LayoutContext";
+import { getLicenseState } from "@/lib/license-enforcement";
+import { LicenseWarningBanner } from "@/components/layout/LicenseWarningBanner";
 
 
 export default async function DashboardLayout({
@@ -52,11 +54,18 @@ export default async function DashboardLayout({
             console.error("Failed to load access context:", e);
         }
     }
+    let licenseInfo = null;
+    try {
+        licenseInfo = await getLicenseState();
+    } catch (e) {
+        // Fallback for missing DB
+    }
 
     return (
         <LayoutProvider>
             <SessionTimeout />
             <div className="h-screen flex flex-col overflow-hidden">
+                <LicenseWarningBanner licenseInfo={licenseInfo} />
                 {/* Pass currentUser which contains profileImage */}
                 <Header settings={settings} user={currentUser} />
                 <div className="flex flex-1 overflow-hidden">

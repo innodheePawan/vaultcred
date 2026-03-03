@@ -451,6 +451,10 @@ export async function purgeDatabase() {
         // Settings
         await safeDelete(prisma.systemSettings);
 
+        // License
+        await safeDelete(prisma.licenseAlertLog);
+        await safeDelete(prisma.licenseRegistry);
+
         return { success: true };
     } catch (error: any) {
         console.error('[Setup] Purge Failed:', error);
