@@ -6,7 +6,7 @@ import { generateLicenseSignature, getMachineId, verifyLicenseServerSignature } 
 import { LICENCE_PUBLIC_KEY } from '@/lib/public-key';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { invalidateLicenseCache } from '@/lib/license-enforcement';
+import { invalidateLicenseCache, getLicenseState } from '@/lib/license-enforcement';
 import { headers } from 'next/headers';
 
 const ACTIVATION_API_URL = 'https://main.d2qgnt0ki6h7ki.amplifyapp.com/api/activate';
@@ -55,7 +55,16 @@ export async function activateProduct(formData: FormData) {
         const timestamp = Math.floor(Date.now() / 1000).toString();
         const nonce = Math.random().toString(36).substring(2, 15);
         const fingerprint = await getMachineId();
-        const domain = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL).hostname : 'localhost';
+
+        // Resolve domain from the actual request Host header (works on AWS/Vercel/any server)
+        const headersList = await headers();
+        const host = headersList.get('host') || '';
+        let domain = 'localhost';
+        if (host && host !== 'localhost' && !host.startsWith('localhost:')) {
+            domain = host.split(':')[0]; // Strip port if present
+        } else if (process.env.NEXTAUTH_URL) {
+            try { domain = new URL(process.env.NEXTAUTH_URL).hostname; } catch { }
+        }
 
         const body = JSON.stringify({
             activationKey: finalActivationKey,
@@ -154,15 +163,8 @@ export async function activateProduct(formData: FormData) {
             // Immediately clear the application's global license cache locally
             invalidateLicenseCache();
 
-            // Ping the internal API to clear its cache in case it runs in an isolated worker (common in dev mode)
-            try {
-                const headersList = await headers();
-                const host = headersList.get('host') || 'localhost:3000';
-                const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-                await fetch(`${protocol}://${host}/api/internal/license-state?refresh=true`, { cache: 'no-store' });
-            } catch (e) {
-
-            }
+            // Force a fresh read so subsequent Server Component renders in this worker see VALID
+            await getLicenseState(true);
 
             revalidatePath('/');
             return { success: true, message: 'Product activated successfully!' };
