@@ -34,7 +34,7 @@ export function SessionTimeout({ timeoutMs = 900000, warningMs = 60000 }: Sessio
                 await logUserLogout();
             }
         } catch (e) {
-            console.error("Auto-logout log failed", e);
+            // Auto-logout log failed
         } finally {
             signOut({ callbackUrl: '/login?reason=timeout' });
         }

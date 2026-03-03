@@ -9,7 +9,7 @@ export async function register() {
             const driftResult = await internalCheckDatabaseDrift();
 
             if (driftResult && driftResult.error) {
-                console.error('[Bootstrap] ❌ Drift Check Internal Error:', driftResult.error);
+
                 return; // Abort sync
             }
 
@@ -22,13 +22,25 @@ export async function register() {
                 if (syncResult && syncResult.success) {
                     // Database successfully synchronized.
                 } else {
-                    console.error('[Bootstrap] ❌ Auto-Sync failed. User intervention may be required upon /setup', syncResult?.error);
+
                 }
             } else {
                 // Database schema is already in sync.
             }
+
+            // --- License State Evaluation (Boot-Time) ---
+            try {
+                const { getLicenseState } = await import('@/lib/license-enforcement');
+
+                // Force a refresh to read the DB, decrypt, and re-verify the signature
+                const licenseInfo = await getLicenseState(true);
+
+            } catch (licenseError) {
+
+            }
+
         } catch (error) {
-            console.error('[Bootstrap] ❌ Fatal Error during automatic database sync sequence:', error);
+
         }
     }
 }

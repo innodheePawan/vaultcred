@@ -19,7 +19,8 @@ const authHandler = auth((req) => {
     const isSignout = path.startsWith('/signout') || path.startsWith('/api/auth/signout');
     const isEnvValue_auth = path.startsWith('/env-value');
     const isShare = path.startsWith('/share');
-    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa || isShare;
+    const isActivation = path.startsWith('/activation');
+    const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa || isShare || isActivation;
 
     // Auth Session
     const isLoggedIn = !!req.auth;
@@ -139,6 +140,19 @@ export default async function middleware(req: any) {
         url.pathname = '/setup';
         return NextResponse.redirect(url);
     }
+
+    // B2. ACTIVATION & LICENSE ENFORCEMENT CHECK
+    const isSetupValidation = path.startsWith('/setup-validation');
+    const isEnvValue_auth = path.startsWith('/env-value');
+
+    // Always allowed routes
+    const isActivation = path.startsWith('/activation');
+    const isActivationApi = path.startsWith('/api/activate') || path.startsWith('/api/internal/license-state');
+    const isHealthEndpoint = path === '/api/health';
+
+    // C. NORMAL AUTH FLOW
+    // Server Components (layouts and pages) handle robust License Enforcement natively via Node.js Prisma
+    // This bypasses AWS Edge HTTP loopback issues.
 
     // C. NORMAL AUTH FLOW
     return (authHandler as any)(req);

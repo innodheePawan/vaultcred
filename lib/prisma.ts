@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 const dbUrl = process.env.DATABASE_URL;
 
 if (!dbUrl) {
-    console.error("❌ [Prisma] DATABASE_URL is undefined. Prisma Client will fail to connect.");
+    // DATABASE_URL is undefined - Prisma Client will fail to connect
 } else {
     // Hide credentials in logs natively
 }

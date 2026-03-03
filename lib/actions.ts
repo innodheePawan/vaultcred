@@ -156,7 +156,7 @@ export async function registerUser(token: string, formData: FormData) {
         return { success: true };
     } catch (error: any) {
         await recordFailure(null, ip);
-        console.error("Registration failed:", error);
+        // Registration failed
         return { error: error.message || 'Registration failed' };
     }
 }

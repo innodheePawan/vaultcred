@@ -31,7 +31,7 @@ export async function getDatabaseInfo() {
                 ssl: url.searchParams.get('sslaccept') === 'strict' || url.searchParams.get('ssl') === 'true'
             };
         } catch (e) {
-            console.error("Failed to parse DATABASE_URL", e);
+            // Failed to parse DATABASE_URL
         }
     }
 
@@ -45,7 +45,7 @@ export async function getDatabaseInfo() {
         status = 'Connected';
     } catch (e: any) {
         status = 'Disconnected';
-        console.error("Database connection check failed:", e.message);
+        // Database connection check failed
     }
 
     return {
@@ -197,7 +197,7 @@ export async function internalCheckDatabaseDrift() {
 
         return { drift: false };
     } catch (error: any) {
-        console.error(`[Drift Check] SQL Error: ${error?.message || error}`);
+        // SQL Error during drift check
         return {
             drift: false,
             error: String(error?.message || error).substring(0, 500),

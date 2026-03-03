@@ -11,6 +11,9 @@ import { Suspense } from 'react';
 import { getSystemSettings } from "@/lib/actions/settings";
 import { prisma } from "@/lib/prisma"; // Added prisma to fetch user directly
 import { LayoutProvider } from "@/components/layout/LayoutContext";
+import { getLicenseState } from "@/lib/license-enforcement";
+import { LicenseWarningBanner } from "@/components/layout/LicenseWarningBanner";
+import { redirect } from 'next/navigation';
 
 
 export default async function DashboardLayout({
@@ -49,14 +52,33 @@ export default async function DashboardLayout({
             showAdminMenu = ctx.role === 'ADMIN' || canAccess(ctx, null, null, 'ADMIN') || canAccess(ctx, null, null, 'AUDIT');
         } catch (e) {
             // User might be invalid or DB issue
-            console.error("Failed to load access context:", e);
+            // Failed to load access context
         }
+    }
+    let licenseInfo = null;
+    try {
+        licenseInfo = await getLicenseState();
+
+        // Robust Node.js Server-Side Enforcement (bypassing Edge middleware network issues)
+        if (licenseInfo?.state === 'UNACTIVATED' || licenseInfo?.state === 'COMPROMISED') {
+            redirect('/activation');
+        }
+
+        if (licenseInfo?.state === 'LOCKED') {
+            const isSuperUser = session?.user?.role === 'SUPERUSER';
+            if (!isSuperUser) {
+                redirect('/activation');
+            }
+        }
+    } catch (e) {
+        // Fallback for missing DB
     }
 
     return (
         <LayoutProvider>
             <SessionTimeout />
             <div className="h-screen flex flex-col overflow-hidden">
+                <LicenseWarningBanner licenseInfo={licenseInfo} />
                 {/* Pass currentUser which contains profileImage */}
                 <Header settings={settings} user={currentUser} />
                 <div className="flex flex-1 overflow-hidden">

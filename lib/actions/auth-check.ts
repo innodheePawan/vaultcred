@@ -144,7 +144,7 @@ export async function preLoginCheck(
             requiresCaptcha: false
         };
     } catch (error) {
-        console.error('[PreLoginCheck] Error:', error);
+        // PreLoginCheck Error
         return { error: 'An error occurred during login.' };
     }
 }

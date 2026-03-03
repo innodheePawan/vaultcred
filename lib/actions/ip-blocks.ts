@@ -34,7 +34,7 @@ export async function getIpSecurityRecords() {
 
         return records;
     } catch (error) {
-        console.error('[IP Management] Error fetching records:', error);
+
         return [];
     }
 }
@@ -64,7 +64,7 @@ export async function unblockIp(ipAddress: string) {
         revalidatePath('/admin/security-events');
         return { success: true };
     } catch (error) {
-        console.error('[IP Management] Error unblocking IP:', error);
+
         return { error: 'Failed to unblock IP address.' };
     }
 }

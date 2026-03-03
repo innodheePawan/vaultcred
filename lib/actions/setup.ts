@@ -105,7 +105,7 @@ export async function prepareEnvironment(formData: FormData) {
             }
         };
     } catch (error: any) {
-        console.error('[Setup] Prepare Env Failed:', error);
+
         return { error: String(error.message || error) };
     }
 }
@@ -257,13 +257,13 @@ runPrisma();
             await updateTaskStatus({ status: 'SUCCESS', endTime: new Date().toISOString() });
             return { success: true, status: 'SUCCESS' };
         } else {
-            console.error('[Setup] DB Push Failed:', stderr);
+
             await updateTaskStatus({ status: 'FAILED', endTime: new Date().toISOString(), error: `Exit code ${code}` });
             return { error: `Prisma db push failed with exit code ${code}. ${stderr.substring(0, 500)}` };
         }
 
     } catch (error: any) {
-        console.error('[Setup] DB Sync CRITICAL FAILURE:', error);
+
         await updateTaskStatus({ status: 'FAILED', error: String(error.message) });
         return {
             error: String(error.message || 'Unknown spawn error')
@@ -294,7 +294,7 @@ export async function verifyTablesAction() {
         const tableNames = tables.map(t => t.table_name || Object.values(t)[0]);
         return { success: true, count: tableNames.length, tables: tableNames };
     } catch (e: any) {
-        console.error('[VerifyTables] Failed:', e);
+
         return { error: 'Verification Failed: ' + String(e.message || e) };
     } finally {
         await prisma.$disconnect();
@@ -315,7 +315,7 @@ export async function seedRolesAction() {
         await appendTaskLog('SUCCESS: Roles (UserGroup) initialized.');
         return { success: true };
     } catch (error: any) {
-        console.error('[Setup] Role Seeding Failed:', error);
+
         return { error: String(error.message || error) };
     } finally {
         await prisma.$disconnect();
@@ -357,7 +357,7 @@ export async function seedSuperAdminAction(email: string, passwordRaw: string) {
         await appendTaskLog('SUCCESS: Super Admin created.');
         return { success: true };
     } catch (error: any) {
-        console.error('[Setup] Admin Seeding Failed:', error);
+
         return { error: String(error.message || error) };
     } finally {
         await prisma.$disconnect();
@@ -387,7 +387,7 @@ export async function seedBrandingAction() {
         await appendTaskLog('SUCCESS: System branding initialized.');
         return { success: true };
     } catch (error: any) {
-        console.error('[Setup] Branding Seeding Failed:', error);
+
         return { error: String(error.message || error) };
     } finally {
         await prisma.$disconnect();
@@ -451,9 +451,13 @@ export async function purgeDatabase() {
         // Settings
         await safeDelete(prisma.systemSettings);
 
+        // License
+        await safeDelete(prisma.licenseAlertLog);
+        await safeDelete(prisma.licenseRegistry);
+
         return { success: true };
     } catch (error: any) {
-        console.error('[Setup] Purge Failed:', error);
+
         return { error: String(error.message || error) };
     } finally {
         await prisma.$disconnect();
@@ -472,7 +476,7 @@ export async function testDbConnection() {
         await prisma.$queryRaw`SELECT 1`;
         return { success: 'Connection established successfully!' };
     } catch (error: any) {
-        console.error('[Setup] DB Connection Test Failed:', error);
+
         return { error: 'Connection Failed: ' + String(error.message || error) };
     } finally {
         await prisma.$disconnect();

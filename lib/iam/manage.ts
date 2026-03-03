@@ -47,7 +47,7 @@ export async function assignUserToGroup(
         revalidatePath('/admin/users');
         return { success: true };
     } catch (error) {
-        console.error('Failed to assign group:', error);
+
         return { error: 'Failed to assign group' };
     }
 }
@@ -72,7 +72,7 @@ export async function removeUserFromGroup(targetUserId: string, groupId: string)
         revalidatePath('/admin/users');
         return { success: true };
     } catch (error) {
-        console.error('Failed to remove group:', error);
+
         return { error: 'Failed to remove group' };
     }
 }

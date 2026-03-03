@@ -266,7 +266,7 @@ export async function updateUser(userId: string, formData: FormData) {
     try {
         const existingUser = await prisma.user.findUnique({
             where: { id: userId },
-            select: { isExternal: true, role: true }
+            select: { isExternal: true, role: true, status: true }
         });
 
         if (!existingUser) return { error: 'User not found' };
@@ -342,6 +342,23 @@ export async function updateUser(userId: string, formData: FormData) {
         }
 
         await prisma.$transaction(async (tx) => {
+            // Check limits if we are activating an inactive user
+            if (status === 'ACTIVE' && existingUser.status !== 'ACTIVE') {
+                const { getLicenseState } = await import('@/lib/license-enforcement');
+                const licenseInfo = await getLicenseState();
+
+                if (licenseInfo.state === 'UNACTIVATED' || licenseInfo.state === 'COMPROMISED') {
+                    throw new Error('System is in an unactivated or compromised state.');
+                }
+
+                if (licenseInfo.activeUsers) {
+                    const currentActiveUsers = await tx.user.count({ where: { status: 'ACTIVE' } });
+                    if (currentActiveUsers >= licenseInfo.activeUsers) {
+                        throw new Error('Active user limit reached as per your license. Please upgrade your license to re-activate this user.');
+                    }
+                }
+            }
+
             // Update User details
             await tx.user.update({
                 where: { id: userId },

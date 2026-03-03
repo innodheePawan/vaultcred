@@ -1,5 +1,7 @@
 /**
  * Minimal structured JSON logging utility for SOC 2 / SIEM compliance.
+ * All logging is silenced in production to prevent console output.
+ * To enable logging, set LOG_LEVEL=debug in the environment.
  */
 
 type LogLevel = 'INFO' | 'WARN' | 'ERROR' | 'AUDIT';
@@ -8,6 +10,10 @@ interface LogPayload {
     event: string;
     message?: string;
     [key: string]: any;
+}
+
+function isLoggingEnabled(): boolean {
+    return process.env.LOG_LEVEL === 'debug';
 }
 
 function formatLog(level: LogLevel, payload: LogPayload) {
@@ -21,16 +27,15 @@ function formatLog(level: LogLevel, payload: LogPayload) {
 
 export const logger = {
     info: (payload: LogPayload) => {
-        console.log(formatLog('INFO', payload));
+        if (isLoggingEnabled()) console.log(formatLog('INFO', payload));
     },
     warn: (payload: LogPayload) => {
-        console.warn(formatLog('WARN', payload));
+        if (isLoggingEnabled()) console.warn(formatLog('WARN', payload));
     },
     error: (payload: LogPayload) => {
-        console.error(formatLog('ERROR', payload));
+        if (isLoggingEnabled()) console.error(formatLog('ERROR', payload));
     },
     audit: (payload: LogPayload) => {
-        // Audit logs usually map to info level in standard streams, but are tagged as 'AUDIT'
-        console.log(formatLog('AUDIT', payload));
+        if (isLoggingEnabled()) console.log(formatLog('AUDIT', payload));
     }
 };

@@ -78,7 +78,7 @@ export async function requestTwoFactorResetDuringLogin(formData: FormData) {
 
         return { success: true, message: 'Reconfiguration email sent! Please check your inbox.' };
     } catch (error) {
-        console.error('[2FA] Login reset request error:', error);
+
         return { error: 'Failed to process 2FA reset request' };
     }
 }
@@ -110,7 +110,7 @@ export async function requestTwoFactorReconfiguration() {
 
         return { success: true, message: 'Reconfiguration email sent! Please check your inbox.' };
     } catch (error) {
-        console.error('[2FA] Request reconfig error:', error);
+
         return { error: 'Failed to send reconfiguration email' };
     }
 }
@@ -156,7 +156,7 @@ export async function resetTwoFactorWithToken(token: string) {
 
         return { success: true, message: '2FA has been reset. You can now set up a new device.' };
     } catch (error) {
-        console.error('[2FA] Reset with token error:', error);
+
         return { error: 'Failed to reset 2FA' };
     }
 }
@@ -215,7 +215,7 @@ export async function generateTwoFactorSetup() {
             secret, // Needed for mobile users who can't scan QR on the same device
         };
     } catch (error) {
-        console.error('[2FA] Generate setup error:', error);
+
         return { error: 'Failed to generate 2FA setup' };
     }
 }
@@ -291,7 +291,7 @@ export async function enableTwoFactor(code: string) {
 
         return { success: true, message: 'Two-Factor Authentication enabled successfully!' };
     } catch (error) {
-        console.error('[2FA] Enable error:', error);
+
         return { error: 'Failed to enable 2FA' };
     }
 }
@@ -377,7 +377,7 @@ export async function disableTwoFactor(code: string) {
 
         return { success: true, message: 'Two-Factor Authentication disabled.' };
     } catch (error) {
-        console.error('[2FA] Disable error:', error);
+
         return { error: 'Failed to disable 2FA' };
     }
 }

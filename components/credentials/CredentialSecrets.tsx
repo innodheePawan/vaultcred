@@ -20,7 +20,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
             setCopied(label);
             setTimeout(() => setCopied(null), 2000);
         } catch (err) {
-            console.error('Failed to copy', err);
+            // Failed to copy
         }
     };
 

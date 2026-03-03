@@ -472,7 +472,30 @@ model OneTimeSecret {
   createdBy      User      @relation(fields: [createdById], references: [id])
   createdAt      DateTime  @default(now()) @map("created_on")
 
-  @@index([token])
-  @@index([createdById])
   @@map("one_time_secrets")
 }
+
+// --------------------------------------
+// LICENSE ACTIVATION
+// --------------------------------------
+model LicenseRegistry {
+  id        String   @id @default(uuid()) @map("id")
+  regKey    String   @map("reg_key") @db.VarChar(100)
+  regValue  Bytes    @map("reg_value") @db.LongBlob
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("license_registry")
+}
+
+model LicenseAlertLog {
+  id             String   @id @default(uuid()) @map("id")
+  milestoneType  String   @map("milestone_type") @db.VarChar(50)
+  licenseVersion String   @map("license_version") @db.VarChar(100)
+  sentAt         DateTime @default(now()) @map("sent_at")
+
+  @@unique([milestoneType, licenseVersion])
+  @@map("license_alert_log")
+}
+
