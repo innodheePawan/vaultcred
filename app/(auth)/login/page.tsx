@@ -1,15 +1,8 @@
 
 import { getSystemSettings } from '@/lib/actions/settings';
 import LoginForm from '@/components/auth/LoginForm';
-import { getLicenseState } from '@/lib/license-enforcement';
-import { redirect } from 'next/navigation';
 
 export default async function LoginPage() {
-    const licenseInfo = await getLicenseState();
-    if (licenseInfo.state === 'UNACTIVATED' || licenseInfo.state === 'COMPROMISED') {
-        redirect('/activation');
-    }
-
     const settings = await getSystemSettings();
     const logoUrl = settings?.logoUrl;
     const applicationName = settings?.applicationName || 'CredSecure';
