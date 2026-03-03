@@ -40,7 +40,7 @@ export async function updateUserProfile(formData: FormData) {
 
         return { success: true, message: 'Profile updated successfully' };
     } catch (error: any) {
-        console.error("Profile update failed:", error);
+        // Profile update failed
         return { error: 'Failed to update profile: ' + error.message };
     }
 }

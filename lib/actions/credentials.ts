@@ -120,7 +120,7 @@ export async function createCredential(prevState: any, formData: FormData) {
     const validation = CredentialSchema.safeParse(rawData);
 
     if (!validation.success) {
-        console.error("Validation Error:", validation.error.format());
+
         return { error: 'Validation Failed', details: validation.error.flatten().fieldErrors };
     }
 
@@ -261,7 +261,7 @@ export async function createCredential(prevState: any, formData: FormData) {
         return { success: true, message: 'Credential created successfully!' };
 
     } catch (error) {
-        console.error("Failed to create credential:", error);
+
         return { error: 'Failed to create credential. ' + (error as Error).message };
     }
 }
@@ -413,7 +413,7 @@ export async function getCredentials(params?: {
         });
         return credentials;
     } catch (error) {
-        console.error("Error fetching credentials:", error);
+
         return [];
     }
 }
@@ -703,7 +703,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
         return { success: true, message: 'Credential updated successfully!' };
 
     } catch (error: any) {
-        console.error("Update failed:", error);
+
         return { error: error.message };
     }
 }

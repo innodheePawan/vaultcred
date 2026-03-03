@@ -156,7 +156,7 @@ export async function requestPasswordReset(emailRaw: string, formData?: FormData
 
         return { success: true, message: genericMessage };
     } catch (error) {
-        console.error('[Password Reset] Error requesting reset:', error);
+
         return { error: 'An unexpected error occurred. Please try again.' };
     }
 }
@@ -199,7 +199,7 @@ export async function validateResetToken(token: string) {
             twoFactorRequired: (user as any).twoFactorEnabled ?? false,
         };
     } catch (error) {
-        console.error('[Password Reset] Error validating token:', error);
+
         return { valid: false, error: 'An unexpected error occurred.' };
     }
 }
@@ -259,7 +259,7 @@ export async function verifyResetTwoFactor(token: string, code: string) {
 
         return { verified: true };
     } catch (error) {
-        console.error('[Password Reset] Error verifying 2FA:', error);
+
         return { verified: false, error: 'An unexpected error occurred.' };
     }
 }
@@ -329,7 +329,7 @@ export async function resetPassword(
 
         return { success: true, message: 'Password reset successfully. You can now log in with your new password.' };
     } catch (error) {
-        console.error('[Password Reset] Error resetting password:', error);
+
         return { error: 'An unexpected error occurred. Please try again.' };
     }
 }

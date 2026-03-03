@@ -51,7 +51,7 @@ export async function getSecurityState(email: string | null, ip: string): Promis
             }
         }
     } catch (e) {
-        console.error('[Security] Error checking IP state:', e);
+        // Error checking state
     }
 
     // 2. Check User Security (if email provided)
@@ -80,7 +80,7 @@ export async function getSecurityState(email: string | null, ip: string): Promis
                 }
             }
         } catch (e) {
-            console.error('[Security] Error checking User state:', e);
+            // Error checking user state
         }
     }
 
@@ -138,7 +138,7 @@ export async function recordFailure(email: string | null, ip: string) {
                 WHERE ip_address = ${ip}`;
         }
     } catch (e) {
-        console.error('[Security] Error recording IP failure:', e);
+        // Error recording IP failure
     }
 
     // 2. Update User Security
@@ -173,7 +173,7 @@ export async function recordFailure(email: string | null, ip: string) {
                 });
             }
         } catch (e) {
-            console.error('[Security] Error recording User failure:', e);
+            // Error recording user failure
         }
     }
 }
@@ -196,7 +196,7 @@ export async function recordSuccess(email: string | null, ip: string) {
                 }
             });
         } catch (e) {
-            console.error('[Security] Error resetting User success:', e);
+            // Error resetting user success
         }
     }
 

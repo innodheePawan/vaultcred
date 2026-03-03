@@ -28,10 +28,10 @@ export async function getLicenseState(forceRefresh = false): Promise<LicenseInfo
             where: { isActive: true }
         });
 
-        console.log(`[License] Found ${records?.length || 0} active registry records.`);
+
 
         if (!records || records.length === 0) {
-            console.log('[License] No active records found. State: UNACTIVATED');
+
             CACHED_LICENSE_INFO = { state: 'UNACTIVATED' };
             return CACHED_LICENSE_INFO;
         }
@@ -49,9 +49,7 @@ export async function getLicenseState(forceRefresh = false): Promise<LicenseInfo
                 data[key] = value;
             } catch (e) {
                 // If any key fails decryption, log the exact error for debugging
-                console.error('[License] Decryption failed for registry entry with ID:', record.id);
-                console.error('[License] regKey length:', record.regKey?.length, 'regValue type:', typeof record.regValue, 'regValue constructor:', (record.regValue as any)?.constructor?.name);
-                console.error('[License] Error details:', e);
+
                 CACHED_LICENSE_INFO = { state: 'COMPROMISED' };
                 return CACHED_LICENSE_INFO;
             }
@@ -63,36 +61,28 @@ export async function getLicenseState(forceRefresh = false): Promise<LicenseInfo
         const signature = data['SIGNATURE'];
         const rawPayload = data['RAW_PAYLOAD'];
 
-        console.log('[License] Decrypted keys found:', Object.keys(data).join(', '));
+
 
         if (!validityTillStr || !graceDaysStr || !activeUsersStr || !signature || !rawPayload) {
-            console.error('[License] Missing required fields. Present:', {
-                validityTill: !!validityTillStr,
-                graceDays: !!graceDaysStr,
-                activeUsers: !!activeUsersStr,
-                signature: !!signature,
-                rawPayload: !!rawPayload
-            });
+
             CACHED_LICENSE_INFO = { state: 'COMPROMISED' };
             return CACHED_LICENSE_INFO;
         }
 
         // Verify PGP Signature
-        console.log('[License] Public key available:', LICENCE_PUBLIC_KEY ? `${LICENCE_PUBLIC_KEY.substring(0, 40)}... (${LICENCE_PUBLIC_KEY.length} chars)` : 'EMPTY');
+
 
         if (!LICENCE_PUBLIC_KEY) {
-            console.error('[License] LICENCE_PUBLIC_KEY is empty! Signature verification will fail. Check keys/license-public.asc or LICENCE_PUBLIC_KEY env var.');
             // Skip signature check if key unavailable to prevent false COMPROMISED on deployments where the key file isn't bundled
-            console.warn('[License] Skipping signature verification due to missing public key. This is a deployment issue, not a security breach.');
         } else {
             const isSignatureValid = await verifyLicenseServerSignature(signature, rawPayload, LICENCE_PUBLIC_KEY);
 
             if (!isSignatureValid) {
-                console.error('[License] PGP signature verification FAILED. State: COMPROMISED');
+
                 CACHED_LICENSE_INFO = { state: 'COMPROMISED' };
                 return CACHED_LICENSE_INFO;
             }
-            console.log('[License] PGP signature verification PASSED.');
+
         }
 
         // Parse Dates - strictly using UTC to avoid local timezone drift

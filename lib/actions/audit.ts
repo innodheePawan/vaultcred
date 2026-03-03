@@ -67,7 +67,7 @@ export async function logAudit(data: {
             }
         });
     } catch (error) {
-        console.error('Failed to write audit log:', error);
+
         // Do not throw, audit failure should not block main action
     }
 }
@@ -198,7 +198,7 @@ export async function getAuditLogs({
             totalPages: Math.ceil(total / limit)
         };
     } catch (error: any) {
-        console.error('Error fetching audit logs:', error);
+
         return { error: 'Failed to fetch audit logs' };
     }
 }

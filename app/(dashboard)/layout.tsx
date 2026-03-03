@@ -52,7 +52,7 @@ export default async function DashboardLayout({
             showAdminMenu = ctx.role === 'ADMIN' || canAccess(ctx, null, null, 'ADMIN') || canAccess(ctx, null, null, 'AUDIT');
         } catch (e) {
             // User might be invalid or DB issue
-            console.error("Failed to load access context:", e);
+            // Failed to load access context
         }
     }
     let licenseInfo = null;

@@ -75,7 +75,7 @@ export async function createInvite(
         await sendInviteEmail(email, token, inviterName);
         emailSent = true;
     } catch (emailError) {
-        console.error('[Invite] Failed to send invite email:', emailError);
+        // Failed to send invite email
         // Don't throw — the invite is created, email failure is non-fatal
     }
 

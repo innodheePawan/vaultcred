@@ -27,7 +27,7 @@ export async function getSystemSettings() {
         return settings;
     } catch (error) {
         // Log the specific error to help with debugging (e.g. 500 error cause)
-        console.error("Failed to fetch system settings (DB Error):", error);
+        // Failed to fetch system settings
         return { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd', logoUrl: null };
     }
 }
@@ -150,7 +150,7 @@ export async function updateGeneralSettings(prevState: any, formData: FormData) 
 
         return { message: 'General settings updated successfully.' };
     } catch (error: any) {
-        console.error('Update General Failed:', error);
+
         return { error: 'Failed to update settings.' };
     }
 }
@@ -425,7 +425,7 @@ export async function updateSystemSettings(prevState: any, formData: FormData) {
         return { success: true, message: 'Settings updated successfully!' };
 
     } catch (error: any) {
-        console.error("Failed to update settings:", error);
+
         return { error: error.message || 'Failed to update settings.' };
     }
 }

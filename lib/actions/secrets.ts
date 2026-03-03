@@ -69,7 +69,7 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
         return { success: true, token, id: secret.id };
 
     } catch (error) {
-        console.error('Failed to create secret:', error);
+
         return { error: 'Failed to create secret' };
     }
 }
@@ -126,7 +126,7 @@ export async function getMySecrets() {
 
         return secrets;
     } catch (error) {
-        console.error('Failed to fetch secrets:', error);
+
         return [];
     }
 }
@@ -163,7 +163,7 @@ export async function revokeSecret(secretId: string) {
         return { success: true };
 
     } catch (error) {
-        console.error('Failed to revoke secret:', error);
+
         return { error: 'Failed to revoke secret' };
     }
 }
@@ -307,7 +307,7 @@ export async function revealSecret(token: string) {
         return { success: true, secretData: decrypted };
 
     } catch (error) {
-        console.error("Reveal error", error);
+
         return { error: 'Failed to reveal' };
     }
 }
@@ -346,7 +346,7 @@ export async function deleteExpiredSecrets() {
         revalidatePath('/one-time-secrets');
         return { success: true, count: result.count };
     } catch (error) {
-        console.error('Failed to delete expired secrets:', error);
+
         return { error: 'Failed to clean up secrets' };
     }
 }

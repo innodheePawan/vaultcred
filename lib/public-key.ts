@@ -37,7 +37,6 @@ function getLicencePublicKey(): string {
         return process.env.LICENCE_PUBLIC_KEY.replace(/\\n/g, '\n').trim();
     }
 
-    console.warn('[Warning] License public key not found at any known path and LICENCE_PUBLIC_KEY env var is not set. License verification will fail.');
     return '';
 }
 

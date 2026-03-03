@@ -112,7 +112,7 @@ export async function GET(request: Request) {
         });
 
         if (superUsers.length === 0) {
-            console.error('[Cron] No active SUPERUSER found to receive license alerts.');
+            // No active SUPERUSER found to receive license alerts
             // We should still record the milestone so we don't spam errors every day
         } else {
             // Prepare email content
@@ -140,7 +140,7 @@ export async function GET(request: Request) {
 
                     await sendEmail(u.email, emailSubject, finalHtml);
                 } catch (emailErr) {
-                    console.error(`[Cron] Failed to send alert to ${u.email}:`, emailErr);
+
                     // Crucial: Throw to prevent DB logging, allowing idempotency retry
                     throw emailErr;
                 }
@@ -164,7 +164,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ success: true, message: `Dispatched ${milestoneString} alerts to ${superUsers.length} admins.` });
 
     } catch (error: any) {
-        console.error('[Cron] License Alert Engine Failed:', error);
+        // License Alert Engine Failed
         return NextResponse.json(
             { success: false, error: error.message },
             { status: 500 }

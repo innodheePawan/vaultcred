@@ -33,7 +33,7 @@ export async function updateTaskStatus(update: Partial<SetupTaskStatus>) {
     try {
         await fs.writeFile(STATUS_FILE, JSON.stringify(next), 'utf8');
     } catch (e) {
-        console.error('[SetupTask] Failed to write status file:', e);
+        // Failed to write status file
     }
 }
 

@@ -62,11 +62,11 @@ export async function verifyLicenseServerSignature(signatureArmored: string, pay
             await verified; // throws on invalid signature
             return true;
         } catch (e) {
-            console.error('[Signature Verification] Invalid signature for KeyID:', keyID.toHex());
+
             return false;
         }
     } catch (error) {
-        console.error('[Signature Verification] Error:', error);
+
         return false;
     }
 }
