@@ -38,11 +38,15 @@ export async function getLicenseState(forceRefresh = false): Promise<LicenseInfo
         for (const record of records) {
             try {
                 const key = decrypt(record.regKey);
-                const value = decrypt(record.regValue.toString('utf-8'));
+
+                // Safe parsing for serverless environments (Uint8Array vs Buffer)
+                // Prisma translates Bytes to Buffer in Node, but Uint8Array in Edge. Buffer.from handles both.
+                const valueStr = Buffer.from(record.regValue as any).toString('utf-8');
+                const value = decrypt(valueStr);
                 data[key] = value;
             } catch (e) {
-
                 // If any key fails decryption, we consider the registry potentially tampered
+                console.error('[License] Decryption failed for a registry entry. Treating as COMPROMISED.', e);
                 CACHED_LICENSE_INFO = { state: 'COMPROMISED' };
                 return CACHED_LICENSE_INFO;
             }
