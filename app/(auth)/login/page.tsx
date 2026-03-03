@@ -13,7 +13,7 @@ export default async function LoginPage() {
     let licenseBlocked = false;
     let licenseMessage = '';
     try {
-        const licenseInfo = await getLicenseState();
+        const licenseInfo = await getLicenseState(true);
         if (licenseInfo.state === 'UNACTIVATED') {
             licenseBlocked = true;
             licenseMessage = 'This system has not been activated yet. Please activate your license to continue.';
