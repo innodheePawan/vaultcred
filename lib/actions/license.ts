@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { invalidateLicenseCache, getLicenseState } from '@/lib/license-enforcement';
 import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
 
 const ACTIVATION_API_URL = 'https://main.d2qgnt0ki6h7ki.amplifyapp.com/api/activate';
 
@@ -52,12 +53,16 @@ export async function activateProduct(formData: FormData) {
     }
 
     try {
+        const session = await auth();
+        const userId = session?.user?.id;
+
         const timestamp = Math.floor(Date.now() / 1000).toString();
         const nonce = Math.random().toString(36).substring(2, 15);
         const fingerprint = await getMachineId();
 
         // Resolve domain from the actual request Host header (works on AWS/Vercel/any server)
         const headersList = await headers();
+        const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || headersList.get('x-real-ip') || '127.0.0.1';
         const host = headersList.get('host') || '';
         let domain = 'localhost';
         if (host && host !== 'localhost' && !host.startsWith('localhost:')) {
@@ -123,6 +128,38 @@ export async function activateProduct(formData: FormData) {
                 return { success: false, message: 'Invalid entitlements received from server.' };
             }
 
+            // Before updating the license, verify the current active user count.
+            // currentActiveUsers <= newActiveUsersLimit
+            const currentActiveUsersInDb = await prisma.user.count({
+                where: { status: 'ACTIVE' }
+            });
+
+            if (entitlements.activeUsers < currentActiveUsersInDb) {
+                return { success: false, message: `New license active user limit (${entitlements.activeUsers}) cannot be less than the current active users count (${currentActiveUsersInDb}).` };
+            }
+
+            // Check if the current license already matches the new one to prevent duplicate entries
+            // Compare the actual entitlement values to accurately catch functional duplicates despite potentially dynamic API response fields
+            const currentState = await getLicenseState(true);
+            if (currentState && currentState.state !== 'UNACTIVATED' && currentState.state !== 'COMPROMISED') {
+                const isDuplicate =
+                    currentState.activeUsers === entitlements.activeUsers &&
+                    currentState.gracePeriodDays === entitlements.gracePeriodDays &&
+                    currentState.validityTill?.getTime() === new Date(`${entitlements.validityTill}T23:59:59Z`).getTime();
+
+                if (isDuplicate) {
+                    return { success: true, message: 'License is already active and up to date with these exact parameters. No changes were made.' };
+                }
+
+                // Verify that newValidityTill >= currentValidityTill
+                const currentValidityTill = currentState.validityTill?.getTime() || 0;
+                const newValidityTill = new Date(`${entitlements.validityTill}T23:59:59Z`).getTime();
+
+                if (newValidityTill < currentValidityTill) {
+                    return { success: false, message: "New license validity date cannot be earlier than the current active license validity." };
+                }
+            }
+
             // Encrypt and persist
             const masterKey = process.env.MASTER_KEY;
             if (!masterKey) throw new Error('MASTER_KEY not configured.');
@@ -158,6 +195,36 @@ export async function activateProduct(formData: FormData) {
                         }
                     });
                 }
+
+                // Perform Audit Logging for License Update
+                const oldValidityTill = currentState && currentState.state !== 'UNACTIVATED' && currentState.state !== 'COMPROMISED' && currentState.validityTill
+                    ? currentState.validityTill.toISOString().split('T')[0]
+                    : null;
+
+                const oldActiveUsers = currentState && currentState.state !== 'UNACTIVATED' && currentState.state !== 'COMPROMISED'
+                    ? currentState.activeUsers
+                    : null;
+
+                const auditData: any = {
+                    action: oldValidityTill ? 'LICENSE_UPDATE' : 'LICENSE_ACTIVATION',
+                    oldValue: JSON.stringify({
+                        old_validity_till: oldValidityTill,
+                        old_active_users: oldActiveUsers
+                    }),
+                    newValue: JSON.stringify({
+                        new_validity_till: entitlements.validityTill,
+                        new_active_users: entitlements.activeUsers
+                    }),
+                    ipAddress: ipAddress || undefined
+                };
+
+                if (userId) {
+                    auditData.performedById = userId;
+                }
+
+                await tx.auditLog.create({
+                    data: auditData
+                });
             });
 
             // Immediately clear the application's global license cache locally

@@ -39,7 +39,7 @@ export default async function SettingsLayout({
                     </p>
                 </div>
 
-                <SettingsNav />
+                <SettingsNav role={session.user.role} />
 
                 <div className="mt-6">
                     {children}

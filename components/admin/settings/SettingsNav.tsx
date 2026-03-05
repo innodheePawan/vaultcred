@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building, Mail, ShieldCheck, Database } from 'lucide-react';
+import { Building, Mail, ShieldCheck, Database, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -12,12 +12,17 @@ const tabs = [
     { name: 'Database', href: '/settings/database', icon: Database },
 ];
 
-export default function SettingsNav() {
+export default function SettingsNav({ role }: { role?: string }) {
     const pathname = usePathname();
+
+    const visibleTabs = [...tabs];
+    if (role === 'ADMIN') {
+        visibleTabs.push({ name: 'License', href: '/settings/license', icon: Key });
+    }
 
     return (
         <nav className="flex space-x-4 border-b border-gray-200 dark:border-gray-700 mb-8 overflow-x-auto">
-            {tabs.map((tab) => {
+            {visibleTabs.map((tab) => {
                 const isActive = pathname === tab.href;
                 const Icon = tab.icon;
                 return (
