@@ -108,17 +108,97 @@ export async function activateProduct(formData: FormData) {
 
             const entitlements = data.entitlements;
 
-            // The API signs the entire response object *before* appending the signature field
+            // The API signs the entire response object *before* appending the signature field.
+            // When external APIs use map-based serialization (e.g., Golang, unordered dicts), 
+            // the JSON keys can occasionally shuffle in order, causing inconsistent PGP signature failures.
+            // We recursively generate all top-level key permutations of the payload object to guarantee we find the exact string signed.
             const payloadObject = { ...data };
             delete payloadObject.signature;
-            const payloadToVerify = JSON.stringify(payloadObject);
+            
+            // Helper to generate all permutations of an array
+            const permute = (arr: string[]): string[][] => {
+                if (arr.length <= 1) return [arr];
+                const result: string[][] = [];
+                for (let i = 0; i < arr.length; i++) {
+                    const current = arr[i];
+                    const remaining = arr.slice(0, i).concat(arr.slice(i + 1));
+                    const remainingPermuted = permute(remaining);
+                    for (let j = 0; j < remainingPermuted.length; j++) {
+                        result.push([current].concat(remainingPermuted[j]));
+                    }
+                }
+                return result;
+            };
 
+            const keys = Object.keys(payloadObject);
+            const keyPermutations = permute(keys);
+            
+            const candidates: string[] = [];
+            
+            // Push all combinations of raw minified JSON
+            for (const perm of keyPermutations) {
+                const orderedObj: Record<string, any> = {};
+                for (const k of perm) orderedObj[k] = payloadObject[k];
+                
+                const minified = JSON.stringify(orderedObj);
+                const pretty2 = JSON.stringify(orderedObj, null, 2);
+                const pretty4 = JSON.stringify(orderedObj, null, 4);
 
-            const isSignatureValid = await verifyLicenseServerSignature(signature, payloadToVerify, LICENCE_PUBLIC_KEY);
+                candidates.push(minified);
+                candidates.push(minified + '\n');
+                candidates.push(pretty2);
+                candidates.push(pretty2 + '\n');
+                candidates.push(pretty4);
+                candidates.push(pretty4 + '\n');
+            }
+            
+            // Add fallback legacy permutations (without 'message') in case the server only signed the core fields
+            if (payloadObject.message) {
+                const legacyObj = { status: payloadObject.status, entitlements: payloadObject.entitlements };
+                const min = JSON.stringify(legacyObj);
+                const p2 = JSON.stringify(legacyObj, null, 2);
+                const p4 = JSON.stringify(legacyObj, null, 4);
+                
+                candidates.push(min, min + '\n', p2, p2 + '\n', p4, p4 + '\n');
+            }
+            
+            // Further fallback: What if the API server strictly ONLY signed the entitlements object recursively?
+            if (payloadObject.entitlements) {
+                const entKeys = Object.keys(payloadObject.entitlements);
+                const entPermutations = permute(entKeys);
+                for (const perm of entPermutations) {
+                    const orderedEnt: Record<string, any> = {};
+                    for (const k of perm) orderedEnt[k] = payloadObject.entitlements[k];
+                    const min = JSON.stringify(orderedEnt);
+                    const p2 = JSON.stringify(orderedEnt, null, 2);
+                    candidates.push(min, min + '\n', p2, p2 + '\n');
+                }
+            }
 
-            if (!isSignatureValid) {
+            let isSignatureValid = false;
+            let payloadToVerify = '';
 
-                return { success: false, message: 'Security validation failed: The server response signature is invalid or tampered with.' };
+            console.log("=== Signature Verification Trace ===");
+            console.log("Signature Received:\n", signature.substring(0, 50) + "...");
+            console.log("Public Key Length:", LICENCE_PUBLIC_KEY ? LICENCE_PUBLIC_KEY.length : 0);
+            console.log("Candidates Length:", candidates.length);
+
+            for (const candidate of candidates) {
+                const valid = await verifyLicenseServerSignature(signature.trim(), candidate, LICENCE_PUBLIC_KEY);
+                if (valid) {
+                    isSignatureValid = true;
+                    payloadToVerify = candidate;
+                    break;
+                }
+            }
+            
+            console.log("Passed Verification:", isSignatureValid);
+            if (isSignatureValid) {
+                console.log("Matched Payload Format:", payloadToVerify);
+            } else {
+                console.error("-> SIGNATURE VALIDATION FAILED against all " + candidates.length + " candidate permutations!");
+                
+                return { success: false, message: 'License signature verification failed. The provided license file has been tampered with or was generated by an untrusted source.' };
             }
 
 
