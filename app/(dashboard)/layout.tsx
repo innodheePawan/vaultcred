@@ -46,7 +46,7 @@ export default async function DashboardLayout({
     if (process.env.DATABASE_URL && session?.user?.id) {
         try {
             const ctx = await getUserAccessContext(session.user.id);
-            // Settings: Strictly Super Admin
+            // Settings: Admins & Super Users
             showSettings = ctx.role === 'ADMIN';
             // Admin Menu: Super Admin OR Scoped Admin OR Auditor
             showAdminMenu = ctx.role === 'ADMIN' || canAccess(ctx, null, null, 'ADMIN') || canAccess(ctx, null, null, 'AUDIT');
@@ -65,7 +65,7 @@ export default async function DashboardLayout({
         }
 
         if (licenseInfo?.state === 'LOCKED') {
-            const isSuperUser = session?.user?.role === 'SUPERUSER';
+            const isSuperUser = session?.user?.role === 'ADMIN';
             if (!isSuperUser) {
                 redirect('/activation');
             }
