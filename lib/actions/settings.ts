@@ -217,18 +217,21 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 
     const auditPersonalCredentials = formData.get('auditPersonalCredentials') === 'true';
     const twoFactorMandatory = formData.get('twoFactorMandatory') === 'true';
+    const allowApiFileDownload = formData.get('allowApiFileDownload') === 'true';
 
     try {
         await prisma.systemSettings.upsert({
             where: { id: 1 },
             update: {
                 auditPersonalCredentials,
-                twoFactorMandatory
+                twoFactorMandatory,
+                allowApiFileDownload
             },
             create: {
                 id: 1,
                 auditPersonalCredentials,
-                twoFactorMandatory
+                twoFactorMandatory,
+                allowApiFileDownload
             },
         });
 
@@ -236,7 +239,7 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 
         await logAudit({
             action: 'UPDATE_SETTINGS',
-            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}`,
+            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}, Allow API File Download=${allowApiFileDownload}`,
             userId: session.user.id
         });
 

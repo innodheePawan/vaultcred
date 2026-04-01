@@ -7,7 +7,7 @@ import { Search } from 'lucide-react';
 // import { useDebouncedCallback } from 'use-debounce'; // Removed missing dependency
 // Converting to standard standard React debounce effectively to avoid dep issues if not present.
 
-export default function AuditLogFilters() {
+export default function AuditLogFilters({ isApiTab = false }: { isApiTab?: boolean }) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const { replace } = useRouter();
@@ -61,25 +61,37 @@ export default function AuditLogFilters() {
                 </div>
             </div>
 
-            {/* Action Filter */}
+            {/* Action/Status Filter */}
             <div className="w-full md:w-48">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Action
+                    {isApiTab ? 'Status' : 'Action'}
                 </label>
-                <select
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-50 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900"
-                    onChange={(e) => handleFilterChange('action', e.target.value)}
-                    defaultValue={searchParams.get('action')?.toString() || 'ALL'}
-                >
-                    <option value="ALL">All Actions</option>
-                    <option value="CREATE">Create</option>
-                    <option value="UPDATE">Update</option>
-                    <option value="DELETE">Delete</option>
-                    <option value="VIEW">View</option>
-                    <option value="DOWNLOAD">Download</option>
-                    <option value="LOGIN">Login</option>
-                    <option value="INVITE">Invite</option>
-                </select>
+                {isApiTab ? (
+                    <select
+                        className="flex h-10 w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-700 dark:text-gray-50 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900"
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                        defaultValue={searchParams.get('status')?.toString() || 'ALL'}
+                    >
+                        <option value="ALL">All Statuses</option>
+                        <option value="SUCCESS">Success</option>
+                        <option value="FAILURE">Failure</option>
+                    </select>
+                ) : (
+                    <select
+                        className="flex h-10 w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-700 dark:text-gray-50 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900"
+                        onChange={(e) => handleFilterChange('action', e.target.value)}
+                        defaultValue={searchParams.get('action')?.toString() || 'ALL'}
+                    >
+                        <option value="ALL">All Actions</option>
+                        <option value="CREATE">Create</option>
+                        <option value="UPDATE">Update</option>
+                        <option value="DELETE">Delete</option>
+                        <option value="VIEW">View</option>
+                        <option value="DOWNLOAD">Download</option>
+                        <option value="LOGIN">Login</option>
+                        <option value="INVITE">Invite</option>
+                    </select>
+                )}
             </div>
 
             {/* Date Range - Simplified for MVP (Native Date Pickers) */}

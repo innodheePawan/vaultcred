@@ -47,6 +47,7 @@ const MENU_ITEMS: MenuItem[] = [
             { title: 'Users & Groups', href: '/admin/users' },
             { title: 'Audit Logs', href: '/admin/audit' },
             { title: 'Security Events', href: '/admin/security-events' },
+            { title: 'API Clients', href: '/admin/api-clients' },
             { title: 'Bulk Import', href: '/credentials/bulk-import' },
         ],
     },
@@ -156,6 +157,7 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
                                             {item.children.map((child) => {
                                                 // Role-based visibility for specific child items
                                                 if (child.title === 'Security Events' && userRole !== 'ADMIN') return null;
+                                                if (child.title === 'API Clients' && userRole !== 'ADMIN') return null;
 
                                                 return (
                                                     <Link

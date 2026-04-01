@@ -56,6 +56,9 @@ model User {
   // IAM Relations
   userGroups              UserGroupMapping[]
   oneTimeSecrets          OneTimeSecret[]
+  
+  // API Clients
+  createdApiClients       ApiClient[]        @relation("CreatedByClient")
 
   @@map("users")
 }
@@ -337,8 +340,12 @@ model AuditLog {
   performedOn   DateTime  @default(now()) @map("performed_on")
   ipAddress     String?   @map("ip_address")
 
+  apiClientId   String?   @map("api_client_id")
+  apiClient     ApiClient? @relation(fields: [apiClientId], references: [id])
+
   @@index([credentialId])
   @@index([performedById])
+  @@index([apiClientId])
   @@map("audit_log")
 }
 
@@ -361,6 +368,7 @@ model SystemSettings {
   themeColor      String?  @map("theme_color")
   auditPersonalCredentials Boolean @default(true) @map("audit_personal_credentials")
   twoFactorMandatory      Boolean @default(false) @map("two_factor_mandatory")
+  allowApiFileDownload    Boolean @default(false) @map("allow_api_file_download")
   
   // SMTP Email Configuration
   smtpHost      String?  @map("smtp_host")
@@ -497,5 +505,69 @@ model LicenseAlertLog {
 
   @@unique([milestoneType, licenseVersion])
   @@map("license_alert_log")
+}
+
+// --------------------------------------
+// EXTERNAL API CLIENTS
+// --------------------------------------
+
+model ApiClient {
+  id                    String    @id @default(uuid()) @map("api_client_id")
+  name                  String    @map("client_name")
+  clientId              String    @unique @map("client_id")
+  clientSecretHash      String    @map("client_secret_hash") @db.Text
+  certificateThumbprint String?   @map("cert_thumbprint")  
+  securityMode          String    @default("BASIC") @map("security_mode")
+  allowFileDownload     Boolean   @default(false) @map("allow_file_download")
+  
+  scopes                String    @map("scopes") @db.Text  // JSON: { "applications": [], "environments": [], "credentialTypes": [], "accessMode": "READ_ONLY" }
+  isActive              Boolean   @default(true) @map("is_active")
+  tokenValiditySeconds  Int       @default(300) @map("token_validity_seconds")
+  secretExpiresAt       DateTime? @map("secret_expires_at")
+  lastUsedAt            DateTime? @map("last_used_at")
+
+  createdById           String    @map("created_by")
+  createdBy             User      @relation("CreatedByClient", fields: [createdById], references: [id])
+  createdAt             DateTime  @default(now()) @map("created_on")
+  
+  updatedAt             DateTime  @updatedAt @map("updated_on")
+
+  auditLogs             AuditLog[]
+
+  @@map("api_clients")
+}
+
+model ApiActivityLog {
+  id                  String   @id @default(uuid()) @map("log_id")
+  apiClientId         String?  @map("api_client_id")
+  clientName          String?  @map("client_name")
+  
+  endpoint            String   @map("endpoint")
+  method              String   @map("method")
+  timestamp           DateTime @default(now())
+  requestId           String?  @map("request_id")
+  
+  authType            String?  @map("auth_type") // OAUTH_ONLY, OAUTH_CERT, OAUTH_CERT_VALIDATION
+  certificateIdentity String?  @map("certificate_identity")
+  validationStatus    String?  @map("validation_status") // SUCCESS, FAILED
+  
+  responseStatus      String   @map("response_status") // SUCCESS, FAILURE
+  httpStatusCode      Int      @map("http_code")
+  errorMessage        String?  @map("error_message") @db.Text
+  
+  credentialId        String?  @map("credential_id")
+  application         String?  @map("application")
+  environment         String?  @map("environment")
+  action              String   @map("action") // LIST, VIEW
+  
+  requestedScope      String?  @map("requested_scope")
+  assignedScope       String?  @map("assigned_scope") @db.Text
+
+  ipAddress           String?  @map("ip_address")
+  userAgent           String?  @map("user_agent") @db.Text
+
+  @@index([apiClientId])
+  @@index([endpoint])
+  @@map("api_activity_log")
 }
 

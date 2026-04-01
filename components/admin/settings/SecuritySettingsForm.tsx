@@ -16,6 +16,7 @@ export default function SecuritySettingsForm({ initialSettings }: { initialSetti
     // Security State
     const [auditPersonal, setAuditPersonal] = useState(initialSettings.auditPersonalCredentials ?? true);
     const [twoFactorMandatory, setTwoFactorMandatory] = useState(initialSettings.twoFactorMandatory ?? false);
+    const [allowApiFileDownload, setAllowApiFileDownload] = useState(initialSettings.allowApiFileDownload ?? false);
 
     return (
         <form action={formAction} className="space-y-6 max-w-2xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
@@ -90,9 +91,38 @@ export default function SecuritySettingsForm({ initialSettings }: { initialSetti
                         </label>
                         <p className="text-gray-500 dark:text-gray-400">
                             When enabled, all users are required to set up 2FA and cannot disable it.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* API Settings */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" />
+                    Global API Policy
+                </h3>
+                <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                        <input
+                            id="allowApiFileDownload"
+                            name="allowApiFileDownload"
+                            type="checkbox"
+                            value="true"
+                            checked={allowApiFileDownload}
+                            onChange={(e) => setAllowApiFileDownload(e.target.checked)}
+                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        />
+                    </div>
+                    <div className="ml-3 text-sm">
+                        <label htmlFor="allowApiFileDownload" className="font-medium text-gray-700 dark:text-gray-300">
+                            Enable External API File Downloads
+                        </label>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            When enabled, authorized API Clients will be able to download "FILE" type credentials via the external API endpoint.
                             <br />
                             <span className="text-xs text-amber-600 dark:text-amber-400">
-                                Enabling this will force users who haven&apos;t set up 2FA to do so on their next login.
+                                This acts as a global master kill switch. Individual API Clients must still be explicitly granted permission!
                             </span>
                         </p>
                     </div>
