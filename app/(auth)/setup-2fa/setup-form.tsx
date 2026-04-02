@@ -308,7 +308,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                         2FA Enabled Successfully!
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Redirecting to dashboard...
+                        Redirecting to login...
                     </p>
                 </div>
             )}

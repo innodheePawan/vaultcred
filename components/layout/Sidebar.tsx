@@ -45,10 +45,9 @@ const MENU_ITEMS: MenuItem[] = [
         icon: <Shield className="w-5 h-5" />,
         children: [
             { title: 'Users & Groups', href: '/admin/users' },
-            { title: 'Audit Logs', href: '/admin/audit' },
-            { title: 'Security Events', href: '/admin/security-events' },
             { title: 'API Clients', href: '/admin/api-clients' },
             { title: 'Bulk Import', href: '/credentials/bulk-import' },
+            { title: 'Activity Center', href: '/admin/activity-center' },
         ],
     },
     {
@@ -156,7 +155,6 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
                                         <div className="mt-1 ml-9 space-y-1 border-l-2 border-gray-100 dark:border-gray-700 pl-2">
                                             {item.children.map((child) => {
                                                 // Role-based visibility for specific child items
-                                                if (child.title === 'Security Events' && userRole !== 'ADMIN') return null;
                                                 if (child.title === 'API Clients' && userRole !== 'ADMIN') return null;
 
                                                 return (
