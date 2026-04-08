@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { getSafeUserContext, canAccess, forbiddenError } from '@/lib/iam/permissions';
+import { logForbiddenThrottled } from '@/lib/iam/authorize';
 
 export type ApiLogParams = {
     page?: number;
@@ -25,7 +27,11 @@ export async function getApiLogs({
     sortOrder = 'desc'
 }: ApiLogParams) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ACTIVITY_API_LOG', 'VIEW')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_API_LOG', 'VIEW');
         return { error: 'Unauthorized' };
     }
 

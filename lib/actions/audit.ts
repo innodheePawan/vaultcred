@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { getSafeUserContext, canAccess, getScopeFilter, forbiddenError } from '@/lib/iam/permissions';
+import { logForbiddenThrottled } from '@/lib/iam/authorize';
 
 export type AuditLogParams = {
     page?: number;
@@ -83,51 +85,21 @@ export async function getAuditLogs({
     sortOrder = 'desc'
 }: AuditLogParams) {
     const session = await auth();
-    // derived permissions: Admin or Moderator (assume Moderator is in Moderator group)
-    // For now, let's just check if they have a session.
-    // Strict RBAC: Check if user has 'READ' permission on 'AUDIT' category?
-    // Current system defaults to Roles. Let's assume anyone with Dashboard access (except maybe restricted viewers?)
-    // Requirement says "Administrator" and likely "Moderator" and "Viewer" (Read only).
-    // So basically any authenticated user in the system?
+    if (!session?.user?.id) return { error: 'Unauthorized' };
 
-    if (!session?.user) {
-        return { error: 'Unauthorized' };
-    }
-
-    // RBAC Check meant for Auditors or Admins
-    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-
-    // Debug Access
-
-
-    let ctx;
-    ctx = await getUserAccessContext(session.user.id);
-
-
-
-    // Check for 'AUDIT' permission or Admin status
-    if (ctx.role !== 'ADMIN' && !canAccess(ctx, null, null, 'AUDIT')) {
-
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ACTIVITY_SYSTEM_LOG', 'VIEW')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_SYSTEM_LOG', 'VIEW');
         return { error: 'Unauthorized: Insufficient permissions to view Audit Logs' };
     }
 
     // Build Where Clause
     const where: any = {};
 
-    // Scope Restriction for Non-Admins
-    if (ctx.role !== 'ADMIN') {
-        const credFilter: any = {};
-        // If not '*', restrict to allowed list. If list is empty, effectively blocks access (in: []).
-        if (!ctx.allowedCategories.includes('*')) {
-            credFilter.category = { in: ctx.allowedCategories };
-        }
-        if (!ctx.allowedEnvironments.includes('*')) {
-            credFilter.environment = { in: ctx.allowedEnvironments };
-        }
-
-        if (Object.keys(credFilter).length > 0) {
-            where.credential = credFilter;
-        }
+    // Scope Restriction — use getScopeFilter (isScoped flag prevents accidental ALL filtering)
+    const scopeFilter = getScopeFilter(ctx, 'FEATURE:ACTIVITY_SYSTEM_LOG');
+    if (scopeFilter.category || scopeFilter.environment) {
+        where.credential = scopeFilter;
     }
 
     if (search) {

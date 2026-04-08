@@ -13,7 +13,8 @@ const initialState: any = {
 
 export default function InviteUserForm({ groups, credentials, action }: { groups: any[], credentials: any[], action: any }) {
     const [state, formAction, isPending] = useActionState(action, initialState as any);
-    const [roleType, setRoleType] = useState<'SUPER_ADMIN' | 'GROUP'>('SUPER_ADMIN');
+    const [roleCategory, setRoleCategory] = useState<'SUPER_ADMIN' | 'SCOPED'>('SCOPED');
+    const [scopedRole, setScopedRole] = useState<string>('USER');
     const [isExternal, setIsExternal] = useState(false);
     const [selectedCats, setSelectedCats] = useState<string[]>([]);
     const [selectedEnvs, setSelectedEnvs] = useState<string[]>([]);
@@ -49,7 +50,8 @@ export default function InviteUserForm({ groups, credentials, action }: { groups
                         onChange={(e) => {
                             setIsExternal(e.target.checked);
                             if (e.target.checked) {
-                                setRoleType('GROUP');
+                                setRoleCategory('SCOPED');
+                                setScopedRole('USER');
                                 setExternalAccessType('VIEW');
                                 setSelectedCats([]);
                                 setSelectedEnvs([]);
@@ -268,36 +270,49 @@ export default function InviteUserForm({ groups, credentials, action }: { groups
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            System Role
+                            System Role (Role-Based Access Control)
                         </label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center">
-                                <input
-                                    type="radio"
-                                    name="systemRole"
-                                    value="SUPER_ADMIN"
-                                    checked={roleType === 'SUPER_ADMIN'}
-                                    onChange={() => setRoleType('SUPER_ADMIN')}
-                                    className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                />
-                                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Super Admin</span>
-                            </label>
-                            <label className="flex items-center">
-                                <input
-                                    type="radio"
-                                    name="systemRole"
-                                    value="GROUP"
-                                    checked={roleType === 'GROUP'}
-                                    onChange={() => setRoleType('GROUP')}
-                                    className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                />
-                                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Scoped Group Role</span>
-                            </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {[
+                                { id: 'SUPER_ADMIN', label: 'Super Admin' },
+                                { id: 'SCOPED', label: 'Scoped User' }
+                            ].map(category => (
+                                <label key={category.id} className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="roleCategory"
+                                        value={category.id}
+                                        checked={roleCategory === category.id}
+                                        onChange={() => setRoleCategory(category.id as 'SUPER_ADMIN' | 'SCOPED')}
+                                        className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{category.label}</span>
+                                </label>
+                            ))}
                         </div>
-                        <p className="mt-1 text-xs text-gray-500">
-                            Super Admin has full access. Scoped roles are limited by Group and Scope.
+                        <p className="mt-2 text-xs text-gray-500">
+                            Super Admin has full access to all resources automatically.
                         </p>
                     </div>
+
+                    {roleCategory === 'SCOPED' && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Scoped Role</label>
+                            <select
+                                value={scopedRole}
+                                onChange={(e) => setScopedRole(e.target.value)}
+                                className="w-full text-black p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700"
+                            >
+                                <option value="SCOPED_ADMIN">Administrator</option>
+                                <option value="USER">User</option>
+                                <option value="VIEWER">Viewer</option>
+                                <option value="AUDITOR">Auditor</option>
+                            </select>
+                            <p className="mt-2 text-xs text-gray-500">
+                                This role works in combination with the required group access and optional scopes below.
+                            </p>
+                        </div>
+                    )}
 
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -315,118 +330,109 @@ export default function InviteUserForm({ groups, credentials, action }: { groups
                         </div>
                     </div>
 
-                    {roleType === 'GROUP' && (
-                        <>
-                            <div>
-                                <div className="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Group</label>
-                                    <select
-                                        name="targetGroupIds"
-                                        className="w-full text-black p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700"
-                                        defaultValue=""
-                                    >
-                                        <option value="" disabled>Select a Group</option>
-                                        {groups.map(g => (
-                                            <option key={g.id} value={g.id}>{g.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                    {roleCategory === 'SCOPED' && (
+                <>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-md border bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-700">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-900 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                        Scoped Categories
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-md border bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-700">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-900 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                Scoped Categories
+                            </label>
+                            <span className="text-[10px] text-gray-500 block mb-2">Leave empty for ALL</span>
+                            <div className="space-y-1.5">
+                                {categories.map(cat => (
+                                    <label key={cat} className="flex items-center cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedCats.includes(cat)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedCats([...selectedCats, cat]);
+                                                else setSelectedCats(selectedCats.filter(c => c !== cat));
+                                            }}
+                                            disabled={scopedRole === 'AUDITOR'}
+                                            className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
+                                        />
+                                        <span className={`ml-2 text-xs transition-colors ${scopedRole === 'AUDITOR' ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300 group-hover:text-indigo-600'}`}>{cat}</span>
                                     </label>
-                                    <span className="text-[10px] text-gray-500 block mb-2">Leave empty for ALL</span>
-                                    <div className="space-y-1.5">
-                                        {categories.map(cat => (
-                                            <label key={cat} className="flex items-center cursor-pointer group">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedCats.includes(cat)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) setSelectedCats([...selectedCats, cat]);
-                                                        else setSelectedCats(selectedCats.filter(c => c !== cat));
-                                                    }}
-                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                />
-                                                <span className="ml-2 text-xs text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 transition-colors">{cat}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                    <input type="hidden" name="scopedCategories" value={selectedCats.join(',')} />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-900 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                        Scoped Environments
-                                    </label>
-                                    <span className="text-[10px] text-gray-500 block mb-2">Leave empty for ALL</span>
-                                    <div className="space-y-1.5">
-                                        {environments.map(env => (
-                                            <label key={env} className="flex items-center cursor-pointer group">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedEnvs.includes(env)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) setSelectedEnvs([...selectedEnvs, env]);
-                                                        else setSelectedEnvs(selectedEnvs.filter(e => e !== env));
-                                                    }}
-                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                />
-                                                <span className="ml-2 text-xs text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 transition-colors">{env}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                    <input type="hidden" name="scopedEnvironments" value={selectedEnvs.join(',')} />
-                                </div>
+                                ))}
                             </div>
-                        </>
-                    )}
-                </div>
+                            <input type="hidden" name="scopedCategories" value={selectedCats.join(',')} />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-900 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                Scoped Environments
+                            </label>
+                            <span className="text-[10px] text-gray-500 block mb-2">Leave empty for ALL</span>
+                            <div className="space-y-1.5">
+                                {environments.map(env => (
+                                    <label key={env} className="flex items-center cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedEnvs.includes(env)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedEnvs([...selectedEnvs, env]);
+                                                else setSelectedEnvs(selectedEnvs.filter(e => e !== env));
+                                            }}
+                                            disabled={scopedRole === 'AUDITOR'}
+                                            className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
+                                        />
+                                        <span className={`ml-2 text-xs transition-colors ${scopedRole === 'AUDITOR' ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300 group-hover:text-indigo-600'}`}>{env}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <input type="hidden" name="scopedEnvironments" value={selectedEnvs.join(',')} />
+                        </div>
+                    </div>
+                </>
             )}
+        </div>
+    )}
 
-            <div className="hidden">
-                <input type="hidden" name="systemRole" value={isExternal ? 'GROUP' : roleType} />
+<div className="hidden">
+    <input type="hidden" name="systemRole" value={isExternal ? 'USER' : (roleCategory === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : scopedRole)} />
+</div>
+{/* Feedback Messages */ }
+{
+    state?.error && (
+        <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+                <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                </div>
+                <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">{state.error}</h3>
+                </div>
             </div>
-            {/* Feedback Messages */}
-            {state?.error && (
-                <div className="rounded-md bg-red-50 p-4">
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
-                        </div>
-                        <div className="ml-3">
-                            <h3 className="text-sm font-medium text-red-800">{state.error}</h3>
-                        </div>
-                    </div>
-                </div>
-            )}
+        </div>
+    )
+}
 
-            {state?.success && (
-                <div className={`rounded-md p-4 ${state.warning ? 'bg-amber-50 border border-amber-200' : 'bg-green-50'}`}>
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            {state.warning ? (
-                                <AlertCircle className="h-5 w-5 text-amber-500" aria-hidden="true" />
-                            ) : (
-                                <Check className="h-5 w-5 text-green-400" aria-hidden="true" />
-                            )
-                            }
-                        </div>
-                        <div className="ml-3">
-                            <p className={`text-sm font-medium ${state.warning ? 'text-amber-800' : 'text-green-800'}`}>
-                                {state.message}
-                            </p>
-                        </div>
-                    </div>
+{
+    state?.success && (
+        <div className={`rounded-md p-4 ${state.warning ? 'bg-amber-50 border border-amber-200' : 'bg-green-50'}`}>
+            <div className="flex">
+                <div className="flex-shrink-0">
+                    {state.warning ? (
+                        <AlertCircle className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                    ) : (
+                        <Check className="h-5 w-5 text-green-400" aria-hidden="true" />
+                    )
+                    }
                 </div>
-            )}
+                <div className="ml-3">
+                    <p className={`text-sm font-medium ${state.warning ? 'text-amber-800' : 'text-green-800'}`}>
+                        {state.message}
+                    </p>
+                </div>
+            </div>
+        </div>
+    )
+}
 
-            <Button type="submit" disabled={isPending} className="w-full">
-                {isPending ? 'Sending Invite...' : 'Send Invite'}
-            </Button>
-        </form>
+<Button type="submit" disabled={isPending} className="w-full">
+    {isPending ? 'Sending Invite...' : 'Send Invite'}
+</Button>
+        </form >
     );
 }

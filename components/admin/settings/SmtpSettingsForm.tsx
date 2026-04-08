@@ -11,7 +11,7 @@ const initialState = {
     error: null,
 };
 
-export default function SmtpSettingsForm({ initialSettings }: { initialSettings: any }) {
+export default function SmtpSettingsForm({ initialSettings, canEdit = true }: { initialSettings: any, canEdit?: boolean }) {
     const [state, formAction, isPending] = useActionState(updateSmtpSettings, initialState as any);
 
     // SMTP State
@@ -97,7 +97,8 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                             defaultValue={initialSettings.smtpHost || ''}
                             placeholder="smtp.example.com"
                             required
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={!canEdit}
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -113,7 +114,8 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                             id="smtpPort"
                             defaultValue={initialSettings.smtpPort || '587'}
                             required
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={!canEdit}
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -130,7 +132,8 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                             defaultValue={initialSettings.smtpUser || ''}
                             autoComplete="off"
                             required
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={!canEdit}
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -147,10 +150,8 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                             defaultValue={initialSettings.smtpPass || ''}
                             autoComplete="new-password"
                             placeholder={initialSettings.smtpPass ? '******' : ''}
-                            // Required only if no existing password? Or always require for new setup?
-                            // Logic: if existing is present, optional. If empty, required? 
-                            // user might just update host.
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={!canEdit}
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -166,7 +167,8 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                             id="smtpFromEmail"
                             defaultValue={initialSettings.smtpFromEmail || ''}
                             placeholder="noreply@yourcompany.com"
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={!canEdit}
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -180,11 +182,12 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                         type="checkbox"
                         value="true"
                         checked={smtpSecure}
+                        disabled={!canEdit}
                         onChange={(e) => {
                             setSmtpSecure(e.target.checked);
                             handleChange(); // Trigger change detection
                         }}
-                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
                 <div className="ml-3 text-sm">
@@ -217,29 +220,32 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                                 value={testEmail}
                                 onChange={(e) => setTestEmail(e.target.value)}
                                 placeholder="you@example.com"
-                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                                disabled={!canEdit}
+                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                         </div>
 
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={onVerifyClick}
-                            disabled={verifying}
-                            className="w-full sm:w-auto"
-                        >
-                            {verifying ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Verifying...
-                                </>
-                            ) : (
-                                <>
-                                    {testEmail ? <Send className="w-4 h-4 mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                                    {testEmail ? 'Verify & Send Test' : 'Test Connection'}
-                                </>
-                            )}
-                        </Button>
+                        {canEdit && (
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={onVerifyClick}
+                                disabled={verifying}
+                                className="w-full sm:w-auto"
+                            >
+                                {verifying ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Verifying...
+                                    </>
+                                ) : (
+                                    <>
+                                        {testEmail ? <Send className="w-4 h-4 mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                                        {testEmail ? 'Verify & Send Test' : 'Test Connection'}
+                                    </>
+                                )}
+                            </Button>
+                        )}
                     </div>
                 </div>
                 {verificationMsg && (
@@ -250,21 +256,25 @@ export default function SmtpSettingsForm({ initialSettings }: { initialSettings:
                 )}
             </div>
 
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                <Button type="submit" disabled={isPending || (!verified && formChanged)}>
-                    {isPending ? 'Saving...' : (
-                        <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Save Settings
-                        </>
-                    )}
-                </Button>
-            </div>
+            {canEdit && (
+                <>
+                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                        <Button type="submit" disabled={isPending || (!verified && formChanged)}>
+                            {isPending ? 'Saving...' : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Settings
+                                </>
+                            )}
+                        </Button>
+                    </div>
 
-            {(!verified && formChanged) && (
-                <p className="text-xs text-red-500 text-right mt-2">
-                    Please test the connection to enable saving.
-                </p>
+                    {(!verified && formChanged) && (
+                        <p className="text-xs text-red-500 text-right mt-2">
+                            Please test the connection to enable saving.
+                        </p>
+                    )}
+                </>
             )}
         </form>
     );

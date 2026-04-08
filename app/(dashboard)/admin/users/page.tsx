@@ -1,7 +1,14 @@
 import { getUsersAndInvites, getAllGroups, inviteUser, getAllCredentialsSummary } from '@/lib/actions/admin';
+import { getSafeUserContext, canAccess } from '@/lib/iam/permissions';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import UserTable from '@/components/admin/UserTable';
 
 export default async function UserManagementPage() {
+    const session = await auth();
+    const ctx = session?.user?.id ? await getSafeUserContext(session.user.id) : null;
+    if (!ctx || !canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW')) redirect('/dashboard');
+
     const { users, invites, isSystemAdmin, canInvite } = await getUsersAndInvites();
     const groups = await getAllGroups();
     const credentials = await getAllCredentialsSummary();

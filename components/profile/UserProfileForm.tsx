@@ -112,10 +112,6 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
         });
     };
 
-    const handleDisable2FA = () => {
-        // ...
-    };
-
     const handleReconfigure2FA = () => {
         setTwoFAError(null);
         setTwoFASuccess(null);
@@ -283,31 +279,19 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Your account is protected with Two-Factor Authentication.
                                 </p>
-                                {twoFactorMandatory ? (
-                                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                                        <p className="text-sm text-amber-700 dark:text-amber-400">
+                                <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm text-amber-700 dark:text-amber-400 mb-2">
                                             Two-Factor Authentication is mandatory at the enterprise level.
                                             It cannot be disabled by individual users.
                                         </p>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-wrap gap-3">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => { setTwoFAStep('disable'); setTwoFACode(''); setTwoFAError(null); setTwoFASuccess(null); }}
-                                            className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
-                                        >
-                                            <ShieldOff className="w-4 h-4 mr-2" /> Disable 2FA
-                                        </Button>
-
                                         <Button
                                             type="button"
                                             variant="outline"
                                             onClick={handleReconfigure2FA}
                                             disabled={is2FAPending || reconfigSent}
-                                            className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 dark:text-indigo-400 dark:border-indigo-700 dark:hover:bg-indigo-900/20"
+                                            className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 dark:text-indigo-400 dark:border-indigo-700 dark:hover:bg-indigo-900/20 bg-white"
                                         >
                                             {is2FAPending ? (
                                                 <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Sending...</>
@@ -316,7 +300,7 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
                                             )}
                                         </Button>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -388,42 +372,6 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
                     </div>
                 )}
 
-                {/* Disable Flow */}
-                {twoFAStep === 'disable' && (
-                    <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-5 mt-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Enter your current authenticator code to confirm disabling 2FA:
-                        </p>
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            maxLength={6}
-                            value={twoFACode}
-                            onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, ''))}
-                            placeholder="000000"
-                            autoFocus
-                            className="block w-full text-center tracking-[0.3em] text-xl font-bold rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 dark:text-white dark:ring-gray-700"
-                        />
-                        <div className="flex gap-3">
-                            <Button
-                                type="button"
-                                onClick={handleDisable2FA}
-                                disabled={is2FAPending || twoFACode.length !== 6}
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                            >
-                                {is2FAPending ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Disabling...</> : 'Confirm Disable'}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => { setTwoFAStep('idle'); setTwoFACode(''); setTwoFAError(null); }}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );

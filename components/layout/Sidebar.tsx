@@ -1,5 +1,7 @@
 "use client";
 
+// Note: hasAccess (rbac.ts) removed — sidebar uses server-resolved featurePermissions prop
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -57,7 +59,19 @@ const MENU_ITEMS: MenuItem[] = [
     },
 ];
 
-export function Sidebar({ className, role: initialRole, showSettings, showAdminMenu }: { className?: string; role?: string; showSettings?: boolean; showAdminMenu?: boolean }) {
+export function Sidebar({
+    className,
+    role: initialRole,
+    showSettings,
+    showAdminMenu,
+    featurePermissions = {},
+}: {
+    className?: string;
+    role?: string;
+    showSettings?: boolean;
+    showAdminMenu?: boolean;
+    featurePermissions?: Record<string, string>;
+}) {
     const [expandedItems, setExpandedItems] = useState<string[]>(['Credentials', 'Admin']);
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -69,21 +83,37 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
     const userRole = initialRole || session?.user?.role;
     const isExternal = (session?.user as any)?.isExternal ?? false;
 
-    const filteredItems = MENU_ITEMS.filter(item => {
-        // If external, ONLY show Credentials
-        if (isExternal) {
-            return item.title === 'Credentials';
-        }
+    // Helper: returns true if the feature has any access (not NO_ACCESS)
+    const hasFeatureAccess = (featureKey: string) => {
+        const perm = featurePermissions[featureKey];
+        return !!perm && perm !== 'NO_ACCESS';
+    };
 
-        if (item.title === 'Admin') {
-            // Show if explicit prop is true OR if session role is ADMIN (fallback)
-            return showAdminMenu || (userRole === 'ADMIN');
-        }
-        if (item.title === 'Settings') {
-            // Show if explicit prop is true OR if session role is ADMIN (fallback)
-            return showSettings || (userRole === 'ADMIN');
-        }
+    const filteredItems = MENU_ITEMS.filter(item => {
+        // External users: only show Credentials
+        if (isExternal) return item.title === 'Credentials';
+
+        if (item.title === 'Admin')     return showAdminMenu;
+        if (item.title === 'Settings')  return showSettings;
+        if (item.title === 'One-Time Secrets') return hasFeatureAccess('FEATURE:ONE_TIME_SECRETS');
         return true;
+    }).map(item => {
+        if (item.title === 'Admin' && item.children) {
+            const children = item.children.filter(child => {
+                if (child.title === 'Users & Groups')  return hasFeatureAccess('FEATURE:ADMIN_USERS_GROUPS');
+                if (child.title === 'API Clients')     return hasFeatureAccess('FEATURE:ADMIN_API_CLIENTS');
+                if (child.title === 'Bulk Import')     return hasFeatureAccess('FEATURE:ADMIN_BULK_IMPORT');
+                if (child.title === 'Activity Center') return [
+                    'FEATURE:ACTIVITY_SYSTEM_LOG',
+                    'FEATURE:ACTIVITY_API_LOG',
+                    'FEATURE:ACTIVITY_IP_BLOCK',
+                    'FEATURE:ACTIVITY_LOGIN',
+                ].some(hasFeatureAccess);
+                return true;
+            });
+            return { ...item, children };
+        }
+        return item;
     });
 
     const toggleExpand = (title: string) => {
@@ -155,8 +185,6 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
                                         <div className="mt-1 ml-9 space-y-1 border-l-2 border-gray-100 dark:border-gray-700 pl-2">
                                             {item.children.map((child) => {
                                                 // Role-based visibility for specific child items
-                                                if (child.title === 'API Clients' && userRole !== 'ADMIN') return null;
-
                                                 return (
                                                     <Link
                                                         key={child.title}

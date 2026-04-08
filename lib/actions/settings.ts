@@ -60,7 +60,12 @@ export async function getDatabaseInfo() {
 
 export async function verifySmtpConfig(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { success: false, message: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { success: false, message: 'Unauthorized' };
     }
 
@@ -91,7 +96,12 @@ export async function verifySmtpConfig(prevState: any, formData: FormData) {
 
 export async function updateGeneralSettings(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -157,7 +167,12 @@ export async function updateGeneralSettings(prevState: any, formData: FormData) 
 
 export async function updateSmtpSettings(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -211,7 +226,12 @@ export async function updateSmtpSettings(prevState: any, formData: FormData) {
 
 export async function updateSecuritySettings(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -253,7 +273,12 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 export async function updateSystemSettings(prevState: any, formData: FormData) {
 
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized: Only Admins can modify system settings.' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized: Only Admins can modify system settings.' };
     }
 

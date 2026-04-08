@@ -151,7 +151,7 @@ export async function createCredential(prevState: any, formData: FormData) {
             }
         }
 
-        if (accessContext.role !== 'ADMIN' && !canAccess(accessContext, data.category || null, data.environment || null, 'CREATE')) {
+        if (accessContext.role !== 'ADMIN' && !canAccess(accessContext, 'FEATURE:CREDENTIALS', 'CREATE')) {
             return { error: 'Unauthorized: You do not have permission to create credentials here.' };
         }
     }
@@ -313,40 +313,27 @@ export async function getCredentials(params?: {
         // They DO NOT see items based on "Scoping Permissions" (Category/Env).
         // That scope is effectively "Write-Only" or "Blind Create" permission in this context.
     } else {
-        // INTERNAL USER: Check RBAC for SHARED items
-        const orConditions: any[] = [];
-        const { permissions } = accessContext;
+        // INTERNAL USER: Check RBAC for SHARED items using new feature-based scope
+        const permission = accessContext.featurePermissions?.['FEATURE:CREDENTIALS'];
+        const isGlobal = permission === 'ALL';
+        const isScoped = permission === 'ALL_SCOPED';
+        const hasAnyAccess = permission && permission !== 'NO_ACCESS';
 
-        const hasSubstantiveAccess = (set?: Set<string>) => {
-            if (!set) return false;
-            return set.has('READ') || set.has('EDIT') || set.has('CREATE') || set.has('ADMIN') || set.has('AUDIT') || (set as any).has('DOWNLOAD');
-        };
-
-        if (hasSubstantiveAccess(permissions['*']?.['*'])) {
-            // Access to all SHARED (due to global permission)
+        if (isGlobal) {
+            // Full global access — see all shared
             where.OR.push({ isPersonal: false });
-        } else {
-            Object.keys(permissions).forEach(cat => {
-                Object.keys(permissions[cat]).forEach(env => {
-                    if (hasSubstantiveAccess(permissions[cat][env])) {
-                        const condition: any = {};
-                        if (cat !== '*') condition.category = cat;
-                        if (env !== '*') condition.environment = env;
-                        orConditions.push(condition);
-                    }
-                });
-            });
+        } else if (hasAnyAccess) {
+            // Scoped, View, View_Masked, Edit — filter by allowed categories/environments intersecting
+            const cats = accessContext.allowedCategories || [];
+            const envs = accessContext.allowedEnvironments || [];
 
-            if (orConditions.length > 0) {
-                where.OR.push({
-                    AND: [
-                        { isPersonal: false },
-                        { OR: orConditions }
-                    ]
-                });
-            }
+            const scopeCondition: any = { isPersonal: false };
+            if (!cats.includes('*')) scopeCondition.category = { in: cats };
+            if (!envs.includes('*')) scopeCondition.environment = { in: envs };
+
+            where.OR.push(scopeCondition);
         }
-    }
+    } // end of else (internal user)
 
     // 3. Apply Filters
     const finalWhere: any = {
@@ -440,9 +427,7 @@ export async function getCredentialById(id: string) {
 
     // IAM Access Check
     const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'READ', credential.id);
-
-    // Allow creator to always access (optional, but typical)
+    const hasAccess = canAccess(accessContext, 'FEATURE:CREDENTIALS', 'VIEW');
     const isOwner = credential.createdById === session.user.id;
 
     if (credential.isPersonal) {
@@ -545,7 +530,7 @@ export async function deleteCredential(id: string) {
 
     // Check permission logic
     const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'ADMIN', credential.id); // Need Admin or Owner
+    const hasAccess = canAccess(accessContext, 'FEATURE:CREDENTIALS', 'DELETE');
     const isOwner = credential.createdById === session.user.id;
 
     if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {
@@ -600,7 +585,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
     // PERMISSIONS
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'EDIT', credential.id);
+    const hasAccess = canAccess(accessContext, 'FEATURE:CREDENTIALS', 'EDIT');
     const isOwner = credential.createdById === session.user.id; // Corrected from ownerId
 
     if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {

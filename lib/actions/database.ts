@@ -5,7 +5,10 @@ import { auth } from '@/lib/auth';
 
 export async function getDatabaseInfo() {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'VIEW')) {
         return { error: 'Unauthorized' };
     }
 
@@ -212,7 +215,11 @@ export async function internalCheckDatabaseDrift() {
  */
 export async function checkDatabaseDrift() {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.id) return { error: 'Unauthorized', drift: false };
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    // Require EDIT on SETTINGS to perform drift checks
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized', drift: false };
     }
     return internalCheckDatabaseDrift();
@@ -223,7 +230,11 @@ export async function checkDatabaseDrift() {
  */
 export async function syncDatabaseAction() {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    // Require EDIT on SETTINGS to perform synchronization
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 

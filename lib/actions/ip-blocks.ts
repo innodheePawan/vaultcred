@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/actions/audit';
 import { revalidatePath } from 'next/cache';
+import { getSafeUserContext, canAccess, canEdit, forbiddenError } from '@/lib/iam/permissions';
+import { logForbiddenThrottled } from '@/lib/iam/authorize';
 
 /**
  * Fetch all IP security records.
@@ -11,8 +13,12 @@ import { revalidatePath } from 'next/cache';
  */
 export async function getIpSecurityRecords() {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
-        throw new Error('Unauthorized');
+    if (!session?.user?.id) throw forbiddenError();
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ACTIVITY_IP_BLOCK', 'VIEW')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_IP_BLOCK', 'VIEW');
+        throw forbiddenError();
     }
 
     try {
@@ -45,8 +51,12 @@ export async function getIpSecurityRecords() {
  */
 export async function unblockIp(ipAddress: string) {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
-        throw new Error('Unauthorized');
+    if (!session?.user?.id) throw forbiddenError();
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canEdit(ctx, 'FEATURE:ACTIVITY_IP_BLOCK')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_IP_BLOCK', 'EDIT');
+        throw forbiddenError();
     }
 
     try {

@@ -183,11 +183,31 @@ model AccessGroupPolicy {
   accessGroup     AccessGroup @relation(fields: [accessGroupId], references: [id], onDelete: Cascade)
 
   // Policy Rules
-  category        String?     // NULL = ALL, or specific category
-  environment     String?     // NULL = ALL, or specific env
-  permission      String      // READ, EDIT, CREATE, DOWNLOAD, ADMIN
+  featureKey    String?     @map("feature_key")             // e.g. FEATURE:CREDENTIALS — populated by seed
+  category      String?                                     // NULL = ALL categories
+  environment   String?                                     // NULL = ALL environments
+  permission    String                                      // ALL | ALL_SCOPED | VIEW | VIEW_MASKED | NO_ACCESS
 
+  @@unique([accessGroupId, featureKey])                     // One policy per feature per group
+  @@index([featureKey])                                     // Fast feature-based lookups
   @@map("iam_access_group_policy")
+}
+
+// --------------------------------------
+// IAM FEATURE REGISTRY
+// --------------------------------------
+
+model IamFeature {
+  id          String   @id @default(uuid()) @map("feature_id")
+  featureKey  String   @unique @map("feature_key")  // e.g. FEATURE:CREDENTIALS
+  module      String   @map("module")
+  submodule   String?  @map("submodule")
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")  // false = deprecated feature
+  createdAt   DateTime @default(now()) @map("created_on")
+
+  @@index([isActive])
+  @@map("iam_features")
 }
 
 // --------------------------------------
@@ -383,6 +403,10 @@ model SystemSettings {
 
   lastLoginArchivedAt DateTime? @map("last_login_archived_at")
   lastArchiveBatchId  String?   @map("last_archive_batch_id")
+
+  // RBAC version — increment on seed run, role change, or group mapping change
+  // Used for version-based cache invalidation of userContext and globalActiveFeatures
+  rbacVersion Int @default(1) @map("rbac_version")
 
   @@map("system_settings")
 }

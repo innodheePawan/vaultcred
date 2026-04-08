@@ -1,12 +1,27 @@
 import { Metadata } from 'next';
 import { ActivityTabs } from './ActivityTabs';
 import { ShieldAlert } from 'lucide-react';
+import { auth } from '@/lib/auth';
+import { getSafeUserContext } from '@/lib/iam/permissions';
 
 export const metadata: Metadata = {
   title: 'Activity Center | CRED Secure',
 };
 
-export default function ActivityCenterPage() {
+export default async function ActivityCenterPage() {
+  // Resolve permissions server-side — passed as props to avoid client Prisma calls
+  const session = await auth();
+  let featurePermissions: Record<string, string> = {};
+
+  if (session?.user?.id) {
+    try {
+      const ctx = await getSafeUserContext(session.user.id);
+      featurePermissions = ctx.featurePermissions as Record<string, string>;
+    } catch {
+      // featurePermissions stays empty — ActivityTabs will default to NO_ACCESS
+    }
+  }
+
   return (
     <div className="flex-1 space-y-6 p-8">
       <div className="flex items-center justify-between">
@@ -18,9 +33,9 @@ export default function ActivityCenterPage() {
       <p className="text-gray-400 max-w-4xl">
         Consolidated observability across governance, authentication, network blocks, and API telemetry.
       </p>
-      
+
       <div className="mt-8 relative min-h-[500px]">
-        <ActivityTabs />
+        <ActivityTabs featurePermissions={featurePermissions} />
       </div>
     </div>
   );

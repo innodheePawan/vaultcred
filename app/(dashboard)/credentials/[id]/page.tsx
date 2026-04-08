@@ -79,7 +79,7 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
                             let canEdit = false;
                             if (isAdmin || isOwner) canEdit = true;
                             else if (isExternal) canEdit = false;
-                            else canEdit = canAccess(ctx, credential.category, credential.environment, 'EDIT', credential.id);
+                            else canEdit = canAccess(ctx, 'FEATURE:CREDENTIALS', 'EDIT');
 
                             if (canEdit) {
                                 return (

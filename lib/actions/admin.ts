@@ -12,7 +12,7 @@ export async function getUsersAndInvites() {
     const session = await auth();
     // Allow if System Admin OR has ADMIN permission
     const ctx = session?.user?.id ? await getUserAccessContext(session.user.id) : null;
-    const hasAdminAccess = ctx ? canAccess(ctx, null, null, 'ADMIN') : false;
+    const hasAdminAccess = ctx ? canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW') : false;
 
     if (session?.user?.role !== 'ADMIN' && !hasAdminAccess) return { users: [], invites: [], isSystemAdmin: false, canInvite: false };
 
@@ -59,8 +59,8 @@ export async function getUsersAndInvites() {
         }
     });
 
-    // System Admin = Full Global Admin (Role=ADMIN implies Super Admin currently, or specific Group)
-    const isSystemAdmin = currentUser?.role === 'ADMIN' || currentUser?.userGroups.some(ug => ug.group.name === 'Administrator') || false;
+    // System Admin = Full Global Admin
+    const isSystemAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || currentUser?.userGroups.some(ug => ug.group.name === 'Administrator') || false;
 
     // Can Invite = System Admin OR Scoped Admin
     const canInvite = isSystemAdmin || hasAdminAccess;
@@ -73,7 +73,7 @@ export async function getAllGroups() {
     if (!session?.user?.id) return [];
 
     const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminAccess = canAccess(ctx, null, null, 'ADMIN');
+    const hasAdminAccess = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW');
 
     if (session.user.role !== 'ADMIN' && !hasAdminAccess) return [];
 
@@ -87,7 +87,7 @@ export async function getAllCredentialsSummary() {
     if (!session?.user?.id) return [];
 
     const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminAccess = canAccess(ctx, null, null, 'ADMIN');
+    const hasAdminAccess = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW');
 
     if (session.user.role !== 'ADMIN' && !hasAdminAccess) return [];
 
@@ -109,32 +109,43 @@ export async function inviteUser(prevState: any, formData: FormData) {
     const session = await auth();
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
-    // Check Auth: Admin Role OR Admin Permission
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminPermission = canAccess(ctx, null, null, 'ADMIN');
+    const hasAdminPermission = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT');
 
-    if (session.user.role !== 'ADMIN' && !hasAdminPermission) {
+    if (!hasAdminPermission) {
         return { error: 'Unauthorized' };
     }
 
     const email = formData.get('email') as string;
 
     // New Logic: Handle System Role & Scopes
-    const systemRole = formData.get('systemRole') as string; // 'SUPER_ADMIN' | 'GROUP'
+    const systemRole = formData.get('systemRole') as string; // 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'AUDITOR' | 'VIEWER'
 
-    let role = 'USER';
+    let role = systemRole || 'USER';
     let targetGroupIds: string[] = [];
     let scopedCats: string | null = null;
     let scopedEnvs: string | null = null;
 
-    if (systemRole === 'SUPER_ADMIN') {
-        role = 'ADMIN';
-    } else {
-        // Group Based
-        // The form field for group select is named 'groups'
-        const gIds = formData.getAll('groups') as string[];
-        if (gIds.length > 0) targetGroupIds = gIds;
+    const roleToGroupName: Record<string, string> = {
+        'SUPER_ADMIN': 'Super Admin',
+        'ADMIN': 'Scoped Admin',
+        'SCOPED_ADMIN': 'Scoped Admin',
+        'USER': 'User',
+        'AUDITOR': 'Auditor',
+        'VIEWER': 'Viewer'
+    };
 
+    const targetGroupName = roleToGroupName[role] || 'User';
+    const targetGroup = await prisma.userGroup.findUnique({
+        where: { name: targetGroupName }
+    });
+
+    if (targetGroup) {
+        targetGroupIds.push(targetGroup.id);
+    }
+
+    if (role !== 'SUPER_ADMIN') {
         const cat = formData.get('scopedCategories') as string;
         if (cat) scopedCats = cat;
 
@@ -211,10 +222,11 @@ export async function resendInvite(inviteId: string) {
     const session = await auth();
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminPermission = canAccess(ctx, null, null, 'ADMIN');
+    const hasAdminPermission = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT');
 
-    if (session.user.role !== 'ADMIN' && !hasAdminPermission) {
+    if (!hasAdminPermission) {
         return { error: 'Unauthorized' };
     }
 
@@ -257,7 +269,11 @@ export async function resendInvite(inviteId: string) {
 
 export async function updateUser(userId: string, formData: FormData) {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getUserAccessContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -303,22 +319,40 @@ export async function updateUser(userId: string, formData: FormData) {
 
         } else {
             // INTERNAL USER UPDATE
-            const systemRole = formData.get('systemRole') as string; // 'SUPER_ADMIN' | 'GROUP'
-            let newRole = 'USER';
+            const systemRole = formData.get('systemRole') as string; // 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'AUDITOR' | 'VIEWER'
+            let newRole = systemRole || 'USER';
 
-            if (systemRole === 'SUPER_ADMIN') {
-                newRole = 'ADMIN';
-            } else {
-                // Group Based
-                const groupId = formData.get('groupId') as string;
+            const roleToGroupName: Record<string, string> = {
+                'SUPER_ADMIN': 'Super Admin',
+                'ADMIN': 'Scoped Admin',
+                'SCOPED_ADMIN': 'Scoped Admin',
+                'USER': 'User',
+                'AUDITOR': 'Auditor',
+                'VIEWER': 'Viewer'
+            };
+
+            const targetGroupName = roleToGroupName[newRole] || 'User';
+            const targetGroup = await prisma.userGroup.findUnique({
+                where: { name: targetGroupName }
+            });
+
+            if (newRole !== 'SUPER_ADMIN') {
                 const categories = formData.get('scopedCategories') as string;
                 const environments = formData.get('scopedEnvironments') as string;
 
-                if (groupId) {
+                if (targetGroup) {
                     groupsToAssign.push({
-                        groupId,
+                        groupId: targetGroup.id,
                         categories: categories || null,
                         environments: environments || null
+                    });
+                }
+            } else {
+                if (targetGroup) {
+                    groupsToAssign.push({
+                        groupId: targetGroup.id,
+                        categories: null,
+                        environments: null
                     });
                 }
             }
@@ -326,10 +360,10 @@ export async function updateUser(userId: string, formData: FormData) {
             updateData.role = newRole;
 
             // Safety check: Cannot deactivate/demote last Super Admin
-            if ((newRole !== 'ADMIN' || status !== 'ACTIVE') && existingUser.role === 'ADMIN') {
+            if ((newRole !== 'SUPER_ADMIN' || status !== 'ACTIVE') && existingUser.role === 'SUPER_ADMIN') {
                 const activeAdminCount = await prisma.user.count({
                     where: {
-                        role: 'ADMIN',
+                        role: 'SUPER_ADMIN',
                         status: 'ACTIVE',
                         id: { not: userId }
                     }
@@ -403,7 +437,11 @@ export async function updateUser(userId: string, formData: FormData) {
 
 export async function deleteUser(userId: string) {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getUserAccessContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -419,10 +457,10 @@ export async function deleteUser(userId: string) {
             select: { role: true, status: true }
         });
 
-        if (user?.role === 'ADMIN') {
+        if (user?.role === 'SUPER_ADMIN') {
             const activeAdminCount = await prisma.user.count({
                 where: {
-                    role: 'ADMIN',
+                    role: 'SUPER_ADMIN',
                     status: 'ACTIVE',
                     id: { not: userId }
                 }
@@ -446,7 +484,11 @@ export async function deleteUser(userId: string) {
 
 export async function deleteInvite(inviteId: string) {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getUserAccessContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 

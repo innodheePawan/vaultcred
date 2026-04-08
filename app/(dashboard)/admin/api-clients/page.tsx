@@ -1,4 +1,5 @@
 import { getApiClients, getDistinctScopes } from "@/lib/actions/api-clients";
+import { getSafeUserContext, canAccess } from '@/lib/iam/permissions';
 import ApiClientsClient from "./ApiClientsClient";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -8,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ApiClientsPage() {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') redirect("/dashboard");
+    const ctx = session?.user?.id ? await getSafeUserContext(session.user.id) : null;
+    if (!ctx || !canAccess(ctx, 'FEATURE:ADMIN_API_CLIENTS', 'VIEW')) redirect('/dashboard');
 
     const [clients, scopes] = await Promise.all([
         getApiClients(),

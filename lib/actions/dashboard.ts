@@ -67,30 +67,32 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         AND: []
     };
 
+    const permission = accessContext.featurePermissions?.['FEATURE:CREDENTIALS'];
+    const isGlobal = permission === 'ALL';
+    const isScoped = permission === 'ALL_SCOPED';
+    const hasAnyAccess = permission && permission !== 'NO_ACCESS';
+
     if (accessContext.role !== 'ADMIN') {
-        const orConditions: any[] = [];
+        if (isGlobal) {
+            // Can see all shared
+        } else if (hasAnyAccess) {
+            const cats = accessContext.allowedCategories || [];
+            const envs = accessContext.allowedEnvironments || [];
+            
+            const scopeCondition: any = {};
+            if (!cats.includes('*')) scopeCondition.category = { in: cats };
+            if (!envs.includes('*')) scopeCondition.environment = { in: envs };
 
-        // Scope based
-        if (!accessContext.allowedCategories.includes('*') || !accessContext.allowedEnvironments.includes('*')) {
-            const scope: any = {};
-            if (!accessContext.allowedCategories.includes('*')) scope.category = { in: accessContext.allowedCategories };
-            if (!accessContext.allowedEnvironments.includes('*')) scope.environment = { in: accessContext.allowedEnvironments };
-            orConditions.push(scope);
-        } else if (accessContext.allowedCategories.includes('*') && accessContext.allowedEnvironments.includes('*')) {
-            // If they have all categories/environments, no extra filter needed for scope
-            // but we'll handle below
-        }
+            const visibilityOr: any[] = [scopeCondition];
 
-        // Granular based
-        if (accessContext.allowedCredentialIds.length > 0) {
-            orConditions.push({ id: { in: accessContext.allowedCredentialIds } });
-        }
+            if (accessContext.allowedCredentialIds && accessContext.allowedCredentialIds.length > 0) {
+                visibilityOr.push({ id: { in: accessContext.allowedCredentialIds } });
+            }
 
-        if (orConditions.length > 0) {
-            sharedWhere.OR = orConditions;
-        } else if (!accessContext.allowedCategories.includes('*') || !accessContext.allowedEnvironments.includes('*')) {
-            // No direct creds and no global scope - restricted
-            sharedWhere.OR = [{ category: 'none' }]; // effectively none
+            sharedWhere.AND = [{ OR: visibilityOr }];
+        } else {
+            // NO ACCESS
+            sharedWhere.id = 'none';
         }
     }
 

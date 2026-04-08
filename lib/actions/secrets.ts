@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/actions/audit';
 import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { sendOneTimeSecretEmail } from '@/lib/email';
+import { getUserAccessContext, canAccess } from '@/lib/iam/permissions';
 
 export interface CreateSecretInput {
     secretData: string;
@@ -28,6 +29,12 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
     // Block External Users from creating One-Time Secrets
     if (session.user.role === 'EXTERNAL') {
         return { error: 'Unauthorized: External users cannot create one-time secrets.' };
+    }
+
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const accessContext = await getUserAccessContext(session.user.id);
+    if (!canAccess(accessContext, 'FEATURE:ONE_TIME_SECRETS', 'CREATE')) {
+        return { error: 'Unauthorized: You do not have permission to create one-time secrets.' };
     }
 
     const { secretData, name, maxViews, ttlHours, sharedVia, recipientEmail, recipientMessage } = input;
@@ -87,9 +94,10 @@ export async function getMySecrets() {
         return { error: 'Unauthorized' };
     }
 
-    const isAdmin = session.user.role === 'ADMIN';
+    const accessContext = await getUserAccessContext(session.user.id);
+    const hasGlobalView = canAccess(accessContext, 'FEATURE:ONE_TIME_SECRETS', 'VIEW') || accessContext.role === 'ADMIN';
 
-    const where = isAdmin ? {} : { createdById: session.user.id };
+    const where = hasGlobalView ? {} : { createdById: session.user.id };
 
     try {
         const secrets = await prisma.oneTimeSecret.findMany({

@@ -1,5 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
+
+// Inline role normalizer — maps any incoming role string to a valid DB enum value
+const VALID_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'AUDITOR', 'VIEWER', 'USER']);
+function deriveFinalRole(role: string): string {
+    if (VALID_ROLES.has(role)) return role;
+    return 'USER'; // Safe default
+}
 import { hashPassword } from '@/lib/utils/password';
 import { sendInviteEmail } from '@/lib/email';
 
@@ -131,13 +138,14 @@ export async function acceptInvite(token: string, name: string, passwordPlain: s
         // ------------------------------------
 
         // 1. Create User
+        const finalRole = deriveFinalRole(invite.role);
         const newUser = await tx.user.create({
             data: {
                 email: invite.email,
                 name,
                 passwordHash: hashedPassword,
                 status: 'ACTIVE',
-                role: invite.role,
+                role: finalRole,
                 inviteToken: token, // Link for audit
                 isExternal: (invite as any).isExternal,
                 externalAccessType: (invite as any).externalAccessType,

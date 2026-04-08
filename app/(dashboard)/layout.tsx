@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { auth } from "@/lib/auth";
-import { getUserAccessContext, canAccess } from "@/lib/iam/permissions";
+import { getSafeUserContext } from "@/lib/iam/permissions";
 
 import { SessionTimeout } from "@/components/layout/SessionTimeout";
 
@@ -42,17 +42,32 @@ export default async function DashboardLayout({
 
     let showSettings = false;
     let showAdminMenu = false;
+    let featurePermissions: Record<string, string> = {};
 
     if (process.env.DATABASE_URL && session?.user?.id) {
         try {
-            const ctx = await getUserAccessContext(session.user.id);
-            // Settings: Admins & Super Users
-            showSettings = ctx.role === 'ADMIN';
-            // Admin Menu: Super Admin OR Scoped Admin OR Auditor
-            showAdminMenu = ctx.role === 'ADMIN' || canAccess(ctx, null, null, 'ADMIN') || canAccess(ctx, null, null, 'AUDIT');
+            const ctx = await getSafeUserContext(session.user.id);
+            featurePermissions = ctx.featurePermissions as Record<string, string>;
+
+            // Settings: any role with VIEW or higher on FEATURE:SETTINGS
+            showSettings = featurePermissions['FEATURE:SETTINGS'] !== 'NO_ACCESS'
+                && !!featurePermissions['FEATURE:SETTINGS'];
+
+            // Admin menu: visible if user has ANY admin or activity feature accessible
+            const adminFeatures = [
+                'FEATURE:ADMIN_USERS_GROUPS',
+                'FEATURE:ADMIN_API_CLIENTS',
+                'FEATURE:ADMIN_BULK_IMPORT',
+                'FEATURE:ACTIVITY_SYSTEM_LOG',
+                'FEATURE:ACTIVITY_API_LOG',
+                'FEATURE:ACTIVITY_LOGIN',
+                'FEATURE:ACTIVITY_IP_BLOCK',
+            ];
+            showAdminMenu = adminFeatures.some(
+                (f) => featurePermissions[f] && featurePermissions[f] !== 'NO_ACCESS'
+            );
         } catch (e) {
-            // User might be invalid or DB issue
-            // Failed to load access context
+            // Silently swallow — sidebar defaults to minimal view
         }
     }
     let licenseInfo = null;
@@ -80,13 +95,14 @@ export default async function DashboardLayout({
             <div className="h-screen flex flex-col overflow-hidden">
                 <LicenseWarningBanner licenseInfo={licenseInfo} />
                 {/* Pass currentUser which contains profileImage */}
-                <Header settings={settings} user={currentUser} />
+                <Header settings={settings} user={currentUser} showSettings={showSettings} />
                 <div className="flex flex-1 overflow-hidden">
                     <Suspense fallback={<div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700" />}>
                         <Sidebar
                             role={session?.user?.role}
                             showSettings={showSettings}
                             showAdminMenu={showAdminMenu}
+                            featurePermissions={featurePermissions}
                         />
                     </Suspense>
                     <div className="flex flex-1 flex-col overflow-hidden relative z-0">
