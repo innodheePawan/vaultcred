@@ -254,6 +254,35 @@ export async function seedRoles(prismaClient: PrismaClient = prisma) {
         }
     }
 
+    // ── Step 3.6: Migrate Legacy Standard Users ──
+    const standardUserGroup = await (prismaClient as any).userGroup.findUnique({ where: { name: 'User' } });
+    if (standardUserGroup) {
+        const standardUsers = await (prismaClient as any).user.findMany({
+            where: { role: 'USER' },
+            include: { userGroups: true }
+        });
+        
+        let userFixCount = 0;
+        for (const user of standardUsers) {
+            if (user.userGroups.length === 0) {
+                await (prismaClient as any).userGroupMapping.create({
+                    data: { 
+                        userId: user.id, 
+                        groupId: standardUserGroup.id, 
+                        assignedBy: 'SYSTEM_FIX',
+                        // Give them '*' wildcard access to legacy structures so they don't lose data
+                        scopedCategories: '*',
+                        scopedEnvironments: '*'
+                    }
+                });
+                userFixCount++;
+            }
+        }
+        if (userFixCount > 0) {
+            console.log(`\n  ✅ Migrated ${userFixCount} legacy standard users to 'User' mapped scope`);
+        }
+    }
+
     // ── Step 4: Increment rbacVersion in SystemSettings ──
     const settings = await (prismaClient as any).systemSettings.findFirst();
     if (settings) {

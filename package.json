@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && prisma db push && tsx scripts/seed-roles.ts && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "tsx scripts/seed-roles.ts",
+    "db:setup": "prisma generate && prisma db push && tsx scripts/seed-roles.ts"
   },
   "dependencies": {
     "@otplib/plugin-base32-scure": "^13.2.1",
