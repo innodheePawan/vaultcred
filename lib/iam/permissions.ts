@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { cache } from 'react';
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -53,7 +54,7 @@ export async function loadGlobalActiveFeatures(version: number): Promise<Set<str
 // USER ACCESS CONTEXT
 // ─────────────────────────────────────────────
 
-export async function getUserAccessContext(userId: string): Promise<UserAccessContext> {
+export const getUserAccessContext = cache(async (userId: string): Promise<UserAccessContext> => {
     // 1. Load current rbacVersion for cache key
     const settings = await prisma.systemSettings.findFirst({
         select: { rbacVersion: true },
@@ -158,7 +159,7 @@ export async function getUserAccessContext(userId: string): Promise<UserAccessCo
     }
 
     return ctx;
-}
+});
 
 function emptyContext(userId: string, activeFeatures: Set<string>): UserAccessContext {
     const featurePermissions: Record<string, FeaturePermission> = {};
