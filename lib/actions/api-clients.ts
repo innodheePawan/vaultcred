@@ -6,15 +6,29 @@ import { encrypt } from "@/lib/crypto";
 import { revalidatePath } from "next/cache";
 import { getUserAccessContext, canAccess } from "@/lib/iam/permissions";
 
-export async function getApiClients() {
+export async function getApiClients(page = 1, limit = 10) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
     const ctx = await getUserAccessContext(session.user.id);
     if (!canAccess(ctx, 'FEATURE:ADMIN_API_CLIENTS', 'VIEW')) throw new Error("Unauthorized");
-    return prisma.apiClient.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: { createdBy: { select: { name: true, email: true } } }
-    });
+
+    const skip = (page - 1) * limit;
+    const [clients, total] = await Promise.all([
+        prisma.apiClient.findMany({
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+            include: { createdBy: { select: { name: true, email: true } } }
+        }),
+        prisma.apiClient.count()
+    ]);
+
+    return {
+        data: clients,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit)
+    };
 }
 
 export async function getDistinctScopes() {

@@ -277,11 +277,13 @@ export async function getCredentials(params?: {
     scope?: string;
     sort?: string;
     order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
 }) {
     const session = await auth();
-    if (!session?.user) return [];
+    if (!session?.user) return { data: [], total: 0, page: 1, totalPages: 0 };
 
-    const { query, type: typeFilter, category, environment, expiry, scope, sort, order } = params || {};
+    const { query, type: typeFilter, category, environment, expiry, scope, sort, order, page = 1, limit = 10 } = params || {};
 
     // 1. Get User IAM Context
     const accessContext = await getUserAccessContext(session.user.id!);
@@ -391,17 +393,28 @@ export async function getCredentials(params?: {
     }
 
     try {
-        const credentials = await prisma.credentialMaster.findMany({
-            where: finalWhere,
-            orderBy,
-            include: {
-                createdBy: { select: { name: true, email: true } }
-            }
-        });
-        return credentials;
-    } catch (error) {
+        const skip = (page - 1) * limit;
+        const [credentials, total] = await Promise.all([
+            prisma.credentialMaster.findMany({
+                where: finalWhere,
+                orderBy,
+                skip,
+                take: limit,
+                include: {
+                    createdBy: { select: { name: true, email: true } }
+                }
+            }),
+            prisma.credentialMaster.count({ where: finalWhere })
+        ]);
 
-        return [];
+        return {
+            data: credentials,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        };
+    } catch (error) {
+        return { data: [], total: 0, page: 1, totalPages: 0 };
     }
 }
 

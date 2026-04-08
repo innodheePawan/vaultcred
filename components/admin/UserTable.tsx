@@ -26,6 +26,7 @@ import StatusConfirmationDialog from './StatusConfirmationDialog';
 import { resendInvite, deleteInvite, deleteUser } from '@/lib/actions/admin';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 
 const GROUP_COLORS = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-800',
@@ -106,7 +107,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
     };
 
     // Filter Users
-    const filteredUsers = users.filter((u: any) =>
+    const filteredUsers = (users?.data || []).filter((u: any) =>
         u.email.toLowerCase().includes(search.toLowerCase()) ||
         u.name?.toLowerCase().includes(search.toLowerCase())
     );
@@ -336,6 +337,15 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                     )}
                 </div>
             </div>
+            
+            {users?.total > 0 && (
+                <PaginationControls
+                    currentPage={users.page}
+                    totalPages={users.totalPages}
+                    totalItems={users.total}
+                    currentLimit={users.data.length > 0 && users.data.length < users.total && users.data.length !== 10 && users.data.length !== 25 && users.data.length !== 50 && users.data.length !== 100 ? users.data.length : (search ? 10 : Math.max(10, Math.ceil(users.total / users.totalPages)))}
+                />
+            )}
 
             {/* Edit Dialog */}
             {editingUser && (

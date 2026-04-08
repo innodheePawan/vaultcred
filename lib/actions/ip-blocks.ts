@@ -11,7 +11,7 @@ import { logForbiddenThrottled } from '@/lib/iam/authorize';
  * Fetch all IP security records.
  * Restricted to Super Admins only.
  */
-export async function getIpSecurityRecords() {
+export async function getIpSecurityRecords(page = 1, limit = 50) {
     const session = await auth();
     if (!session?.user?.id) throw forbiddenError();
 
@@ -22,6 +22,8 @@ export async function getIpSecurityRecords() {
     }
 
     try {
+        const skip = (page - 1) * limit;
+        
         // Use raw SQL to fetch from security_ip_blocks for robustness against stale Prisma client
         const records: any[] = await prisma.$queryRaw`
             SELECT 
@@ -36,12 +38,20 @@ export async function getIpSecurityRecords() {
                 updated_at as updatedAt
             FROM security_ip_blocks
             ORDER BY last_block_at DESC, updated_at DESC
+            LIMIT ${limit} OFFSET ${skip}
         `;
 
-        return records;
-    } catch (error) {
+        const totalRes: any[] = await prisma.$queryRaw`SELECT COUNT(*) as c FROM security_ip_blocks`;
+        const total = Number(totalRes[0].c || 0);
 
-        return [];
+        return {
+            data: records,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        };
+    } catch (error) {
+        return { data: [], total: 0, page: 1, totalPages: 0 };
     }
 }
 

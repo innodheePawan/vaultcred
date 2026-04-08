@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, RefreshCcw, ExternalLink, Trash2, Copy, Eye, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { getMySecrets, revokeSecret } from '@/lib/actions/secrets';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 
 // If simple-toast or other toast lib is used, adjust layout. 
 // For now I'll use standard window.alert or console if no toast provided in context.
@@ -31,13 +32,17 @@ type Secret = {
 };
 
 export default function OneTimeSecretsPage() {
-    const [secrets, setSecrets] = useState<Secret[]>([]);
+    const [secrets, setSecrets] = useState<any>({ data: [], total: 0, page: 1, totalPages: 0 });
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const fetchSecrets = async () => {
         setLoading(true);
-        const data = await getMySecrets();
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        const limit = parseInt(searchParams.get('limit') || '10', 10);
+        
+        const data = await getMySecrets(page, limit);
 
         // If the user is external, getMySecrets returns an error object, check for it
         if (data && 'error' in data && data.error === 'Unauthorized') {
@@ -45,14 +50,13 @@ export default function OneTimeSecretsPage() {
             return;
         }
 
-        // @ts-ignore
         setSecrets(data);
         setLoading(false);
     };
 
     useEffect(() => {
         fetchSecrets();
-    }, []);
+    }, [searchParams]);
 
     const handleRevoke = async (id: string) => {
         if (!confirm('Are you sure you want to revoke this secret? It will be inaccessible immediately.')) return;
@@ -125,14 +129,14 @@ export default function OneTimeSecretsPage() {
                                         Loading secrets...
                                     </td>
                                 </tr>
-                            ) : secrets.length === 0 ? (
+                            ) : secrets.data.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                                         No active secrets found. Create one to get started.
                                     </td>
                                 </tr>
                             ) : (
-                                secrets.map((secret) => (
+                                secrets.data.map((secret: Secret) => (
                                     <tr key={secret.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-900 dark:text-white">
@@ -193,6 +197,15 @@ export default function OneTimeSecretsPage() {
                     </table>
                 </div>
             </div>
+            
+            {secrets.total > 0 && !loading && (
+                <PaginationControls
+                    currentPage={secrets.page}
+                    totalPages={secrets.totalPages}
+                    totalItems={secrets.total}
+                    currentLimit={parseInt(searchParams.get('limit') || '10', 10)}
+                />
+            )}
         </div>
     );
 }

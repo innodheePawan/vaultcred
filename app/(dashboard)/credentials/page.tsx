@@ -5,6 +5,7 @@ import { Plus, Folder, Key, Lock, Terminal, FileText, ArrowUp, ArrowDown } from 
 import { formatDate } from '@/lib/utils';
 import { Suspense } from 'react';
 import CredentialFilters from '@/components/credentials/CredentialFilters';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 import { auth } from '@/lib/auth';
 import { getUserAccessContext, canAccess } from '@/lib/iam/permissions';
 import { redirect } from 'next/navigation';
@@ -69,18 +70,23 @@ export default async function CredentialsPage(props: {
         expiry?: string,
         scope?: string,
         sort?: string,
-        order?: 'asc' | 'desc'
+        order?: 'asc' | 'desc',
+        page?: string,
+        limit?: string
     }>
 }) {
     const session = await auth();
     if (!session?.user) redirect('/login');
 
     const searchParams = await props.searchParams;
-    const { q, type, category, environment, sort, order } = searchParams;
+    const { q, type, category, environment, sort, order, page, limit } = searchParams;
 
     const accessContext = await getUserAccessContext(session.user.id!);
 
-    const credentials = await getCredentials({
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    const { data: credentials, total, totalPages, page: currentPage } = await getCredentials({
         query: q,
         type,
         category,
@@ -88,7 +94,9 @@ export default async function CredentialsPage(props: {
         expiry: searchParams.expiry,
         scope: searchParams.scope,
         sort,
-        order
+        order,
+        page: pageNum,
+        limit: limitNum
     });
 
     const createLink = type ? `/credentials/create?type=${type}` : '/credentials/create';
@@ -242,6 +250,13 @@ export default async function CredentialsPage(props: {
                     </table>
                 )}
             </div>
+            
+            <PaginationControls 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={total}
+                currentLimit={limitNum}
+            />
         </div>
     );
 }

@@ -86,9 +86,9 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
  * Admins/Super Admins can see ALL secrets (but maybe not decrypt them unless they use the token flow, 
  * but dashboard requirement says "View all created one-time secrets... See status... Revoke").
  */
-export async function getMySecrets() {
+export async function getMySecrets(page = 1, limit = 10) {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
+    if (!session?.user) return { data: [], total: 0, page: 1, totalPages: 0 };
 
     if (session.user.role === 'EXTERNAL') {
         return { error: 'Unauthorized' };
@@ -100,15 +100,20 @@ export async function getMySecrets() {
     const where = hasGlobalView ? {} : { createdById: session.user.id };
 
     try {
-        const secrets = await prisma.oneTimeSecret.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                createdBy: {
-                    select: { name: true, email: true }
+        const [secrets, total] = await Promise.all([
+            prisma.oneTimeSecret.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+                include: {
+                    createdBy: {
+                        select: { name: true, email: true }
+                    }
                 }
-            }
-        });
+            }),
+            prisma.oneTimeSecret.count({ where })
+        ]);
 
         // Lazy expire check for the dashboard list
         const now = new Date();
@@ -132,10 +137,15 @@ export async function getMySecrets() {
             secretsToExpire.forEach((s) => s.status = 'EXPIRED');
         }
 
-        return secrets;
+        return {
+            data: secrets,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        };
     } catch (error) {
 
-        return [];
+        return { data: [], total: 0, page: 1, totalPages: 0 };
     }
 }
 

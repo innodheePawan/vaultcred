@@ -64,31 +64,33 @@ export const getUserAccessContext = cache(async (userId: string): Promise<UserAc
     // 2. Load global active features (version-based cache)
     const activeFeatures = await loadGlobalActiveFeatures(rbacVersion);
 
-    // 3. Fetch user with groups → access groups → policies
+    // 3. Fetch user explicitly avoiding Prisma Cartesian joins
     const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-            userGroups: {
-                include: {
-                    group: {
-                        include: {
-                            access: {
-                                include: {
-                                    accessGroup: {
-                                        include: { policies: true },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
+        where: { id: userId }
     });
 
     if (!user) {
         return emptyContext(userId, activeFeatures);
     }
+
+    // Fast multi-lookup to get policies without Cartesian explosion
+    const userGroups = await prisma.userGroupMapping.findMany({
+        where: { userId },
+        select: { groupId: true, scopedCategories: true, scopedEnvironments: true }
+    });
+    const groupIds = userGroups.map(g => g.groupId);
+
+    const groupAccess = await prisma.userGroupAccess.findMany({
+        where: { userGroupId: { in: groupIds } },
+        select: { accessGroupId: true }
+    });
+    const accessGroupIds = groupAccess.map(a => a.accessGroupId);
+
+    const policies = accessGroupIds.length > 0 
+        ? await prisma.accessGroupPolicy.findMany({
+            where: { accessGroupId: { in: accessGroupIds } }
+        })
+        : [];
 
     const isExternal = (user as any).isExternal || false;
     const externalType = (user as any).externalAccessType;
@@ -111,8 +113,7 @@ export const getUserAccessContext = cache(async (userId: string): Promise<UserAc
     const allCategories = new Set<string>();
     const allEnvironments = new Set<string>();
 
-    for (const groupMapping of user.userGroups) {
-        // Extract scope from this group mapping
+    for (const groupMapping of userGroups) {
         const scopeCats = groupMapping.scopedCategories
             ? groupMapping.scopedCategories.split(',').filter(Boolean)
             : ['*'];
@@ -120,30 +121,26 @@ export const getUserAccessContext = cache(async (userId: string): Promise<UserAc
             ? groupMapping.scopedEnvironments.split(',').filter(Boolean)
             : ['*'];
 
-        // Union scope across all groups
         scopeCats.forEach((c) => allCategories.add(c));
         scopeEnvs.forEach((e) => allEnvironments.add(e));
+    }
 
-        for (const access of groupMapping.group.access) {
-            for (const policy of access.accessGroup.policies) {
-                // Only process FEATURE: permission tokens
-                if (!policy.featureKey) continue;
+    for (const policy of policies) {
+        if (!policy.featureKey) continue;
 
-                const featureKey = policy.featureKey;
-                const incomingPerm = policy.permission as FeaturePermission;
+        const featureKey = policy.featureKey;
+        const incomingPerm = policy.permission as FeaturePermission;
 
-                if (!PERMISSION_HIERARCHY.includes(incomingPerm)) continue;
+        if (!PERMISSION_HIERARCHY.includes(incomingPerm)) continue;
 
-                // Highest-wins aggregation
-                const currentRank = PERMISSION_HIERARCHY.indexOf(
-                    ctx.featurePermissions[featureKey] ?? 'NO_ACCESS'
-                );
-                const incomingRank = PERMISSION_HIERARCHY.indexOf(incomingPerm);
+        // Highest-wins aggregation
+        const currentRank = PERMISSION_HIERARCHY.indexOf(
+            ctx.featurePermissions[featureKey] ?? 'NO_ACCESS'
+        );
+        const incomingRank = PERMISSION_HIERARCHY.indexOf(incomingPerm);
 
-                if (incomingRank > currentRank) {
-                    ctx.featurePermissions[featureKey] = incomingPerm;
-                }
-            }
+        if (incomingRank > currentRank) {
+            ctx.featurePermissions[featureKey] = incomingPerm;
         }
     }
 

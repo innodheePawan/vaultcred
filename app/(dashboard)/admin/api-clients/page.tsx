@@ -7,18 +7,24 @@ import { redirect } from "next/navigation";
 export const metadata = { title: "API Clients - Admin" };
 export const dynamic = "force-dynamic";
 
-export default async function ApiClientsPage() {
+export default async function ApiClientsPage(props: {
+    searchParams: Promise<{ page?: string; limit?: string }>;
+}) {
     const session = await auth();
     const ctx = session?.user?.id ? await getSafeUserContext(session.user.id) : null;
     if (!ctx || !canAccess(ctx, 'FEATURE:ADMIN_API_CLIENTS', 'VIEW')) redirect('/dashboard');
 
-    const [clients, scopes] = await Promise.all([
-        getApiClients(),
+    const searchParams = await props.searchParams;
+    const pageNum = searchParams.page ? parseInt(searchParams.page, 10) : 1;
+    const limitNum = searchParams.limit ? parseInt(searchParams.limit, 10) : 10;
+
+    const [clientsResponse, scopes] = await Promise.all([
+        getApiClients(pageNum, limitNum),
         getDistinctScopes()
     ]);
 
     // Parse scopes for client consumption
-    const parsedClients = clients.map(c => ({
+    const parsedClients = clientsResponse.data.map(c => ({
         ...c,
         scopesObj: typeof c.scopes === 'string' ? JSON.parse(c.scopes) : c.scopes
     }));
@@ -30,7 +36,16 @@ export default async function ApiClientsPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage external applications interfacing with the vault securely.</p>
             </div>
             
-            <ApiClientsClient initialClients={parsedClients} availableScopes={scopes} />
+            <ApiClientsClient 
+                initialClients={{
+                    data: parsedClients,
+                    total: clientsResponse.total,
+                    page: clientsResponse.page,
+                    totalPages: clientsResponse.totalPages
+                }} 
+                availableScopes={scopes} 
+                currentLimit={limitNum}
+            />
         </div>
     );
 }

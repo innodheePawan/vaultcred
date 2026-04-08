@@ -8,16 +8,21 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { clearRateLimit } from '@/lib/rate-limit';
 
-export async function getUsersAndInvites() {
+export async function getUsersAndInvites(page = 1, limit = 10) {
     const session = await auth();
     // Allow if System Admin OR has ADMIN permission
     const ctx = session?.user?.id ? await getUserAccessContext(session.user.id) : null;
     const hasAdminAccess = ctx ? canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW') : false;
 
-    if (session?.user?.role !== 'ADMIN' && !hasAdminAccess) return { users: [], invites: [], isSystemAdmin: false, canInvite: false };
+    if (session?.user?.role !== 'ADMIN' && !hasAdminAccess) return { users: { data: [], total: 0, page: 1, totalPages: 0 }, invites: [], isSystemAdmin: false, canInvite: false };
 
-    const users = await prisma.user.findMany({
-        where: { status: { not: 'INVITED' } },
+    const skip = (page - 1) * limit;
+
+    const [users, totalUsers] = await Promise.all([
+        prisma.user.findMany({
+            where: { status: { not: 'INVITED' } },
+            skip,
+            take: limit,
         select: {
             id: true,
             email: true,
@@ -41,7 +46,9 @@ export async function getUsersAndInvites() {
             }
         },
         orderBy: { name: 'asc' }
-    });
+    }),
+    prisma.user.count({ where: { status: { not: 'INVITED' } } })
+    ]);
 
     const invites = await prisma.invite.findMany({
         where: { accepted: false },
@@ -65,7 +72,17 @@ export async function getUsersAndInvites() {
     // Can Invite = System Admin OR Scoped Admin
     const canInvite = isSystemAdmin || hasAdminAccess;
 
-    return { users, invites, isSystemAdmin, canInvite };
+    return { 
+        users: {
+            data: users,
+            total: totalUsers,
+            page,
+            totalPages: Math.ceil(totalUsers / limit)
+        }, 
+        invites, 
+        isSystemAdmin, 
+        canInvite 
+    };
 }
 
 export async function getAllGroups() {

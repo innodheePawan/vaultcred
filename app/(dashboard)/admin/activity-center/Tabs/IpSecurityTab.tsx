@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getIpSecurityRecords, unblockIp } from '@/lib/actions/ip-blocks';
 import { Loader2, Unlock, AlertTriangle, ShieldCheck } from 'lucide-react';
 
@@ -8,22 +8,48 @@ export default function IpSecurityTab() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [unblocking, setUnblocking] = useState<string | null>(null);
+  
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const limit = 50;
 
   useEffect(() => {
-    fetchRecords();
-  }, []);
+    fetchRecords(page === 1);
+  }, [page]);
 
-  async function fetchRecords() {
-    setLoading(true);
+  async function fetchRecords(reset = false) {
+    if (reset) setLoading(true);
     try {
-      const data = await getIpSecurityRecords();
-      setRecords(data || []);
+      const res = await getIpSecurityRecords(page, limit);
+      if (res && res.data) {
+        setRecords(prev => reset ? res.data : [...prev, ...res.data]);
+        setHasMore(res.page < res.totalPages);
+        setTotal(res.total);
+      } else {
+        if (reset) setRecords([]);
+        setHasMore(false);
+      }
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (reset) setLoading(false);
     }
   }
+
+  const lastElementRef = useCallback((node: HTMLTableRowElement | null) => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+    
+    if (node) observerRef.current.observe(node);
+  }, [loading, hasMore]);
 
   async function handleUnblock(ip: string) {
     if (!confirm(`Are you sure you want to unblock ${ip}?`)) return;
@@ -82,13 +108,17 @@ export default function IpSecurityTab() {
                 </td>
               </tr>
             ) : (
-              records.map((rec) => {
+              records.map((rec, index) => {
                 const now = new Date();
                 const blockedUntil = rec.blockedUntil ? new Date(rec.blockedUntil) : null;
                 const isCurrentlyBlocked = rec.isPermanentBlock || (blockedUntil && blockedUntil > now);
                 
                 return (
-                  <tr key={rec.id} className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors">
+                  <tr 
+                    key={rec.id}
+                    ref={index === records.length - 1 ? lastElementRef : null}
+                    className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors"
+                  >
                     <td className="px-6 py-4 font-mono text-gray-200">
                       {rec.ipAddress}
                     </td>
@@ -133,6 +163,19 @@ export default function IpSecurityTab() {
             )}
           </tbody>
         </table>
+        
+        {!loading && hasMore && (
+           <div className="py-4 flex justify-center border-t border-gray-800">
+             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+             <span className="ml-2 text-gray-400 text-sm">Loading more records...</span>
+           </div>
+        )}
+      </div>
+
+      <div className="flex justify-end pt-4">
+        <span className="text-sm text-gray-500">
+          Total Blocks Found: <span className="font-semibold text-gray-400">{total}</span>
+        </span>
       </div>
     </div>
   );

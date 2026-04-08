@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createApiClient, deleteApiClient, toggleApiClientStatus } from "@/lib/actions/api-clients";
 import { Plus, Trash2, Copy, Check, Shield, Key, Power, PowerOff } from 'lucide-react';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 
 function CustomMultiSelect({ options, selected, onChange, placeholder }: { options: string[], selected: string[], onChange: (val: string[]) => void, placeholder: string }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -83,8 +84,8 @@ function CustomMultiSelect({ options, selected, onChange, placeholder }: { optio
 }
 
 
-export default function ApiClientsClient({ initialClients, availableScopes }: { initialClients: any[], availableScopes: { categories: string[], environments: string[] } }) {
-    const [clients, setClients] = useState(initialClients);
+export default function ApiClientsClient({ initialClients, availableScopes, currentLimit }: { initialClients: { data: any[], total: number, page: number, totalPages: number }, availableScopes: { categories: string[], environments: string[] }, currentLimit: number }) {
+    const [clients, setClients] = useState(initialClients.data);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
@@ -332,6 +333,15 @@ export default function ApiClientsClient({ initialClients, availableScopes }: { 
                     </table>
                 </div>
             </div>
+
+            {initialClients.total > 0 && (
+                <PaginationControls
+                    currentPage={initialClients.page}
+                    totalPages={initialClients.totalPages}
+                    totalItems={initialClients.total}
+                    currentLimit={currentLimit}
+                />
+            )}
 
             {/* Create Modal overlay */}
             {isCreateOpen && (

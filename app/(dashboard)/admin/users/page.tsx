@@ -4,12 +4,18 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import UserTable from '@/components/admin/UserTable';
 
-export default async function UserManagementPage() {
+export default async function UserManagementPage(props: {
+    searchParams: Promise<{ page?: string; limit?: string }>;
+}) {
     const session = await auth();
     const ctx = session?.user?.id ? await getSafeUserContext(session.user.id) : null;
     if (!ctx || !canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW')) redirect('/dashboard');
 
-    const { users, invites, isSystemAdmin, canInvite } = await getUsersAndInvites();
+    const searchParams = await props.searchParams;
+    const pageNum = searchParams.page ? parseInt(searchParams.page, 10) : 1;
+    const limitNum = searchParams.limit ? parseInt(searchParams.limit, 10) : 10;
+
+    const { users, invites, isSystemAdmin, canInvite } = await getUsersAndInvites(pageNum, limitNum);
     const groups = await getAllGroups();
     const credentials = await getAllCredentialsSummary();
 

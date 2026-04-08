@@ -1,39 +1,55 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAuditLogs, AuditLogParams } from '@/lib/actions/audit';
-import { Loader2, Search, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, Calendar } from 'lucide-react';
 
 export default function SystemLogsTab() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
-  const limit = 15;
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  
+  const limit = 50;
 
   useEffect(() => {
-    fetchLogs();
+    fetchLogs(page === 1);
   }, [page, search]);
 
-  async function fetchLogs() {
-    setLoading(true);
+  async function fetchLogs(reset = false) {
+    if (reset) setLoading(true);
     try {
       const res = await getAuditLogs({ page, limit, search });
       if (res && !res.error) {
-        setLogs(res.data || []);
-        setTotalPages(res.totalPages || 1);
+        setLogs(prev => reset ? (res.data || []) : [...prev, ...(res.data || [])]);
+        setHasMore((res.page || 1) < (res.totalPages || 1));
         setTotal(res.total || 0);
       } else {
-        setLogs([]);
+        if (reset) setLogs([]);
+        setHasMore(false);
       }
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (reset) setLoading(false);
     }
   }
+
+  const lastElementRef = useCallback((node: HTMLTableRowElement | null) => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+    
+    if (node) observerRef.current.observe(node);
+  }, [loading, hasMore]);
 
   return (
     <div className="space-y-4">
@@ -79,8 +95,12 @@ export default function SystemLogsTab() {
                 </td>
               </tr>
             ) : (
-              logs.map((log) => (
-                <tr key={log.id} className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors">
+              logs.map((log, index) => (
+                <tr 
+                  key={log.id} 
+                  ref={index === logs.length - 1 ? lastElementRef : null}
+                  className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors"
+                >
                   <td className="px-6 py-4 font-medium text-gray-200">
                     <span className="bg-gray-800 px-2 py-1 rounded text-xs">
                       {log.action}
@@ -107,31 +127,20 @@ export default function SystemLogsTab() {
             )}
           </tbody>
         </table>
+        
+        {!loading && hasMore && (
+           <div className="py-4 flex justify-center border-t border-gray-800">
+             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+             <span className="ml-2 text-gray-400 text-sm">Loading more logs...</span>
+           </div>
+        )}
       </div>
 
-      {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4">
-          <span className="text-sm text-gray-400">
-            Showing <span className="font-semibold text-white">{(page - 1) * limit + 1}</span> to <span className="font-semibold text-white">{Math.min(page * limit, total)}</span> of <span className="font-semibold text-white">{total}</span> Entries
-          </span>
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="p-2 bg-[#1A1A24] border border-gray-700 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 text-gray-300" />
-            </button>
-            <button 
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="p-2 bg-[#1A1A24] border border-gray-700 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 text-gray-300" />
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="flex justify-end pt-4">
+        <span className="text-sm text-gray-500">
+          Total Logs Found: <span className="font-semibold text-gray-400">{total}</span>
+        </span>
+      </div>
     </div>
   );
 }
