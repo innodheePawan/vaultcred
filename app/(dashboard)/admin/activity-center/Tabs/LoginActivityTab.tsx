@@ -7,6 +7,7 @@ import { Loader2, Search, Calendar, ShieldAlert, Fingerprint } from 'lucide-reac
 export default function LoginActivityTab() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -14,43 +15,73 @@ export default function LoginActivityTab() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   
   const limit = 50;
+  const MAX_ROWS = 5000;
 
   useEffect(() => {
+    let active = true;
+
+    async function fetchLogs(reset = false) {
+      if (reset) {
+        setLoading(true);
+      } else {
+        if (isFetchingNextPage) return;
+        setIsFetchingNextPage(true);
+      }
+
+      if (!reset && logs.length >= MAX_ROWS) {
+        setHasMore(false);
+        setIsFetchingNextPage(false);
+        return;
+      }
+
+      const start = Date.now();
+      try {
+        const res = await getLoginLogs({ page, limit, email: search });
+        if (!active) return;
+
+        if (res && res.logs) {
+          setLogs(prev => reset ? res.logs : [...prev, ...res.logs]);
+          setHasMore((res.page || 1) < (res.totalPages || 1));
+          setTotal(res.total || 0);
+        } else {
+          if (reset) setLogs([]);
+          setHasMore(false);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (!active) return;
+        const elapsed = Date.now() - start;
+        const minWait = Math.max(0, 300 - elapsed);
+        setTimeout(() => {
+          if (!active) return;
+          if (reset) setLoading(false);
+          else setIsFetchingNextPage(false);
+        }, minWait);
+      }
+    }
+
     fetchLogs(page === 1);
+
+    return () => {
+      active = false;
+    };
   }, [page, search]);
 
-  async function fetchLogs(reset = false) {
-    if (reset) setLoading(true);
-    try {
-      // Use search as email filter
-      const res = await getLoginLogs({ page, limit, email: search });
-      if (res && res.logs) {
-        setLogs(prev => reset ? res.logs : [...prev, ...res.logs]);
-        setHasMore((res.page || 1) < (res.totalPages || 1));
-        setTotal(res.total || 0);
-      } else {
-        if (reset) setLogs([]);
-        setHasMore(false);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      if (reset) setLoading(false);
-    }
-  }
+
 
   const lastElementRef = useCallback((node: HTMLTableRowElement | null) => {
-    if (loading) return;
+    if (loading || isFetchingNextPage) return;
     if (observerRef.current) observerRef.current.disconnect();
     
     observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
+      if (entries[0].isIntersecting && hasMore && logs.length < MAX_ROWS) {
         setPage(prev => prev + 1);
       }
     });
     
     if (node) observerRef.current.observe(node);
-  }, [loading, hasMore]);
+  }, [loading, isFetchingNextPage, hasMore, logs.length]);
 
   function getRiskColor(risk: string) {
     if (risk === 'HIGH') return 'bg-red-500/10 text-red-500 border-red-500/20';
@@ -78,6 +109,7 @@ export default function LoginActivityTab() {
              onChange={(e) => {
                setSearch(e.target.value);
                setPage(1); 
+               setLogs([]);
              }}
            />
         </div>

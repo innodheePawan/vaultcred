@@ -7,49 +7,82 @@ import { Loader2, Unlock, AlertTriangle, ShieldCheck } from 'lucide-react';
 export default function IpSecurityTab() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [unblocking, setUnblocking] = useState<string | null>(null);
   
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const limit = 50;
+  const MAX_ROWS = 5000;
 
   useEffect(() => {
-    fetchRecords(page === 1);
-  }, [page]);
+    let active = true;
 
-  async function fetchRecords(reset = false) {
-    if (reset) setLoading(true);
-    try {
-      const res = await getIpSecurityRecords(page, limit);
-      if (res && res.data) {
-        setRecords(prev => reset ? res.data : [...prev, ...res.data]);
-        setHasMore(res.page < res.totalPages);
-        setTotal(res.total);
+    async function fetchRecords(reset = false) {
+      if (reset) {
+        setLoading(true);
       } else {
-        if (reset) setRecords([]);
-        setHasMore(false);
+        if (isFetchingNextPage) return;
+        setIsFetchingNextPage(true);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      if (reset) setLoading(false);
+
+      if (!reset && records.length >= MAX_ROWS) {
+        setHasMore(false);
+        setIsFetchingNextPage(false);
+        return;
+      }
+
+      const start = Date.now();
+      try {
+        const res = await getIpSecurityRecords(page, limit);
+        if (!active) return;
+
+        if (res && res.data) {
+          setRecords(prev => reset ? res.data : [...prev, ...res.data]);
+          setHasMore(res.page < res.totalPages);
+          setTotal(res.total);
+        } else {
+          if (reset) setRecords([]);
+          setHasMore(false);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (!active) return;
+        const elapsed = Date.now() - start;
+        const minWait = Math.max(0, 300 - elapsed);
+        setTimeout(() => {
+          if (!active) return;
+          if (reset) setLoading(false);
+          else setIsFetchingNextPage(false);
+        }, minWait);
+      }
     }
-  }
+
+    fetchRecords(page === 1);
+
+    return () => {
+      active = false;
+    };
+  }, [page, refreshKey]);
+
+
 
   const lastElementRef = useCallback((node: HTMLTableRowElement | null) => {
-    if (loading) return;
+    if (loading || isFetchingNextPage) return;
     if (observerRef.current) observerRef.current.disconnect();
     
     observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
+      if (entries[0].isIntersecting && hasMore && records.length < MAX_ROWS) {
         setPage(prev => prev + 1);
       }
     });
     
     if (node) observerRef.current.observe(node);
-  }, [loading, hasMore]);
+  }, [loading, isFetchingNextPage, hasMore, records.length]);
 
   async function handleUnblock(ip: string) {
     if (!confirm(`Are you sure you want to unblock ${ip}?`)) return;
@@ -58,7 +91,8 @@ export default function IpSecurityTab() {
     try {
       const res = await unblockIp(ip);
       if (res.success) {
-        await fetchRecords();
+        setPage(1);
+        setRefreshKey(r => r + 1);
       } else {
         alert(res.error || 'Failed to unblock IP');
       }

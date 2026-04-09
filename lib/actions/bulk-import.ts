@@ -58,13 +58,13 @@ function validateRow(row: BulkRow, rowNum: number): string | null {
 
 export async function bulkImportCredentials(csvData: BulkRow[]): Promise<BulkResult> {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user || session.user.isActive === false) {
         return { total: 0, success: 0, failed: 0, skipped: 0, errors: [{ row: 0, name: '', error: 'Unauthorized' }] };
     }
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const ctx = await getUserAccessContext(session.user.id);
-    if (!canAccess(ctx, 'FEATURE:CREDENTIALS', 'CREATE')) {
+    const ctx = await getUserAccessContext(session.user.id, session.user);
+    if (!canAccess(ctx, 'CREDENTIALS', 'CREATE')) {
         return { total: 0, success: 0, failed: 0, skipped: 0, errors: [{ row: 0, name: '', error: 'You do not have permission to perform bulk imports.' }] };
     }
 

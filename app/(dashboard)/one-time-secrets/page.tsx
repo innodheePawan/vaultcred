@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Plus, RefreshCcw, ExternalLink, Trash2, Copy, Eye, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { getMySecrets, revokeSecret } from '@/lib/actions/secrets';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { canCreate, canDelete } from '@/lib/iam/client-permissions';
 import { PaginationControls } from '@/components/ui/PaginationControls';
 
 // If simple-toast or other toast lib is used, adjust layout. 
@@ -36,6 +38,7 @@ export default function OneTimeSecretsPage() {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session } = useSession();
 
     const fetchSecrets = async () => {
         setLoading(true);
@@ -81,31 +84,40 @@ export default function OneTimeSecretsPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">One-Time Secrets</h1>
                     <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your secure links and shared secrets.</p>
+                    {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-red-500 font-mono">
+                            DEBUG ROLE: {session?.user?.role} | OTS PERM: {(session?.user as any)?.rbac?.featurePermissions?.ONE_TIME_SECRETS} | CAN_CREATE: {String(canCreate((session?.user as any)?.rbac, 'ONE_TIME_SECRETS'))}
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-3">
-                    <button
-                        onClick={async () => {
-                            if (!confirm('Delete all expired and revoked secrets? This cannot be undone.')) return;
-                            const { deleteExpiredSecrets } = await import('@/lib/actions/secrets');
-                            const res = await deleteExpiredSecrets();
-                            if (res.error) alert(res.error);
-                            else {
-                                alert(`Cleanup complete. Removed ${res.count} secrets.`);
-                                fetchSecrets();
-                            }
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-900/20 transition"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        Cleanup Expired
-                    </button>
-                    <Link
-                        href="/one-time-secrets/create"
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Share New Secret
-                    </Link>
+                    {canDelete((session?.user as any)?.rbac, 'ADMIN_OTS_CLEANUP') && (
+                        <button
+                            onClick={async () => {
+                                if (!confirm('Delete all expired and revoked secrets? This cannot be undone.')) return;
+                                const { deleteExpiredSecrets } = await import('@/lib/actions/secrets');
+                                const res = await deleteExpiredSecrets();
+                                if (res.error) alert(res.error);
+                                else {
+                                    alert(`Cleanup complete. Removed ${res.count} secrets.`);
+                                    fetchSecrets();
+                                }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-900/20 transition"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Cleanup Expired
+                        </button>
+                    )}
+                    {canCreate((session?.user as any)?.rbac, 'ONE_TIME_SECRETS') && (
+                        <Link
+                            href="/one-time-secrets/create"
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                        >
+                            <Plus className="w-5 h-5" />
+                            Share New Secret
+                        </Link>
+                    )}
                 </div>
             </div>
 

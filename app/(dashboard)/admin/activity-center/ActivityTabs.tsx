@@ -10,10 +10,10 @@ import ApiLogsTab from './Tabs/ApiLogsTab';
 
 // Feature keys mapped to each tab
 const ALL_TABS = [
-  { id: 'system',    name: 'System Logs',       icon: Activity,    feature: 'FEATURE:ACTIVITY_SYSTEM_LOG' },
-  { id: 'login',     name: 'Login Activity',     icon: UserCheck,   feature: 'FEATURE:ACTIVITY_LOGIN' },
-  { id: 'ip_blocks', name: 'IP Security Blocks', icon: ShieldCheck, feature: 'FEATURE:ACTIVITY_IP_BLOCK' },
-  { id: 'api_logs',  name: 'API Telemetry',      icon: GlobeLock,   feature: 'FEATURE:ACTIVITY_API_LOG' },
+  { id: 'system',    name: 'System Logs',       icon: Activity,    feature: 'ACTIVITY_SYSTEM_LOG' },
+  { id: 'login',     name: 'Login Activity',     icon: UserCheck,   feature: 'ACTIVITY_LOGIN' },
+  { id: 'ip_blocks', name: 'IP Security Blocks', icon: ShieldCheck, feature: 'ACTIVITY_IP_BLOCK' },
+  { id: 'api_logs',  name: 'API Telemetry',      icon: GlobeLock,   feature: 'ACTIVITY_API_LOG' },
 ] as const;
 
 type TabId = typeof ALL_TABS[number]['id'];

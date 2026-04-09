@@ -11,8 +11,8 @@ import { clearRateLimit } from '@/lib/rate-limit';
 export async function getUsersAndInvites(page = 1, limit = 10) {
     const session = await auth();
     // Allow if System Admin OR has ADMIN permission
-    const ctx = session?.user?.id ? await getUserAccessContext(session.user.id) : null;
-    const hasAdminAccess = ctx ? canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW') : false;
+    const ctx = session?.user?.id ? await getUserAccessContext(session.user.id, session.user) : null;
+    const hasAdminAccess = ctx ? canAccess(ctx, 'ADMIN_USERS_GROUPS', 'VIEW') : false;
 
     if (session?.user?.role !== 'ADMIN' && !hasAdminAccess) return { users: { data: [], total: 0, page: 1, totalPages: 0 }, invites: [], isSystemAdmin: false, canInvite: false };
 
@@ -89,8 +89,8 @@ export async function getAllGroups() {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminAccess = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW');
+    const ctx = await getUserAccessContext(session.user.id, session.user);
+    const hasAdminAccess = canAccess(ctx, 'ADMIN_USERS_GROUPS', 'VIEW');
 
     if (session.user.role !== 'ADMIN' && !hasAdminAccess) return [];
 
@@ -103,8 +103,8 @@ export async function getAllCredentialsSummary() {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminAccess = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'VIEW');
+    const ctx = await getUserAccessContext(session.user.id, session.user);
+    const hasAdminAccess = canAccess(ctx, 'ADMIN_USERS_GROUPS', 'VIEW');
 
     if (session.user.role !== 'ADMIN' && !hasAdminAccess) return [];
 
@@ -127,8 +127,8 @@ export async function inviteUser(prevState: any, formData: FormData) {
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminPermission = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT');
+    const ctx = await getUserAccessContext(session.user.id, session.user, true); // forceFresh for critical security
+    const hasAdminPermission = canAccess(ctx, 'ADMIN_USERS_GROUPS', 'EDIT');
 
     if (!hasAdminPermission) {
         return { error: 'Unauthorized' };
@@ -240,8 +240,8 @@ export async function resendInvite(inviteId: string) {
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const ctx = await getUserAccessContext(session.user.id);
-    const hasAdminPermission = canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT');
+    const ctx = await getUserAccessContext(session.user.id, session.user, true);
+    const hasAdminPermission = canAccess(ctx, 'ADMIN_USERS_GROUPS', 'EDIT');
 
     if (!hasAdminPermission) {
         return { error: 'Unauthorized' };
@@ -289,8 +289,8 @@ export async function updateUser(userId: string, formData: FormData) {
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const ctx = await getUserAccessContext(session.user.id);
-    if (!canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT')) {
+    const ctx = await getUserAccessContext(session.user.id, session.user, true);
+    if (!canAccess(ctx, 'ADMIN_USERS_GROUPS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -457,8 +457,8 @@ export async function deleteUser(userId: string) {
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const ctx = await getUserAccessContext(session.user.id);
-    if (!canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT')) {
+    const ctx = await getUserAccessContext(session.user.id, session.user, true);
+    if (!canAccess(ctx, 'ADMIN_USERS_GROUPS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -504,8 +504,8 @@ export async function deleteInvite(inviteId: string) {
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const ctx = await getUserAccessContext(session.user.id);
-    if (!canAccess(ctx, 'FEATURE:ADMIN_USERS_GROUPS', 'EDIT')) {
+    const ctx = await getUserAccessContext(session.user.id, session.user, true);
+    if (!canAccess(ctx, 'ADMIN_USERS_GROUPS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 

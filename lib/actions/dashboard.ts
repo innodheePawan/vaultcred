@@ -26,12 +26,12 @@ export type DashboardStats = {
 
 export async function getDashboardStats(): Promise<DashboardStats> {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user || session.user.isActive === false) {
         throw new Error('Unauthorized');
     }
 
     const userId = session.user.id!;
-    const accessContext = await getUserAccessContext(userId);
+    const accessContext = await getUserAccessContext(userId, session.user);
     const now = new Date();
     const nearFuture = new Date();
     nearFuture.setDate(now.getDate() + 60);
@@ -67,7 +67,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         AND: []
     };
 
-    const permission = accessContext.featurePermissions?.['FEATURE:CREDENTIALS'];
+    const permission = accessContext.featurePermissions?.['CREDENTIALS'];
     const isGlobal = permission === 'ALL';
     const isScoped = permission === 'ALL_SCOPED';
     const hasAnyAccess = permission && permission !== 'NO_ACCESS';

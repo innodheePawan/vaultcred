@@ -22,7 +22,7 @@ export function Header({ settings, user, publicView = false, showSettings = fals
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    
+
     // Mock notifications for demonstration (can be wired to backend later)
     const [notifications, setNotifications] = useState([
         { id: 1, text: 'System Update: Universal 2FA is now permanently mandatory.', isNew: true },
@@ -30,6 +30,16 @@ export function Header({ settings, user, publicView = false, showSettings = fals
         { id: 3, text: 'UI Update: Search text now elegantly clears upon navigation.', isNew: true },
         { id: 4, text: 'Permission Sync: Viewer role upgraded to explicitly allow scoped visibility.', isNew: true }
     ]);
+
+    // Make demonstrations persistent locally
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const hasRead = localStorage.getItem('demo_notifications_read');
+            if (hasRead === 'true') {
+                setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+            }
+        }
+    }, []);
 
     const profileRef = useRef<HTMLDivElement>(null);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -145,12 +155,14 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                         <>
                             {/* Notifications Dropdown */}
                             <div className="relative" ref={notificationRef}>
-                                <button 
+                                <button
                                     onClick={() => {
                                         setIsNotificationOpen(!isNotificationOpen);
-                                        // Mark all as read when opening
                                         if (!isNotificationOpen) {
                                             setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+                                            if (typeof window !== 'undefined') {
+                                                localStorage.setItem('demo_notifications_read', 'true');
+                                            }
                                         }
                                     }}
                                     className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 relative focus:outline-none"

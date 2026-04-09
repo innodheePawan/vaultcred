@@ -49,19 +49,19 @@ export default async function DashboardLayout({
             const ctx = await getSafeUserContext(session.user.id);
             featurePermissions = ctx.featurePermissions as Record<string, string>;
 
-            // Settings: any role with VIEW or higher on FEATURE:SETTINGS
-            showSettings = featurePermissions['FEATURE:SETTINGS'] !== 'NO_ACCESS'
-                && !!featurePermissions['FEATURE:SETTINGS'];
+            // Settings: any role with VIEW or higher on SETTINGS
+            showSettings = featurePermissions['SETTINGS'] !== 'NO_ACCESS'
+                && !!featurePermissions['SETTINGS'];
 
             // Admin menu: visible if user has ANY admin or activity feature accessible
             const adminFeatures = [
-                'FEATURE:ADMIN_USERS_GROUPS',
-                'FEATURE:ADMIN_API_CLIENTS',
-                'FEATURE:ADMIN_BULK_IMPORT',
-                'FEATURE:ACTIVITY_SYSTEM_LOG',
-                'FEATURE:ACTIVITY_API_LOG',
-                'FEATURE:ACTIVITY_LOGIN',
-                'FEATURE:ACTIVITY_IP_BLOCK',
+                'ADMIN_USERS_GROUPS',
+                'ADMIN_API_CLIENTS',
+                'ADMIN_BULK_IMPORT',
+                'ACTIVITY_SYSTEM_LOG',
+                'ACTIVITY_API_LOG',
+                'ACTIVITY_LOGIN',
+                'ACTIVITY_IP_BLOCK',
             ];
             showAdminMenu = adminFeatures.some(
                 (f) => featurePermissions[f] && featurePermissions[f] !== 'NO_ACCESS'

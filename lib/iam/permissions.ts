@@ -22,13 +22,32 @@ export const VALID_ACTIONS: FeatureAction[] = ['VIEW', 'CREATE', 'EDIT', 'DELETE
 export interface UserAccessContext {
     userId: string;
     role: string;
-    featurePermissions: Record<string, FeaturePermission>; // { 'FEATURE:CREDENTIALS': 'VIEW_MASKED' }
+    featurePermissions: Record<string, FeaturePermission>; // { 'CREDENTIALS': 'VIEW_MASKED' }
     activeFeatures: Set<string>;                           // globally loaded active feature keys
     allowedCategories: string[];
     allowedEnvironments: string[];
     allowedCredentialIds: string[];
     isExternal: boolean;
     externalAccessType?: string;
+    version?: number;
+}
+
+export const FEATURES = {
+    CREDENTIALS: 'CREDENTIALS',
+    ONE_TIME_SECRETS: 'ONE_TIME_SECRETS',
+    ACTIVITY_SYSTEM_LOG: 'ACTIVITY_SYSTEM_LOG',
+    ACTIVITY_LOGIN: 'ACTIVITY_LOGIN',
+    ACTIVITY_SECURITY: 'ACTIVITY_SECURITY',
+    ACTIVITY_TELEMETRY: 'ACTIVITY_TELEMETRY',
+    API_CLIENTS: 'ADMIN_API_CLIENTS',
+    ADMIN_OTS_CLEANUP: 'ADMIN_OTS_CLEANUP',
+    IAM_USERS: 'ADMIN_USERS_GROUPS',
+    IAM_GROUPS: 'ADMIN_USERS_GROUPS',
+    IAM_ROLES: 'ADMIN_USERS_GROUPS'
+};
+
+export function normalizeFeatureKey(key: string): string {
+    return key.replace(/^FEATURE:/i, '').toUpperCase();
 }
 
 // ─────────────────────────────────────────────
@@ -44,7 +63,7 @@ export async function loadGlobalActiveFeatures(version: number): Promise<Set<str
             where: { isActive: true },
             select: { featureKey: true },
         });
-        _globalActiveFeatures = new Set(features.map((f) => f.featureKey));
+        _globalActiveFeatures = new Set(features.map((f) => normalizeFeatureKey(f.featureKey)));
         _currentFeatureVersion = version;
     }
     return _globalActiveFeatures;
@@ -54,7 +73,33 @@ export async function loadGlobalActiveFeatures(version: number): Promise<Set<str
 // USER ACCESS CONTEXT
 // ─────────────────────────────────────────────
 
-export const getUserAccessContext = cache(async (userId: string): Promise<UserAccessContext> => {
+export async function getUserAccessContext(userId: string, sessionUser?: any, forceFresh = false): Promise<UserAccessContext> {
+    if (sessionUser?.rbac && !forceFresh) {
+        // Safe Fallback: if version is corrupted, fetch from DB
+        if (!sessionUser.rbac.version) {
+            return await _getUserAccessContextDB(userId);
+        }
+        const featurePerms = sessionUser.rbac.featurePermissions || {};
+        // Maximum Return Speed: TRUST session context completely by default
+        return {
+            userId: sessionUser.id,
+            role: sessionUser.role,
+            isExternal: sessionUser.isExternal || false,
+            externalAccessType: sessionUser.externalAccessType,
+            featurePermissions: featurePerms,
+            allowedCategories: sessionUser.rbac.allowedCategories || [],
+            allowedEnvironments: sessionUser.rbac.allowedEnvironments || [],
+            allowedCredentialIds: sessionUser.rbac.allowedCredentialIds || [],
+            version: sessionUser.rbac.version,
+            activeFeatures: new Set(Object.keys(featurePerms))
+        } as UserAccessContext;
+    }
+
+    // Fallback ALWAYS safe
+    return await _getUserAccessContextDB(userId);
+}
+
+const _getUserAccessContextDB = cache(async (userId: string): Promise<UserAccessContext> => {
     // 1. Load current rbacVersion for cache key
     const settings = await prisma.systemSettings.findFirst({
         select: { rbacVersion: true },
@@ -107,6 +152,7 @@ export const getUserAccessContext = cache(async (userId: string): Promise<UserAc
             : [],
         isExternal,
         externalAccessType: externalType,
+        version: rbacVersion,
     };
 
     // 4. Aggregate permissions across all groups (highest-wins per feature)
@@ -128,7 +174,7 @@ export const getUserAccessContext = cache(async (userId: string): Promise<UserAc
     for (const policy of policies) {
         if (!policy.featureKey) continue;
 
-        const featureKey = policy.featureKey;
+        const featureKey = normalizeFeatureKey(policy.featureKey);
         const incomingPerm = policy.permission as FeaturePermission;
 
         if (!PERMISSION_HIERARCHY.includes(incomingPerm)) continue;
@@ -161,7 +207,7 @@ export const getUserAccessContext = cache(async (userId: string): Promise<UserAc
 function emptyContext(userId: string, activeFeatures: Set<string>): UserAccessContext {
     const featurePermissions: Record<string, FeaturePermission> = {};
     for (const key of activeFeatures) {
-        featurePermissions[key] = 'NO_ACCESS';
+        featurePermissions[normalizeFeatureKey(key)] = 'NO_ACCESS';
     }
     return {
         userId,
@@ -172,6 +218,7 @@ function emptyContext(userId: string, activeFeatures: Set<string>): UserAccessCo
         allowedEnvironments: [],
         allowedCredentialIds: [],
         isExternal: false,
+        version: 0,
     };
 }
 
@@ -209,22 +256,24 @@ export function canAccess(
     featureKey: string,
     action: FeatureAction
 ): boolean {
+    const normalizedKey = normalizeFeatureKey(featureKey);
+
     // Guard 1: Invalid action
     if (!VALID_ACTIONS.includes(action)) {
-        logMisconfigurationThrottled(ctx.userId, featureKey, `Invalid action: ${action}`);
+        logMisconfigurationThrottled(ctx.userId, normalizedKey, `Invalid action: ${action}`);
         return false;
     }
 
     // Guard 2: Unknown feature key (not in registry)
-    if (!ctx.activeFeatures.has(featureKey)) {
-        logMisconfigurationThrottled(ctx.userId, featureKey, 'Unknown or inactive featureKey');
+    if (!ctx.activeFeatures.has(normalizedKey)) {
+        logMisconfigurationThrottled(ctx.userId, normalizedKey, 'Unknown or inactive featureKey');
         return false;
     }
 
     // Guard 3: Get resolved permission (guaranteed by default fill, but defensive)
-    const permission = ctx.featurePermissions[featureKey];
+    const permission = ctx.featurePermissions[normalizedKey];
     if (!permission) {
-        logMisconfigurationThrottled(ctx.userId, featureKey, 'No permission entry found');
+        logMisconfigurationThrottled(ctx.userId, normalizedKey, 'No permission entry found');
         return false;
     }
 
@@ -302,7 +351,8 @@ export function getScopeFilter(
     ctx: UserAccessContext,
     featureKey: string
 ): { category?: { in: string[] }; environment?: { in: string[] } } {
-    const permission = ctx.featurePermissions[featureKey];
+    const normalizedKey = normalizeFeatureKey(featureKey);
+    const permission = ctx.featurePermissions[normalizedKey];
     const isScoped = permission === 'ALL_SCOPED';
 
     if (!isScoped) return {}; // ALL = global, no filter

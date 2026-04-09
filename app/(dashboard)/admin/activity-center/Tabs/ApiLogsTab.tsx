@@ -7,6 +7,7 @@ import { Loader2, Search, Calendar, CheckCircle2, XCircle } from 'lucide-react';
 export default function ApiLogsTab() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -14,42 +15,73 @@ export default function ApiLogsTab() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   
   const limit = 50;
+  const MAX_ROWS = 5000;
 
   useEffect(() => {
-    fetchLogs(page === 1);
-  }, [page, search]);
+    let active = true;
 
-  async function fetchLogs(reset = false) {
-    if (reset) setLoading(true);
-    try {
-      const res = await getApiLogs({ page, limit, search });
-      if (res && !res.error) {
-        setLogs(prev => reset ? (res.data || []) : [...prev, ...(res.data || [])]);
-        setHasMore((res.page || 1) < (res.totalPages || 1));
-        setTotal(res.total || 0);
+    async function fetchLogs(reset = false) {
+      if (reset) {
+        setLoading(true);
       } else {
-        if (reset) setLogs([]);
-        setHasMore(false);
+        if (isFetchingNextPage) return;
+        setIsFetchingNextPage(true);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      if (reset) setLoading(false);
+
+      if (!reset && logs.length >= MAX_ROWS) {
+        setHasMore(false);
+        setIsFetchingNextPage(false);
+        return;
+      }
+
+      const start = Date.now();
+      try {
+        const res = await getApiLogs({ page, limit, search });
+        if (!active) return;
+
+        if (res && !res.error) {
+          setLogs(prev => reset ? (res.data || []) : [...prev, ...(res.data || [])]);
+          setHasMore((res.page || 1) < (res.totalPages || 1));
+          setTotal(res.total || 0);
+        } else {
+          if (reset) setLogs([]);
+          setHasMore(false);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (!active) return;
+        const elapsed = Date.now() - start;
+        const minWait = Math.max(0, 300 - elapsed);
+        setTimeout(() => {
+          if (!active) return;
+          if (reset) setLoading(false);
+          else setIsFetchingNextPage(false);
+        }, minWait);
+      }
     }
-  }
+
+    fetchLogs(page === 1);
+
+    return () => {
+      active = false;
+    };
+  }, [page, search]); // Re-run when page or search changes
+
+
 
   const lastElementRef = useCallback((node: HTMLTableRowElement | null) => {
-    if (loading) return;
+    if (loading || isFetchingNextPage) return;
     if (observerRef.current) observerRef.current.disconnect();
     
     observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
+      if (entries[0].isIntersecting && hasMore && logs.length < MAX_ROWS) {
         setPage(prev => prev + 1);
       }
     });
     
     if (node) observerRef.current.observe(node);
-  }, [loading, hasMore]);
+  }, [loading, isFetchingNextPage, hasMore, logs.length]);
 
   return (
     <div className="space-y-4">
@@ -65,6 +97,7 @@ export default function ApiLogsTab() {
              onChange={(e) => {
                setSearch(e.target.value);
                setPage(1); 
+               setLogs([]); // Clear logs immediately on search to prevent ghost scrolling
              }}
            />
         </div>

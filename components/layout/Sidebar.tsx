@@ -76,7 +76,7 @@ export function Sidebar({
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const currentType = searchParams.get('type');
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const { isCollapsed } = useLayout();
 
     // Use server-passed role (immediate) or client-side session role (fallback/update)
@@ -95,19 +95,19 @@ export function Sidebar({
 
         if (item.title === 'Admin')     return showAdminMenu;
         if (item.title === 'Settings')  return showSettings;
-        if (item.title === 'One-Time Secrets') return hasFeatureAccess('FEATURE:ONE_TIME_SECRETS');
+        if (item.title === 'One-Time Secrets') return hasFeatureAccess('ONE_TIME_SECRETS');
         return true;
     }).map(item => {
         if (item.title === 'Admin' && item.children) {
             const children = item.children.filter(child => {
-                if (child.title === 'Users & Groups')  return hasFeatureAccess('FEATURE:ADMIN_USERS_GROUPS');
-                if (child.title === 'API Clients')     return hasFeatureAccess('FEATURE:ADMIN_API_CLIENTS');
-                if (child.title === 'Bulk Import')     return hasFeatureAccess('FEATURE:ADMIN_BULK_IMPORT');
+                if (child.title === 'Users & Groups')  return hasFeatureAccess('ADMIN_USERS_GROUPS');
+                if (child.title === 'API Clients')     return hasFeatureAccess('ADMIN_API_CLIENTS');
+                if (child.title === 'Bulk Import')     return hasFeatureAccess('ADMIN_BULK_IMPORT');
                 if (child.title === 'Activity Center') return [
-                    'FEATURE:ACTIVITY_SYSTEM_LOG',
-                    'FEATURE:ACTIVITY_API_LOG',
-                    'FEATURE:ACTIVITY_IP_BLOCK',
-                    'FEATURE:ACTIVITY_LOGIN',
+                    'ACTIVITY_SYSTEM_LOG',
+                    'ACTIVITY_API_LOG',
+                    'ACTIVITY_IP_BLOCK',
+                    'ACTIVITY_LOGIN',
                 ].some(hasFeatureAccess);
                 return true;
             });
@@ -146,6 +146,25 @@ export function Sidebar({
 
         return false;
     };
+
+    if (status === 'loading') {
+        return (
+            <aside className={clsx(
+                "bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full z-30 relative transition-all duration-300",
+                isCollapsed ? "w-20" : "w-64",
+                className
+            )}>
+                <div className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex gap-3 items-center px-3 py-2 animate-pulse">
+                            <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-md shrink-0"></div>
+                            {!isCollapsed && <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md w-3/4"></div>}
+                        </div>
+                    ))}
+                </div>
+            </aside>
+        );
+    }
 
     return (
         <aside className={clsx(
