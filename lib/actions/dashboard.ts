@@ -72,7 +72,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const isScoped = permission === 'ALL_SCOPED';
     const hasAnyAccess = permission && permission !== 'NO_ACCESS';
 
-    if (accessContext.role !== 'ADMIN') {
+    if (accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN') {
         if (isGlobal) {
             // Can see all shared
         } else if (hasAnyAccess) {

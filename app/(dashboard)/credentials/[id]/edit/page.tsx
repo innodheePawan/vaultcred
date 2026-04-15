@@ -16,7 +16,7 @@ export default async function EditCredentialPage(props: { params: Promise<{ id: 
         notFound();
     }
 
-    if (credential.createdById !== session.user.id && session.user.role !== 'ADMIN') {
+    if (credential.createdById !== session.user.id && session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
         return (
             <div className="max-w-4xl mx-auto py-8 px-4 text-center">
                 <h2 className="text-xl font-bold text-red-600">Unauthorized</h2>

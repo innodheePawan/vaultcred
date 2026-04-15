@@ -91,11 +91,11 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
 export async function getMySecrets(page = 1, limit = 10) {
     const session = await auth();
     if (!session?.user || session.user.isActive === false) {
-        return { data: [], total: 0, page: 1, totalPages: 0, error: { code: 'UNAUTHORIZED' } };
+        return { data: [], total: 0, page: 1, totalPages: 0, permissions: { CREATE: false, DELETE: false, VIEW: false }, error: { code: 'UNAUTHORIZED' } };
     }
 
     if (session.user.role === 'EXTERNAL') {
-        return { data: [], total: 0, page: 1, totalPages: 0, error: { code: 'FORBIDDEN' } };
+        return { data: [], total: 0, page: 1, totalPages: 0, permissions: { CREATE: false, DELETE: false, VIEW: false }, error: { code: 'FORBIDDEN' } };
     }
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
@@ -146,11 +146,16 @@ export async function getMySecrets(page = 1, limit = 10) {
             data: secrets,
             total,
             page,
-            totalPages: Math.ceil(total / limit)
+            totalPages: Math.ceil(total / limit),
+            permissions: {
+                CREATE: canAccess(accessContext, 'ONE_TIME_SECRETS', 'CREATE'),
+                DELETE: canAccess(accessContext, 'ADMIN_OTS_CLEANUP', 'DELETE'),
+                VIEW: hasGlobalView
+            }
         };
     } catch (error) {
 
-        return { data: [], total: 0, page: 1, totalPages: 0 };
+        return { data: [], total: 0, page: 1, totalPages: 0, permissions: { CREATE: false, DELETE: false, VIEW: false } };
     }
 }
 

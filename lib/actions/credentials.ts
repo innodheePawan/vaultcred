@@ -151,7 +151,7 @@ export async function createCredential(prevState: any, formData: FormData) {
             }
         }
 
-        if (accessContext.role !== 'ADMIN' && !canAccess(accessContext, 'CREDENTIALS', 'CREATE')) {
+        if (accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !canAccess(accessContext, 'CREDENTIALS', 'CREATE')) {
             return { error: 'Unauthorized: You do not have permission to create credentials here.' };
         }
     }
@@ -304,7 +304,7 @@ export async function getCredentials(params?: {
         where.OR.push({ id: { in: accessContext.allowedCredentialIds } });
     }
 
-    if (accessContext.role === 'ADMIN') {
+    if (accessContext.role === 'ADMIN' || accessContext.role === 'SUPER_ADMIN') {
         // Admin sees all SHARED items
         where.OR.push({ isPersonal: false });
     } else if (accessContext.isExternal) {
@@ -447,7 +447,7 @@ export async function getCredentialById(id: string) {
         if (!isOwner) return null; // STRICT: Only owner sees personal
     } else {
         // Shared
-        if (accessContext.role !== 'ADMIN' && !isOwner && !hasAccess) return null;
+        if (accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !isOwner && !hasAccess) return null;
     }
 
     await logAudit({
@@ -546,7 +546,7 @@ export async function deleteCredential(id: string) {
     const hasAccess = canAccess(accessContext, 'CREDENTIALS', 'DELETE');
     const isOwner = credential.createdById === session.user.id;
 
-    if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {
+    if (!isOwner && accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !hasAccess) {
         return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
     }
 
@@ -601,7 +601,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
     const hasAccess = canAccess(accessContext, 'CREDENTIALS', 'EDIT');
     const isOwner = credential.createdById === session.user.id; // Corrected from ownerId
 
-    if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {
+    if (!isOwner && accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !hasAccess) {
         return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
     }
 

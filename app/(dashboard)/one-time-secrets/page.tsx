@@ -6,7 +6,6 @@ import { Plus, RefreshCcw, ExternalLink, Trash2, Copy, Eye, Clock, CheckCircle, 
 import { getMySecrets, revokeSecret } from '@/lib/actions/secrets';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { canCreate, canDelete } from '@/lib/iam/client-permissions';
 import { PaginationControls } from '@/components/ui/PaginationControls';
 
 // If simple-toast or other toast lib is used, adjust layout. 
@@ -34,11 +33,11 @@ type Secret = {
 };
 
 export default function OneTimeSecretsPage() {
-    const [secrets, setSecrets] = useState<any>({ data: [], total: 0, page: 1, totalPages: 0 });
+    const [secrets, setSecrets] = useState<any>({ data: [], total: 0, page: 1, totalPages: 0, permissions: { CREATE: false, DELETE: false, VIEW: false } });
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
 
     const fetchSecrets = async () => {
         setLoading(true);
@@ -86,12 +85,12 @@ export default function OneTimeSecretsPage() {
                     <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your secure links and shared secrets.</p>
                     {process.env.NODE_ENV === 'development' && (
                         <div className="text-xs text-red-500 font-mono">
-                            DEBUG ROLE: {session?.user?.role} | OTS PERM: {(session?.user as any)?.rbac?.featurePermissions?.ONE_TIME_SECRETS} | CAN_CREATE: {String(canCreate((session?.user as any)?.rbac, 'ONE_TIME_SECRETS'))}
+                            DEBUG ROLE: {session?.user?.role} | SERVER PERMS CREATE: {String(secrets.permissions?.CREATE)}
                         </div>
                     )}
                 </div>
                 <div className="flex gap-3">
-                    {canDelete((session?.user as any)?.rbac, 'ADMIN_OTS_CLEANUP') && (
+                    {secrets.permissions?.DELETE && (
                         <button
                             onClick={async () => {
                                 if (!confirm('Delete all expired and revoked secrets? This cannot be undone.')) return;
@@ -109,7 +108,7 @@ export default function OneTimeSecretsPage() {
                             Cleanup Expired
                         </button>
                     )}
-                    {canCreate((session?.user as any)?.rbac, 'ONE_TIME_SECRETS') && (
+                    {secrets.permissions?.CREATE && (
                         <Link
                             href="/one-time-secrets/create"
                             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"

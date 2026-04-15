@@ -13,7 +13,7 @@ export default function SystemLogsTab() {
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
-  
+
   const limit = 50;
   const MAX_ROWS = 5000;
 
@@ -73,13 +73,13 @@ export default function SystemLogsTab() {
   const lastElementRef = useCallback((node: HTMLTableRowElement | null) => {
     if (loading || isFetchingNextPage) return;
     if (observerRef.current) observerRef.current.disconnect();
-    
+
     observerRef.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore && logs.length < MAX_ROWS) {
         setPage(prev => prev + 1);
       }
     });
-    
+
     if (node) observerRef.current.observe(node);
   }, [loading, isFetchingNextPage, hasMore, logs.length]);
 
@@ -88,18 +88,18 @@ export default function SystemLogsTab() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h3 className="text-xl font-semibold text-white">System Logs</h3>
         <div className="relative w-full sm:w-64">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-           <input 
-             type="text" 
-             placeholder="Search logs..." 
-             className="w-full bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
-             value={search}
-             onChange={(e) => {
-               setSearch(e.target.value);
-               setPage(1);
-               setLogs([]);
-             }}
-           />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search logs..."
+            className="w-full bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+              setLogs([]);
+            }}
+          />
         </div>
       </div>
 
@@ -108,7 +108,7 @@ export default function SystemLogsTab() {
           <thead className="text-xs text-gray-300 uppercase bg-[#1A1A24]">
             <tr>
               <th className="px-6 py-4">Action</th>
-              <th className="px-6 py-4">Credential / Entity</th>
+              <th className="px-6 py-4 max-w-[200px]">Credential / Entity</th>
               <th className="px-6 py-4">Performed By</th>
               <th className="px-6 py-4">IP Address</th>
               <th className="px-6 py-4">Timestamp</th>
@@ -129,8 +129,8 @@ export default function SystemLogsTab() {
               </tr>
             ) : (
               logs.map((log, index) => (
-                <tr 
-                  key={log.id} 
+                <tr
+                  key={log.id}
                   ref={index === logs.length - 1 ? lastElementRef : null}
                   className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors"
                 >
@@ -139,20 +139,26 @@ export default function SystemLogsTab() {
                       {log.action}
                     </span>
                   </td>
-                  <td className="px-6 py-4">{log.credential?.name || log.newValue || 'System'}</td>
+                  <td className="px-6 py-4 max-w-[200px]">
+                    {(() => {
+                      const val = log.credential?.name || log.newValue || 'System';
+                      const truncated = val.length > 50 ? val.slice(0, 50) + '…' : val;
+                      return <span title={val} className="block truncate">{truncated}</span>;
+                    })()}
+                  </td>
                   <td className="px-6 py-4">
-                     {log.performedBy ? (
-                       <div className="flex flex-col">
-                         <span className="text-gray-200">{log.performedBy.name}</span>
-                         <span className="text-xs text-gray-500">{log.performedBy.email}</span>
-                       </div>
-                     ) : 'System'}
+                    {log.performedBy ? (
+                      <div className="flex flex-col">
+                        <span className="text-gray-200">{log.performedBy.name}</span>
+                        <span className="text-xs text-gray-500">{log.performedBy.email}</span>
+                      </div>
+                    ) : 'System'}
                   </td>
                   <td className="px-6 py-4 font-mono text-xs">{log.ipAddress || '-'}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center text-gray-400">
-                       <Calendar className="w-3 h-3 mr-1" />
-                       {new Date(log.performedOn).toLocaleString()}
+                      <Calendar className="w-3 h-3 mr-1" />
+                      {new Date(log.performedOn).toLocaleString()}
                     </div>
                   </td>
                 </tr>
@@ -160,12 +166,12 @@ export default function SystemLogsTab() {
             )}
           </tbody>
         </table>
-        
+
         {!loading && hasMore && (
-           <div className="py-4 flex justify-center border-t border-gray-800">
-             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-             <span className="ml-2 text-gray-400 text-sm">Loading more logs...</span>
-           </div>
+          <div className="py-4 flex justify-center border-t border-gray-800">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            <span className="ml-2 text-gray-400 text-sm">Loading more logs...</span>
+          </div>
         )}
       </div>
 

@@ -294,6 +294,10 @@ export async function updateUser(userId: string, formData: FormData) {
         return { error: 'Unauthorized' };
     }
 
+    if (userId === session.user.id) {
+        return { error: 'Action Denied: You cannot modify your own profile settings from this panel.' };
+    }
+
     const status = formData.get('status') as string;
 
     try {

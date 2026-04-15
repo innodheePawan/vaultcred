@@ -32,7 +32,7 @@ export const authConfig = {
             if (isProtected) {
                 if (isLoggedIn) {
 
-                    if (nextUrl.pathname.startsWith('/admin') && (auth.user as any)?.role !== 'ADMIN') {
+                    if (nextUrl.pathname.startsWith('/admin') && (auth.user as any)?.role !== 'ADMIN' && (auth.user as any)?.role !== 'SUPER_ADMIN') {
                         return false;
                     }
                     return true;

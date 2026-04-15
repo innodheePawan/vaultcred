@@ -40,6 +40,7 @@ export default async function UserManagementPage(props: {
                 inviteUserAction={inviteUser}
                 isSystemAdmin={isSystemAdmin}
                 canInvite={canInvite}
+                currentUserId={session?.user?.id}
             />
         </div>
     );

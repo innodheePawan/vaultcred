@@ -57,7 +57,7 @@ const getGroupColor = (name: string) => {
     return GROUP_COLORS[index];
 };
 
-export default function UserTable({ users, invites, groups, credentials, inviteUserAction, isSystemAdmin, canInvite }: any) {
+export default function UserTable({ users, invites, groups, credentials, inviteUserAction, isSystemAdmin, canInvite, currentUserId }: any) {
     const router = useRouter();
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<any>(null);
@@ -355,6 +355,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                     credentials={credentials}
                     open={!!editingUser}
                     onOpenChange={(open: boolean) => !open && setEditingUser(null)}
+                    currentUserId={currentUserId}
                 />
             )}
 

@@ -28,7 +28,7 @@ interface EditUserDialogProps {
 }
 
 
-export default function EditUserDialog({ user, groups, credentials, open, onOpenChange }: any) {
+export default function EditUserDialog({ user, groups, credentials, open, onOpenChange, currentUserId }: any) {
     const router = useRouter();
     const [state, formAction, isPending] = useActionState(
         async (prev: any, formData: FormData) => {
@@ -38,6 +38,7 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
     );
 
     const isExternal = user.isExternal;
+    const isSelfEdit = user.id === currentUserId;
 
     // Initial values for Internal Users (Group Based)
     const assignedGroupIds = user.userGroups?.map((ug: any) => ug.groupId) || [];
@@ -105,7 +106,8 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                             <select
                                 name="status"
                                 defaultValue={user.status}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 shadow-sm sm:text-sm px-3 py-2"
+                                disabled={isSelfEdit}
+                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 shadow-sm sm:text-sm px-3 py-2 disabled:opacity-50"
                             >
                                 <option value="ACTIVE">Active</option>
                                 <option value="INACTIVE">Inactive (Login Disabled)</option>
@@ -113,6 +115,22 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                             </select>
                         </div>
                     </div>
+
+                    {isSelfEdit && (
+                        <div className="rounded-md bg-yellow-50 p-4 border border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <AlertCircle className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+                                </div>
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">You are editing your own profile</h3>
+                                    <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-400">
+                                        <p>Self-modification of roles, scopes, and status is disabled for security reasons.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ================= EXTERNAL USER UI ================= */}
                     {isExternal && (
@@ -305,7 +323,8 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                                             value="SUPER_ADMIN"
                                             checked={roleCategory === 'SUPER_ADMIN'}
                                             onChange={() => setRoleCategory('SUPER_ADMIN')}
-                                            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            disabled={isSelfEdit}
+                                            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
                                         />
                                         <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Super Admin</span>
                                     </label>
@@ -316,7 +335,8 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                                             value="SCOPED"
                                             checked={roleCategory === 'SCOPED'}
                                             onChange={() => setRoleCategory('SCOPED')}
-                                            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            disabled={isSelfEdit}
+                                            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
                                         />
                                         <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Scoped User</span>
                                     </label>
@@ -333,7 +353,8 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                                         <select
                                             value={scopedRole}
                                             onChange={(e) => setScopedRole(e.target.value)}
-                                            className="w-full text-black p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700"
+                                            disabled={isSelfEdit}
+                                            className="w-full text-black p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 disabled:opacity-50"
                                         >
                                             <option value="SCOPED_ADMIN">Administrator</option>
                                             <option value="USER">User</option>
@@ -362,7 +383,7 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                                                                 if (e.target.checked) setSelectedCats([...selectedCats, cat]);
                                                                 else setSelectedCats(selectedCats.filter(c => c !== cat));
                                                             }}
-                                                            disabled={scopedRole === 'AUDITOR'}
+                                                            disabled={scopedRole === 'AUDITOR' || isSelfEdit}
                                                             className="h-4 w-4 rounded border-gray-300 text-indigo-600 disabled:opacity-50"
                                                         />
                                                         <span className={`ml-2 text-sm transition-colors ${scopedRole === 'AUDITOR' ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>{cat}</span>
@@ -382,10 +403,10 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                                                                 type="checkbox"
                                                                 checked={selectedEnvs.includes(env)}
                                                                 onChange={(e) => {
-                                                                    if (e.target.checked) setSelectedEnvs([...selectedEnvs, env]);
+                                                                if (e.target.checked) setSelectedEnvs([...selectedEnvs, env]);
                                                                     else setSelectedEnvs(selectedEnvs.filter(e => e !== env));
                                                                 }}
-                                                                disabled={scopedRole === 'AUDITOR'}
+                                                                disabled={scopedRole === 'AUDITOR' || isSelfEdit}
                                                                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 disabled:opacity-50"
                                                             />
                                                             <span className={`ml-2 text-sm transition-colors ${scopedRole === 'AUDITOR' ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>{env}</span>
