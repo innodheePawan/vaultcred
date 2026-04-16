@@ -1,8 +1,9 @@
 'use client';
 
-import { useActionState, useState, useRef } from 'react';
+import React, { useActionState, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle, Upload, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, CheckCircle, Upload, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const initialState = {
     message: null,
@@ -40,6 +41,31 @@ export default function CredentialForm({
     const [showPassword, setShowPassword] = useState(false);
     const [showClientSecret, setShowClientSecret] = useState(false);
     const [showPassphrase, setShowPassphrase] = useState(false);
+    const [dismissError, setDismissError] = useState(false);
+    const [forceCloseModal, setForceCloseModal] = useState(false);
+    const [navigatingUrl, setNavigatingUrl] = useState<string | null>(null);
+    const router = useRouter();
+
+    const handleNavigate = (url: string) => {
+        setNavigatingUrl(url);
+        // Show loading state briefly before closing modal and navigating
+        setTimeout(() => {
+            setForceCloseModal(true);
+            if (url === '/credentials/create') {
+                window.location.href = url;
+            } else {
+                router.push(url);
+            }
+        }, 150);
+    };
+
+    // Reset error dismissal status whenever a new submission starts
+    import_react_useEffect_hack: {
+        // We use a small hack since we can't easily add the import if it's not there, but it is imported as useEffect in the top.
+    }
+    React.useEffect(() => {
+        if (isPending) setDismissError(false);
+    }, [isPending]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -610,36 +636,70 @@ export default function CredentialForm({
                 </div>
             )}
 
-            {state?.error && (
-                <div className="p-4 bg-red-50 text-red-700 rounded-md flex flex-col gap-2">
-                    <div className="flex items-center gap-2 font-bold">
-                        <AlertCircle className="w-5 h-5" />
-                        <span>Validation Error</span>
-                    </div>
-                    {typeof state.error === 'string' ? state.error : (
-                        <ul className="list-disc pl-5 text-sm">
-                            {/* Handle Object errors from Zod flatten() */}
-                            {state.details && Object.entries(state.details).map(([key, msgs]) => (
-                                <li key={key}>
-                                    <span className="font-semibold capitalize">{key}:</span> {Array.isArray(msgs) ? (msgs as string[]).join(', ') : (msgs as string)}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-            )}
+            {/* MODAL OVERLAY */}
+            {(!forceCloseModal && (isPending || (state?.message && !isEdit) || (state?.message && isEdit) || (state?.error && !dismissError))) && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200 flex flex-col items-center border border-gray-200 dark:border-gray-700">
+                        {isPending && (
+                            <>
+                                <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    {isEdit ? 'Updating credentials...' : 'Creating credentials...'}
+                                </h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">Please wait while we encrypt and save your data.</p>
+                            </>
+                        )}
 
+                        {!isPending && state?.message && (
+                            <>
+                                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+                                    <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Success!</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">{state.message}</p>
+                                <div className="flex flex-col gap-3 w-full">
+                                    {!isEdit && (
+                                        <Button type="button" onClick={() => handleNavigate('/credentials/create')} disabled={navigatingUrl !== null} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center">
+                                            {navigatingUrl === '/credentials/create' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : '➕ '} Create New Credentials
+                                        </Button>
+                                    )}
+                                    <Button type="button" variant="outline" onClick={() => handleNavigate('/credentials')} disabled={navigatingUrl !== null} className="w-full flex items-center justify-center">
+                                        {navigatingUrl === '/credentials' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : '👁️ '} View Credentials
+                                    </Button>
+                                    <Button type="button" variant="ghost" onClick={() => handleNavigate('/dashboard')} disabled={navigatingUrl !== null} className="w-full flex items-center justify-center">
+                                        {navigatingUrl === '/dashboard' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : '🏠 '} Go to Dashboard
+                                    </Button>
+                                </div>
+                            </>
+                        )}
 
-            {state?.message && typeof state.message === 'string' && (
-                <div className="p-4 bg-green-50 text-green-700 rounded-md flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5" />
-                    <div className="flex-1">
-                        {state.message}
-                        <div className="mt-1">
-                            <a href="/credentials" className="text-sm font-medium underline">
-                                View All Credentials
-                            </a>
-                        </div>
+                        {!isPending && state?.error && (
+                            <>
+                                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                                    <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Creation Failed</h3>
+                                <div className="text-sm text-red-600 dark:text-red-400 text-center mb-6 max-h-32 overflow-y-auto">
+                                   {typeof state.error === 'string' ? state.error : (
+                                        <ul className="list-disc pl-5 text-left">
+                                            {state.details && Object.entries(state.details).map(([key, msgs]) => (
+                                                <li key={key}>
+                                                    <span className="font-semibold capitalize">{key}:</span> {Array.isArray(msgs) ? (msgs as string[]).join(', ') : (msgs as unknown as string)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                                <div className="flex gap-3 w-full">
+                                    <Button type="button" variant="outline" className="flex-1" onClick={() => window.history.back()}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="button" className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => setDismissError(true)}>
+                                        Retry
+                                    </Button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

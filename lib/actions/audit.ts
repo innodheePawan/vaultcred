@@ -104,18 +104,14 @@ export async function getAuditLogs({
 
     if (search) {
         where.OR = [
-            { action: { contains: search } }, // SQLite is case-insensitive by default? Usually yes.
+            { action: { contains: search } },
             { ipAddress: { contains: search } },
-            {
-                performedBy: {
-                    name: { contains: search }
-                }
-            },
-            {
-                credential: {
-                    name: { contains: search }
-                }
-            }
+            { oldValue: { contains: search } },
+            { newValue: { contains: search } },
+            { performedBy: { name: { contains: search } } },
+            { performedBy: { email: { contains: search } } },
+            { credential: { name: { contains: search } } },
+            { credential: { type: { contains: search } } }
         ];
     }
 

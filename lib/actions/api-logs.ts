@@ -38,11 +38,17 @@ export async function getApiLogs({
     const where: any = {};
 
     if (search) {
+        const searchNumber = Number(search);
         where.OR = [
             { clientName: { contains: search } },
             { endpoint: { contains: search } },
-            { requestId: { contains: search } },
-            { errorMessage: { contains: search } }
+            { errorMessage: { contains: search } },
+            { method: { contains: search } },
+            { authType: { contains: search } },
+            { ipAddress: { contains: search } },
+            { userAgent: { contains: search } },
+            { responseStatus: { contains: search } },
+            ...( !isNaN(searchNumber) && search.trim() !== '' ? [{ httpStatusCode: searchNumber }] : [])
         ];
     }
 
