@@ -237,7 +237,7 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 
     const auditPersonalCredentials = formData.get('auditPersonalCredentials') === 'true';
     const twoFactorMandatory = formData.get('twoFactorMandatory') === 'true';
-    const allowApiFileDownload = formData.get('allowApiFileDownload') === 'true';
+    const allowApiAccess = formData.get('allowApiAccess') === 'true';
 
     try {
         await prisma.systemSettings.upsert({
@@ -245,13 +245,13 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
             update: {
                 auditPersonalCredentials,
                 twoFactorMandatory,
-                allowApiFileDownload
+                allowApiAccess
             },
             create: {
                 id: 1,
                 auditPersonalCredentials,
                 twoFactorMandatory,
-                allowApiFileDownload
+                allowApiAccess
             },
         });
 
@@ -259,13 +259,14 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 
         await logAudit({
             action: 'UPDATE_SETTINGS',
-            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}, Allow API File Download=${allowApiFileDownload}`,
+            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}, Allow API Access=${allowApiAccess}`,
             userId: session.user.id
         });
 
         return { message: 'Security settings updated successfully.' };
-    } catch (error) {
-        return { error: 'Failed to update Security settings.' };
+    } catch (error: any) {
+        console.error("DEBUG Settings Update Error:", error);
+        return { error: 'Failed to update Security settings: ' + error.message };
     }
 }
 

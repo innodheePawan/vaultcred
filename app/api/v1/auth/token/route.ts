@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/crypto";
 import { generateApiJwt } from "@/lib/api-auth";
+import { checkGlobalApiAccess, STANDARD_404_HTML } from "@/lib/api-pipeline";
 
 import crypto from 'crypto';
 
@@ -35,6 +36,12 @@ export async function POST(req: Request) {
     };
 
     try {
+        const isGlobalEnabled = await checkGlobalApiAccess();
+        if (!isGlobalEnabled) {
+            await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
+            return new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } });
+        }
+
         let clientId = "";
         let clientSecret = "";
         

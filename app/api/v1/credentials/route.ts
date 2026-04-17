@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyApiJwt, validateApiHmacContext } from "@/lib/api-auth";
+import { checkGlobalApiAccess, STANDARD_404_HTML } from "@/lib/api-pipeline";
 import { decrypt } from "@/lib/crypto";
 
 import crypto from 'crypto';
@@ -25,6 +26,12 @@ export async function GET(req: Request) {
     };
 
     try {
+        const isGlobalEnabled = await checkGlobalApiAccess();
+        if (!isGlobalEnabled) {
+            await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
+            return new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } });
+        }
+
         const authHeader = req.headers.get("authorization");
         if (!authHeader?.startsWith("Bearer ")) {
             await logActivity({ responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Missing or invalid Bearer token" });
@@ -79,9 +86,6 @@ export async function GET(req: Request) {
         }
         if (scopes.environments && scopes.environments.length > 0 && !scopes.environments.includes("*")) {
             whereClause.environment = { in: scopes.environments };
-        }
-        if (scopes.credentialTypes && scopes.credentialTypes.length > 0 && !scopes.credentialTypes.includes("*")) {
-            whereClause.type = { in: scopes.credentialTypes };
         }
 
         const credentials = await prisma.credentialMaster.findMany({
