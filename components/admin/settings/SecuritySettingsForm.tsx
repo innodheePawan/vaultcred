@@ -15,7 +15,7 @@ export default function SecuritySettingsForm({ initialSettings, canEdit = true }
 
     // Security State
     const [auditPersonal, setAuditPersonal] = useState(initialSettings.auditPersonalCredentials ?? true);
-    const [allowApiFileDownload, setAllowApiFileDownload] = useState(initialSettings.allowApiFileDownload ?? false);
+    const [allowApiAccess, setAllowApiAccess] = useState(initialSettings.allowApiAccess ?? false);
 
     return (
         <form action={formAction} className="space-y-6 max-w-2xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
@@ -78,25 +78,25 @@ export default function SecuritySettingsForm({ initialSettings, canEdit = true }
                 <div className="flex items-start">
                     <div className="flex items-center h-5">
                         <input
-                            id="allowApiFileDownload"
-                            name="allowApiFileDownload"
+                            id="allowApiAccess"
+                            name="allowApiAccess"
                             type="checkbox"
                             value="true"
-                            checked={allowApiFileDownload}
-                            onChange={(e) => setAllowApiFileDownload(e.target.checked)}
+                            checked={allowApiAccess}
+                            onChange={(e) => setAllowApiAccess(e.target.checked)}
                             disabled={!canEdit}
                             className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div className="ml-3 text-sm">
-                        <label htmlFor="allowApiFileDownload" className="font-medium text-gray-700 dark:text-gray-300">
-                            Enable External API File Downloads
+                        <label htmlFor="allowApiAccess" className="font-medium text-gray-700 dark:text-gray-300">
+                            Enable External API Access
                         </label>
                         <p className="text-gray-500 dark:text-gray-400">
-                            When enabled, authorized API Clients will be able to download "FILE" type credentials via the external API endpoint.
+                            When enabled, authorized external API Clients and OAuth tokens will be able to access Vault APIs.
                             <br />
                             <span className="text-xs text-amber-600 dark:text-amber-400">
-                                This acts as a global master kill switch. Individual API Clients must still be explicitly granted permission!
+                                This acts as a global master kill switch for ALL external APIs. Individual API Clients must still be explicitly granted permission!
                             </span>
                         </p>
                     </div>

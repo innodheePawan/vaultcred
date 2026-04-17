@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyApiJwt, validateApiHmacContext } from "@/lib/api-auth";
+import { checkGlobalApiAccess, STANDARD_404_HTML } from "@/lib/api-pipeline";
 import { decrypt } from "@/lib/crypto";
 
 import crypto from 'crypto';
@@ -25,6 +26,12 @@ export async function GET(req: Request) {
     };
 
     try {
+        const isGlobalEnabled = await checkGlobalApiAccess();
+        if (!isGlobalEnabled) {
+            await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
+            return new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } });
+        }
+
         const authHeader = req.headers.get("authorization");
         if (!authHeader?.startsWith("Bearer ")) {
             await logActivity({ responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Missing or invalid Bearer token" });
@@ -71,6 +78,34 @@ export async function GET(req: Request) {
             }
         }
 
+        const reqUrlObject = new URL(req.url);
+        
+        // ── PAGINATION EXTRACTION ──────────────────────────────────────────────
+        const pageParam = reqUrlObject.searchParams.get("page");
+        const pageSizeParam = reqUrlObject.searchParams.get("pageSize");
+        
+        let page = 1;
+        let pageSize = 50;
+        
+        if (pageParam !== null) {
+            page = parseInt(pageParam, 10);
+            if (isNaN(page) || page < 1) {
+                await logActivity({ apiClientId: client.id, clientName: client.name, authType, responseStatus: "FAILURE", httpStatusCode: 400, errorMessage: "Invalid page parameter" });
+                return NextResponse.json({ error: "Invalid 'page' parameter. Must be >= 1." }, { status: 400 });
+            }
+        }
+        
+        if (pageSizeParam !== null) {
+            pageSize = parseInt(pageSizeParam, 10);
+            if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
+                await logActivity({ apiClientId: client.id, clientName: client.name, authType, responseStatus: "FAILURE", httpStatusCode: 400, errorMessage: "Invalid pageSize parameter" });
+                return NextResponse.json({ error: "Invalid 'pageSize' parameter. Must be between 1 and 100." }, { status: 400 });
+            }
+        }
+
+        const skip = (page - 1) * pageSize;
+
+        // ── RBAC AND SCOPE FILTERS ─────────────────────────────────────────────
         const whereClause: any = { isPersonal: false, status: "ACTIVE" };
         const scopes = clientContext.scopes;
         
@@ -80,18 +115,42 @@ export async function GET(req: Request) {
         if (scopes.environments && scopes.environments.length > 0 && !scopes.environments.includes("*")) {
             whereClause.environment = { in: scopes.environments };
         }
-        if (scopes.credentialTypes && scopes.credentialTypes.length > 0 && !scopes.credentialTypes.includes("*")) {
-            whereClause.type = { in: scopes.credentialTypes };
-        }
 
-        const credentials = await prisma.credentialMaster.findMany({
-            where: whereClause,
-            select: { id: true, name: true, type: true, category: true, environment: true, description: true, version: true, createdOn: true, lastModifiedOn: true },
-            orderBy: { name: 'asc' }
-        });
+        const [total, credentials] = await Promise.all([
+            prisma.credentialMaster.count({ where: whereClause }),
+            prisma.credentialMaster.findMany({
+                where: whereClause,
+                select: { id: true, name: true, type: true, category: true, environment: true, description: true, version: true, createdOn: true, lastModifiedOn: true },
+                skip: skip,
+                take: pageSize,
+                orderBy: { createdOn: 'desc' }
+            })
+        ]);
+
+        const totalPages = Math.ceil(total / pageSize);
+        const hasNext = page < totalPages;
+        const hasPrevious = page > 1;
+
+        const buildLink = (targetPage: number) => {
+            const newUrl = new URL(req.url);
+            newUrl.searchParams.set("page", targetPage.toString());
+            newUrl.searchParams.set("pageSize", pageSize.toString());
+            return `${newUrl.pathname}${newUrl.search}`;
+        };
+
+        const pagination = {
+            page,
+            pageSize,
+            total,
+            totalPages,
+            hasNext,
+            hasPrevious,
+            next: hasNext ? buildLink(page + 1) : null,
+            previous: hasPrevious ? buildLink(page - 1) : null
+        };
 
         await logActivity({ apiClientId: client.id, clientName: client.name, authType, responseStatus: "SUCCESS", httpStatusCode: 200 });
-        return NextResponse.json({ data: credentials });
+        return NextResponse.json({ data: credentials, pagination });
 
     } catch (error) {
         console.error("API GET /credentials error:", error);

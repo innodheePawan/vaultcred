@@ -2,17 +2,39 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getApiLogs, ApiLogParams } from '@/lib/actions/api-logs';
-import { Loader2, Search, Calendar, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, Search, Calendar, CheckCircle2, XCircle, RefreshCcw, RotateCcw, AlertCircle } from 'lucide-react';
 
 export default function ApiLogsTab() {
+  const getDefaultStartDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
+  
+  const [startDate, setStartDate] = useState(getDefaultStartDate());
+  const [endDate, setEndDate] = useState('');
+  
+  const [appliedStartDate, setAppliedStartDate] = useState(getDefaultStartDate());
+  const [appliedEndDate, setAppliedEndDate] = useState('');
+  const [dateError, setDateError] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const limit = 50;
   const MAX_ROWS = 5000;
@@ -24,7 +46,7 @@ export default function ApiLogsTab() {
       if (reset) {
         setLoading(true);
       } else {
-        if (isFetchingNextPage) return;
+        if (isFetchingNextPage || loading) return;
         setIsFetchingNextPage(true);
       }
 
@@ -36,7 +58,13 @@ export default function ApiLogsTab() {
 
       const start = Date.now();
       try {
-        const res = await getApiLogs({ page, limit, search });
+        const res = await getApiLogs({ 
+            page, 
+            limit, 
+            search: debouncedSearch,
+            startDate: appliedStartDate,
+            endDate: appliedEndDate
+        });
         if (!active) return;
 
         if (res && !res.error) {
@@ -66,7 +94,50 @@ export default function ApiLogsTab() {
     return () => {
       active = false;
     };
-  }, [page, search]); // Re-run when page or search changes
+  }, [page, debouncedSearch, appliedStartDate, appliedEndDate, refreshTrigger]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+    setLogs([]);
+    setHasMore(true);
+  }, [debouncedSearch]);
+
+  const handleRefresh = () => {
+    if (startDate && endDate && startDate > endDate) {
+      setDateError('Start Date cannot be after End Date.');
+      return;
+    }
+    setDateError('');
+    setPage(1);
+    setLogs([]);
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+    setRefreshTrigger(prev => prev + 1);
+    if (containerRef.current) containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleReset = () => {
+    const defStart = getDefaultStartDate();
+    setStartDate(defStart);
+    setEndDate('');
+    setSearch('');
+    setDateError('');
+    setPage(1);
+    setLogs([]);
+    setAppliedStartDate(defStart);
+    setAppliedEndDate('');
+    setRefreshTrigger(prev => prev + 1);
+    if (containerRef.current) containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
 
 
@@ -85,25 +156,65 @@ export default function ApiLogsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h3 className="text-xl font-semibold text-white">API Telemetry</h3>
-        <div className="relative w-full sm:w-64">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-           <input 
-             type="text" 
-             placeholder="Search endpoints..." 
-             className="w-full bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
-             value={search}
-             onChange={(e) => {
-               setSearch(e.target.value);
-               setPage(1); 
-               setLogs([]); // Clear logs immediately on search to prevent ghost scrolling
-             }}
-           />
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
+        <div>
+           <h3 className="text-xl font-semibold text-white mb-2">API Telemetry</h3>
+           {dateError && (
+              <div className="flex items-center text-xs text-red-500 mt-1">
+                 <AlertCircle className="w-3 h-3 mr-1" />
+                 {dateError}
+              </div>
+           )}
+        </div>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full xl:w-auto">
+          <div className="relative w-full sm:w-48">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+             <input 
+               type="text" 
+               placeholder="Search endpoints..." 
+               className="w-full bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+               value={search}
+               onChange={(e) => setSearch(e.target.value)}
+             />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+             <input 
+                type="datetime-local"
+                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                title="Start Date"
+             />
+             <span className="text-gray-500">-</span>
+             <input 
+                type="datetime-local"
+                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                title="End Date"
+             />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+             <button 
+                onClick={handleRefresh}
+                disabled={!!(startDate && endDate && startDate > endDate)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+             >
+                <RefreshCcw className="w-4 h-4" />
+                Refresh
+             </button>
+             <button 
+                onClick={handleReset}
+                className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+                title="Reset Filters"
+             >
+                <RotateCcw className="w-4 h-4" />
+             </button>
+          </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-800">
+      <div ref={containerRef} className="overflow-x-auto rounded-lg border border-gray-800">
         <table className="w-full text-sm text-left text-gray-400">
           <thead className="text-xs text-gray-300 uppercase bg-[#1A1A24]">
             <tr>

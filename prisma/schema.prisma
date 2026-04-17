@@ -249,6 +249,8 @@ model CredentialMaster {
 
   @@index([type])
   @@index([status])
+  @@index([category, environment])
+  @@index([createdOn])
   @@map("credential_master")
 }
 
@@ -388,7 +390,7 @@ model SystemSettings {
   themeColor      String?  @map("theme_color")
   auditPersonalCredentials Boolean @default(true) @map("audit_personal_credentials")
   twoFactorMandatory      Boolean @default(false) @map("two_factor_mandatory")
-  allowApiFileDownload    Boolean @default(false) @map("allow_api_file_download")
+  allowApiAccess          Boolean @default(false) @map("allow_api_access")
   
   // SMTP Email Configuration
   smtpHost      String?  @map("smtp_host")
