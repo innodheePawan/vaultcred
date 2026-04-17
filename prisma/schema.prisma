@@ -249,6 +249,8 @@ model CredentialMaster {
 
   @@index([type])
   @@index([status])
+  @@index([category, environment])
+  @@index([createdOn])
   @@map("credential_master")
 }
 

@@ -39,7 +39,6 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         } else if (credential.type === "FILE" && credential.detailsFile) {
             payload.fileName = credential.detailsFile.fileName;
             payload.fileType = credential.detailsFile.fileType;
-            payload.fileSize = credential.detailsFile.fileSize;
         } else if (credential.type === "SECURE_NOTE" && credential.detailsNote) {
             payload.note = decrypt(credential.detailsNote.noteEncrypted);
         }
