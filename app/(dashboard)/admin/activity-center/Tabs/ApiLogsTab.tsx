@@ -220,7 +220,8 @@ export default function ApiLogsTab() {
             <tr>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Client</th>
-              <th className="px-6 py-4">Endpoint</th>
+              <th className="px-6 py-4">Action</th>
+              <th className="px-6 py-4">Resource</th>
               <th className="px-6 py-4">Response</th>
               <th className="px-6 py-4">Timestamp</th>
             </tr>
@@ -228,18 +229,27 @@ export default function ApiLogsTab() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-6 py-12 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" />
                 </td>
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                   No api logs found matching your criteria.
                 </td>
               </tr>
             ) : (
-              logs.map((log, index) => (
+              logs.map((log, index) => {
+                const actionMap: Record<string, string> = {
+                    'LIST': 'List Metadata',
+                    'LIST_FILES': 'List Files',
+                    'DOWNLOAD_FILE': 'Download File',
+                    'REVEAL_CREDENTIAL': 'Reveal Credential'
+                };
+                const actionDisplay = actionMap[log.action] || log.action || 'Unknown Action';
+
+                return (
                 <tr 
                   key={log.id}
                   ref={index === logs.length - 1 ? lastElementRef : null}
@@ -254,10 +264,10 @@ export default function ApiLogsTab() {
                   </td>
                   <td className="px-6 py-4 font-medium text-gray-200">{log.clientName || 'Unknown Client'}</td>
                   <td className="px-6 py-4">
-                     <div className="flex flex-col">
-                       <span className="font-mono text-xs text-blue-400">{log.method}</span>
-                       <span className="text-gray-300 truncate max-w-[200px]" title={log.endpoint}>{log.endpoint}</span>
-                     </div>
+                     <span className="text-gray-300 font-medium">{actionDisplay}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                     <span className="text-gray-300 truncate max-w-[200px] block" title={log.resourceName}>{log.resourceName || 'Global'}</span>
                   </td>
                   <td className="px-6 py-4">
                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -278,7 +288,8 @@ export default function ApiLogsTab() {
                     </div>
                   </td>
                 </tr>
-              ))
+              );
+            })
             )}
           </tbody>
         </table>

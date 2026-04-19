@@ -106,14 +106,45 @@ export async function GET(req: Request) {
         const skip = (page - 1) * pageSize;
 
         // ── RBAC AND SCOPE FILTERS ─────────────────────────────────────────────
-        const whereClause: any = { isPersonal: false, status: "ACTIVE" };
         const scopes = clientContext.scopes;
         
-        if (scopes.applications && scopes.applications.length > 0 && !scopes.applications.includes("*")) {
-            whereClause.category = { in: scopes.applications };
+        let allowedCategories = scopes.applications && scopes.applications.length > 0 && !scopes.applications.includes("*") ? scopes.applications : null;
+        let allowedEnvironments = scopes.environments && scopes.environments.length > 0 && !scopes.environments.includes("*") ? scopes.environments : null;
+
+        // ── QUERY PARAMS FILTERS ─────────────────────────────────────────────
+        const applicationFilter = reqUrlObject.searchParams.get("application"); 
+        const environmentFilter = reqUrlObject.searchParams.get("environment");
+        const typeFilter = reqUrlObject.searchParams.get("type");
+        const nameFilter = reqUrlObject.searchParams.get("name");
+
+        const whereClause: any = { isPersonal: false, status: "ACTIVE" };
+
+        if (applicationFilter) {
+            if (allowedCategories && !allowedCategories.includes(applicationFilter)) {
+                whereClause.category = { in: [] }; 
+            } else {
+                whereClause.category = applicationFilter;
+            }
+        } else if (allowedCategories) {
+            whereClause.category = { in: allowedCategories };
         }
-        if (scopes.environments && scopes.environments.length > 0 && !scopes.environments.includes("*")) {
-            whereClause.environment = { in: scopes.environments };
+
+        if (environmentFilter) {
+            if (allowedEnvironments && !allowedEnvironments.includes(environmentFilter)) {
+                whereClause.environment = { in: [] };
+            } else {
+                whereClause.environment = environmentFilter;
+            }
+        } else if (allowedEnvironments) {
+            whereClause.environment = { in: allowedEnvironments };
+        }
+
+        if (typeFilter) {
+            whereClause.type = typeFilter;
+        }
+
+        if (nameFilter) {
+            whereClause.name = { contains: nameFilter }; // mysql string search is usually case-insensitive by default in prisma without mode: 'insensitive' (unless postgres)
         }
 
         const [total, credentials] = await Promise.all([

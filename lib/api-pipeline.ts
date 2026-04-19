@@ -82,7 +82,7 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
 
     // 3. Client Check
     const clientRows: any[] = await prisma.$queryRawUnsafe(
-        `SELECT api_client_id, client_id, client_name, security_mode, is_active FROM api_clients WHERE client_id = ?`,
+        `SELECT api_client_id, client_id, client_name, security_mode, is_active, allow_file_download FROM api_clients WHERE client_id = ?`,
         clientContext.clientId
     );
     if (clientRows.length === 0) {

@@ -27,20 +27,22 @@ export async function GET(req: Request, props: { params: Promise<{ id: string, f
         if (credential.type === "KEY_CERT" && credential.detailsKeyCert) {
             const certDetails = credential.detailsKeyCert;
             
-            if (fileId === 'certificate' && (certDetails.certificateChain || certDetails.certificateFile)) {
-                // Return chain if available, else standard file
-                contentStr = certDetails.certificateChain || certDetails.certificateFile || '';
+            if ((fileId === 'cert_1' || fileId === 'certificate') && certDetails.certificateFile) {
+                contentStr = certDetails.certificateFile;
                 fileName = "certificate.crt";
-            } else if (fileId === 'privateKey' && certDetails.privateKeyEnc) {
+            } else if ((fileId === 'chain_1' || fileId === 'certificateChain') && certDetails.certificateChain) {
+                contentStr = certDetails.certificateChain;
+                fileName = "chain.crt";
+            } else if ((fileId === 'priv_1' || fileId === 'privateKey') && certDetails.privateKeyEnc) {
                 try { contentStr = decrypt(certDetails.privateKeyEnc); } catch(e) {}
                 fileName = certDetails.privateKeyFileName || "private.key";
-            } else if (fileId === 'publicKey' && certDetails.publicKey) {
-                contentStr = certDetails.publicKey;
+            } else if ((fileId === 'pub_1' || fileId === 'publicKey') && (certDetails.publicKeyFileName || certDetails.publicKey)) {
+                contentStr = certDetails.publicKey || '';
                 fileName = certDetails.publicKeyFileName || "public.key";
             } else {
                 return NextResponse.json({ error: "File ID not found for this credential" }, { status: 404 });
             }
-        } else if (credential.type === "FILE" && credential.detailsFile && fileId === 'fileContent') {
+        } else if (credential.type === "FILE" && credential.detailsFile && (fileId === 'file_1' || fileId === 'fileContent')) {
             const d = credential.detailsFile;
             fileName = d.fileName || 'file.bin';
             if (d.fileContent) {

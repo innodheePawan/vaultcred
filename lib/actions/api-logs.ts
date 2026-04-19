@@ -67,7 +67,7 @@ export async function getApiLogs({
     }
 
     try {
-        const [data, total] = await Promise.all([
+        const [raw, total] = await Promise.all([
             prisma.apiActivityLog.findMany({
                 where,
                 orderBy: { [sortBy]: sortOrder },
@@ -76,6 +76,21 @@ export async function getApiLogs({
             }),
             prisma.apiActivityLog.count({ where })
         ]);
+
+        const credentialIds = Array.from(new Set(raw.filter(r => r.credentialId).map(r => r.credentialId as string)));
+        let credentialMap: Record<string, string> = {};
+        if (credentialIds.length > 0) {
+            const credentials = await prisma.credentialMaster.findMany({
+                where: { id: { in: credentialIds } },
+                select: { id: true, name: true }
+            });
+            credentialMap = credentials.reduce((acc: any, c) => ({ ...acc, [c.id]: c.name }), {});
+        }
+
+        const data = raw.map(log => ({
+            ...log,
+            resourceName: log.credentialId ? credentialMap[log.credentialId] || 'Deleted Credential' : 'Global'
+        }));
 
         return {
             data,
