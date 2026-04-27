@@ -27,7 +27,7 @@ export default function SystemLogsTab() {
 
   const [startDate, setStartDate] = useState(getDefaultStartDate());
   const [endDate, setEndDate] = useState('');
-  
+
   const [appliedStartDate, setAppliedStartDate] = useState(getDefaultStartDate());
   const [appliedEndDate, setAppliedEndDate] = useState('');
   const [dateError, setDateError] = useState('');
@@ -58,12 +58,12 @@ export default function SystemLogsTab() {
 
       const start = Date.now();
       try {
-        const res = await getAuditLogs({ 
-            page, 
-            limit, 
-            search: debouncedSearch,
-            startDate: appliedStartDate,
-            endDate: appliedEndDate
+        const res = await getAuditLogs({
+          page,
+          limit,
+          search: debouncedSearch,
+          startDate: appliedStartDate,
+          endDate: appliedEndDate
         });
         if (!active) return;
 
@@ -158,13 +158,13 @@ export default function SystemLogsTab() {
     <div className="space-y-4">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
         <div>
-           <h3 className="text-xl font-semibold text-white mb-2">System Logs</h3>
-           {dateError && (
-              <div className="flex items-center text-xs text-red-500 mt-1">
-                 <AlertCircle className="w-3 h-3 mr-1" />
-                 {dateError}
-              </div>
-           )}
+          <h3 className="text-xl font-semibold text-white mb-2">System Logs</h3>
+          {dateError && (
+            <div className="flex items-center text-xs text-red-500 mt-1">
+              <AlertCircle className="w-3 h-3 mr-1" />
+              {dateError}
+            </div>
+          )}
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full xl:w-auto">
           <div className="relative w-full sm:w-48">
@@ -178,38 +178,38 @@ export default function SystemLogsTab() {
             />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-             <input 
-                type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                title="Start Date"
-             />
-             <span className="text-gray-500">-</span>
-             <input 
-                type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                title="End Date"
-             />
+            <input
+              type="datetime-local"
+              className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              title="Start Date"
+            />
+            <span className="text-gray-500">-</span>
+            <input
+              type="datetime-local"
+              className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              title="End Date"
+            />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-             <button 
-                onClick={handleRefresh}
-                disabled={!!(startDate && endDate && startDate > endDate)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-             >
-                <RefreshCcw className="w-4 h-4" />
-                Refresh
-             </button>
-             <button 
-                onClick={handleReset}
-                className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-700"
-                title="Reset Filters"
-             >
-                <RotateCcw className="w-4 h-4" />
-             </button>
+            <button
+              onClick={handleRefresh}
+              disabled={!!(startDate && endDate && startDate > endDate)}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Refresh
+            </button>
+            <button
+              onClick={handleReset}
+              className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+              title="Reset Filters"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -218,8 +218,8 @@ export default function SystemLogsTab() {
         <table className="w-full text-sm text-left text-gray-400">
           <thead className="text-xs text-gray-300 uppercase bg-[#1A1A24]">
             <tr>
-              <th className="px-6 py-4">Action</th>
-              <th className="px-6 py-4 max-w-[200px]">Credential / Entity</th>
+              <th className="px-6 py-4 w-10">Action</th>
+              <th className="px-6 py-4 max-w-[300px]">Credential / Entity</th>
               <th className="px-6 py-4">Performed By</th>
               <th className="px-6 py-4">IP Address</th>
               <th className="px-6 py-4">Timestamp</th>
@@ -245,12 +245,12 @@ export default function SystemLogsTab() {
                   ref={index === logs.length - 1 ? lastElementRef : null}
                   className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors"
                 >
-                  <td className="px-6 py-4 font-medium text-gray-200">
+                  <td className="px-6 py-4 w-10 font-medium text-gray-200">
                     <span className="bg-gray-800 px-2 py-1 rounded text-xs">
                       {log.action}
                     </span>
                   </td>
-                  <td className="px-6 py-4 max-w-[200px]">
+                  <td className="px-6 py-4 max-w-[300px]">
                     {(() => {
                       const val = log.credential?.name || log.newValue || 'System';
                       const truncated = val.length > 50 ? val.slice(0, 50) + '…' : val;
