@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { encrypt } from '@/lib/crypto';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { generateLicenseSignature, getMachineId, verifyLicenseServerSignature } from '@/lib/license-utils';
 import { LICENCE_PUBLIC_KEY } from '@/lib/public-key';
 import { revalidatePath } from 'next/cache';
@@ -44,6 +44,34 @@ export async function activateProduct(formData: FormData) {
         } catch (e) {
 
             return { success: false, message: 'Invalid license file format.' };
+        }
+    }
+
+    // Attempt to fetch missing information from existing active license
+    if (!finalActivationKey || !finalApiKey || !finalApiSecret) {
+        try {
+            const allEntries = await prisma.licenseRegistry.findMany({
+                where: { isActive: true }
+            });
+
+            for (const entry of allEntries) {
+                try {
+                    const decryptedKey = decrypt(entry.regKey);
+                    if (decryptedKey === 'ACTIVATION_KEY' && !finalActivationKey) {
+                        finalActivationKey = decrypt(entry.regValue.toString('utf8'));
+                    }
+                    if (decryptedKey === 'API_KEY' && !finalApiKey) {
+                        finalApiKey = decrypt(entry.regValue.toString('utf8'));
+                    }
+                    if (decryptedKey === 'API_SECRET' && !finalApiSecret) {
+                        finalApiSecret = decrypt(entry.regValue.toString('utf8'));
+                    }
+                } catch (e) {
+                    // Ignore decryption errors
+                }
+            }
+        } catch (e) {
+            // Ignore DB errors here, fall through to the missing info check
         }
     }
 
@@ -251,7 +279,10 @@ export async function activateProduct(formData: FormData) {
                 { key: 'ACTIVE_USERS', value: entitlements.activeUsers.toString() },
                 { key: 'ACTIVATION_STATUS', value: 'ACTIVE' },
                 { key: 'SIGNATURE', value: signature.trim() },
-                { key: 'RAW_PAYLOAD', value: payloadToVerify }
+                { key: 'RAW_PAYLOAD', value: payloadToVerify },
+                { key: 'ACTIVATION_KEY', value: finalActivationKey },
+                { key: 'API_KEY', value: finalApiKey },
+                { key: 'API_SECRET', value: finalApiSecret }
             ];
 
             // Run this in an atomic transaction to preserve history
@@ -263,18 +294,15 @@ export async function activateProduct(formData: FormData) {
                 });
 
                 // Insert the new records
-                for (const item of storageTasks) {
-                    const encryptedKey = encrypt(item.key);
-                    const encryptedValue = encrypt(item.value);
+                const newRecords = storageTasks.map(item => ({
+                    regKey: encrypt(item.key),
+                    regValue: Buffer.from(encrypt(item.value)),
+                    isActive: true
+                }));
 
-                    await tx.licenseRegistry.create({
-                        data: {
-                            regKey: encryptedKey,
-                            regValue: Buffer.from(encryptedValue),
-                            isActive: true
-                        }
-                    });
-                }
+                await tx.licenseRegistry.createMany({
+                    data: newRecords
+                });
 
                 // Perform Audit Logging for License Update
                 const oldValidityTill = currentState && currentState.state !== 'UNACTIVATED' && currentState.state !== 'COMPROMISED' && currentState.validityTill
@@ -305,6 +333,9 @@ export async function activateProduct(formData: FormData) {
                 await tx.auditLog.create({
                     data: auditData
                 });
+            }, {
+                maxWait: 5000, // 5s max wait to connect
+                timeout: 15000 // 15s timeout
             });
 
             // Immediately clear the application's global license cache locally
@@ -323,12 +354,12 @@ export async function activateProduct(formData: FormData) {
             };
         }
     } catch (error: any) {
-
-        return { success: false, message: 'An internal error occurred during activation.' };
+        console.error("Activation Error:", error);
+        return { success: false, message: 'An internal error occurred during activation. See server logs for details.' };
     }
 }
 
-import { decrypt } from '@/lib/crypto';
+
 
 /**
  * Checks if the application is activated.
