@@ -23,22 +23,30 @@ export function Header({ settings, user, publicView = false, showSettings = fals
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Mock notifications for demonstration (can be wired to backend later)
-    const [notifications, setNotifications] = useState([
-        { id: 1, text: 'System Update: Universal 2FA is now permanently mandatory.', isNew: true },
-        { id: 2, text: 'RBAC v11 Enforced: Scoped Admins can now edit users natively.', isNew: true },
-        { id: 3, text: 'UI Update: Search text now elegantly clears upon navigation.', isNew: true },
-        { id: 4, text: 'Permission Sync: Viewer role upgraded to explicitly allow scoped visibility.', isNew: true }
-    ]);
+    // ── Dynamic Release Notes from DB ──
+    const [notifications, setNotifications] = useState<{ id: string; text: string; tag: string; version: string; isNew: boolean }[]>([]);
+    const [hasUnread, setHasUnread] = useState(false);
 
-    // Make demonstrations persistent locally
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const hasRead = localStorage.getItem('demo_notifications_read');
-            if (hasRead === 'true') {
-                setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+        async function loadNotes() {
+            try {
+                const { getReleaseNotes } = await import('@/lib/actions/release-notes');
+                const payload = await getReleaseNotes();
+                setNotifications(
+                    payload.notes.map(n => ({
+                        id: n.id,
+                        text: n.title,
+                        tag: n.tag,
+                        version: n.version,
+                        isNew: payload.hasUnread,
+                    }))
+                );
+                setHasUnread(payload.hasUnread);
+            } catch (e) {
+                // Silently fail — notifications are non-critical
             }
         }
+        loadNotes();
     }, []);
 
     const profileRef = useRef<HTMLDivElement>(null);
@@ -156,38 +164,54 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                             {/* Notifications Dropdown */}
                             <div className="relative" ref={notificationRef}>
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         setIsNotificationOpen(!isNotificationOpen);
-                                        if (!isNotificationOpen) {
+                                        if (!isNotificationOpen && hasUnread) {
+                                            setHasUnread(false);
                                             setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
-                                            if (typeof window !== 'undefined') {
-                                                localStorage.setItem('demo_notifications_read', 'true');
+                                            try {
+                                                const { markNotificationsRead } = await import('@/lib/actions/release-notes');
+                                                await markNotificationsRead();
+                                            } catch (e) {
+                                                // Non-critical
                                             }
                                         }
                                     }}
                                     className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 relative focus:outline-none"
                                 >
                                     <Bell className="h-5 w-5" />
-                                    {notifications.some(n => n.isNew) && (
+                                    {hasUnread && (
                                         <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
                                     )}
                                 </button>
 
                                 {isNotificationOpen && (
-                                    <div className="absolute right-0 mt-2 w-72 rounded-md shadow-lg py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 animate-in fade-in zoom-in-95 duration-100 z-50">
-                                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-600">
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white">Notifications</p>
+                                    <div className="absolute right-0 mt-2 w-96 rounded-md shadow-lg py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 animate-in fade-in zoom-in-95 duration-100 z-50">
+                                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-600 flex items-center justify-between">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">What&apos;s New</p>
+                                            {notifications.length > 0 && (
+                                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{notifications[0]?.version}</span>
+                                            )}
                                         </div>
-                                        <div className="max-h-64 overflow-y-auto">
+                                        <div className="max-h-80 overflow-y-auto">
                                             {notifications.length > 0 ? (
                                                 notifications.map(notification => (
                                                     <div key={notification.id} className="px-4 py-3 border-b border-gray-50 dark:border-gray-600 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-600/50">
-                                                        <p className="text-sm text-gray-700 dark:text-gray-200">{notification.text}</p>
+                                                        <div className="flex items-start gap-2">
+                                                            <span className={`mt-0.5 shrink-0 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                                                                notification.tag === 'Fix' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' :
+                                                                notification.tag === 'Feature' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' :
+                                                                notification.tag === 'Enhancement' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
+                                                                notification.tag === 'Performance' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' :
+                                                                'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
+                                                            }`}>{notification.tag}</span>
+                                                            <p className="text-sm text-gray-700 dark:text-gray-200">{notification.text}</p>
+                                                        </div>
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                                                    No new notifications
+                                                <div className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                                    No release notes yet
                                                 </div>
                                             )}
                                         </div>

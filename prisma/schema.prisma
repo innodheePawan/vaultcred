@@ -597,3 +597,28 @@ model ApiActivityLog {
   @@map("api_activity_log")
 }
 
+// --------------------------------------
+// RELEASE NOTES / CHANGELOG
+// --------------------------------------
+
+model ReleaseNote {
+  id          String   @id @default(uuid()) @map("note_id")
+  version     String   @map("version") @db.VarChar(20)       // e.g. "v2.4.0"
+  title       String   @map("title")                          // Short summary
+  tag         String   @map("tag") @db.VarChar(20)            // Fix, Feature, Enhancement, Performance
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([isActive, createdAt])
+  @@map("release_notes")
+}
+
+model UserNotificationRead {
+  userId        String   @map("user_id")
+  lastReadNoteId String? @map("last_read_note_id")            // ID of the latest ReleaseNote they viewed
+  readAt        DateTime @default(now()) @map("read_at")
+
+  @@id([userId])
+  @@map("user_notification_read")
+}

@@ -15,6 +15,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
     const { update } = useSession();
     const [step, setStep] = useState<'install' | 'generate' | 'verify' | 'done'>('install');
     const [platform, setPlatform] = useState<'ios' | 'android'>('ios');
+    const [authApp, setAuthApp] = useState<'google' | 'microsoft'>('google');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [secret, setSecret] = useState<string | null>(null);
     const [code, setCode] = useState('');
@@ -24,8 +25,14 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
     const [isPending, startTransition] = useTransition();
 
     const appStoreLinks = {
-        ios: 'https://apps.apple.com/us/app/google-authenticator/id388497605',
-        android: 'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2'
+        google: {
+            ios: 'https://apps.apple.com/us/app/google-authenticator/id388497605',
+            android: 'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2'
+        },
+        microsoft: {
+            ios: 'https://apps.apple.com/us/app/microsoft-authenticator/id983156458',
+            android: 'https://play.google.com/store/apps/details?id=com.azure.authenticator'
+        }
     };
 
     const handleGenerate = () => {
@@ -87,8 +94,25 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                             Step 1: Install Authenticator
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Select your device type to download Google Authenticator.
+                            Select your preferred authenticator app and device type.
                         </p>
+                    </div>
+
+                    <div className="flex justify-center">
+                        <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg inline-flex">
+                            <button
+                                onClick={() => setAuthApp('google')}
+                                className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${authApp === 'google' ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                            >
+                                Google
+                            </button>
+                            <button
+                                onClick={() => setAuthApp('microsoft')}
+                                className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${authApp === 'microsoft' ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                            >
+                                Microsoft
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex justify-center gap-4">
@@ -116,7 +140,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
 
                     <div className="flex flex-col items-center gap-3">
                         <a
-                            href={appStoreLinks[platform]}
+                            href={appStoreLinks[authApp][platform]}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-indigo-600 dark:text-indigo-400 text-sm font-semibold hover:underline flex items-center gap-1"
@@ -127,7 +151,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
 
                     <div className="inline-block p-4 bg-white rounded-xl shadow-md border border-gray-100 ring-4 ring-gray-50 dark:ring-gray-900/50">
                         <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(appStoreLinks[platform as keyof typeof appStoreLinks])}`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(appStoreLinks[authApp][platform])}`}
                             alt={`Download for ${platform}`}
                             className="w-40 h-40"
                         />
@@ -206,7 +230,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                             </p>
                             <div className="flex flex-wrap justify-center gap-3">
                                 <a
-                                    href={appStoreLinks.ios}
+                                    href={appStoreLinks[authApp].ios}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -218,7 +242,7 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                                     </div>
                                 </a>
                                 <a
-                                    href={appStoreLinks.android}
+                                    href={appStoreLinks[authApp].android}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -281,7 +305,8 @@ export default function SetupTwoFactorForm({ user }: SetupTwoFactorFormProps) {
                             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                             placeholder="000000"
                             autoFocus
-                            className="block w-full text-center tracking-[0.5em] text-2xl font-bold rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 dark:text-white dark:ring-gray-700"
+                            disabled={isPending}
+                            className={`block w-full text-center tracking-[0.5em] text-2xl font-bold rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 dark:text-white dark:ring-gray-700 transition-colors ${isPending ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800' : ''}`}
                         />
                     </div>
 
