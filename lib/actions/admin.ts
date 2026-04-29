@@ -492,9 +492,36 @@ export async function deleteUser(userId: string) {
             }
         }
 
-        await prisma.user.delete({
-            where: { id: userId }
-        });
+        try {
+            await prisma.user.delete({
+                where: { id: userId }
+            });
+        } catch (dbError: any) {
+            if (dbError.code === 'P2003') {
+                // Foreign key constraint failed. Soft delete to preserve audit history and relations.
+                await prisma.$transaction([
+                    prisma.user.update({
+                        where: { id: userId },
+                        data: {
+                            status: 'INACTIVE',
+                            email: `deleted_${Date.now()}_${userId.substring(0, 8)}@deleted.local`,
+                            name: 'Deleted User',
+                            passwordHash: null,
+                            twoFactorEnabled: false,
+                            twoFactorSecret: null,
+                            inviteToken: null,
+                            profileImage: null,
+                            isExternal: false,
+                        }
+                    }),
+                    prisma.userGroupMapping.deleteMany({
+                        where: { userId }
+                    })
+                ]);
+            } else {
+                throw dbError;
+            }
+        }
 
         revalidatePath('/settings/database');
         return { success: true, message: 'User deleted successfully' };
