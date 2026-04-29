@@ -114,25 +114,26 @@ export async function acceptInvite(token: string, name: string, passwordPlain: s
 
     const hashedPassword = await hashPassword(passwordPlain);
 
+    // --- License Limit Check ---
+    const { getLicenseState } = await import('@/lib/license-enforcement');
+    const licenseInfo = await getLicenseState();
+
+    if (licenseInfo.state === 'UNACTIVATED' || licenseInfo.state === 'COMPROMISED') {
+        throw new Error('System is in an unactivated or compromised state.');
+    }
+
+    if (!licenseInfo.activeUsers) {
+        throw new Error('License user limit is missing.');
+    }
+
     // Use transaction to ensure user creation and group assignment happen together
     const user = await prisma.$transaction(async (tx) => {
         // --- Atomic License Limit Check ---
-        const { getLicenseState } = await import('@/lib/license-enforcement');
-        const licenseInfo = await getLicenseState();
-
-        if (licenseInfo.state === 'UNACTIVATED' || licenseInfo.state === 'COMPROMISED') {
-            throw new Error('System is in an unactivated or compromised state.');
-        }
-
-        if (!licenseInfo.activeUsers) {
-            throw new Error('License user limit is missing.');
-        }
-
         const currentActiveUsers = await tx.user.count({
             where: { status: 'ACTIVE' }
         });
 
-        if (currentActiveUsers >= licenseInfo.activeUsers) {
+        if (currentActiveUsers >= licenseInfo.activeUsers!) {
             throw new Error('Active user limit reached as per your license. Please ask your administrator to upgrade your license to add more users.');
         }
         // ------------------------------------
