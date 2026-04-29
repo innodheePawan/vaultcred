@@ -32,7 +32,7 @@ export const authConfig = {
             if (isProtected) {
                 if (isLoggedIn) {
 
-                    if (nextUrl.pathname.startsWith('/admin') && (auth.user as any)?.role !== 'ADMIN') {
+                    if (nextUrl.pathname.startsWith('/admin') && (auth.user as any)?.role !== 'ADMIN' && (auth.user as any)?.role !== 'SUPER_ADMIN') {
                         return false;
                     }
                     return true;
@@ -104,6 +104,26 @@ export const authConfig = {
                         token.accessExpiresAt = dbUser.accessExpiresAt?.toISOString() || null;
                         token.vendorName = dbUser.vendorName;
                         token.role = dbUser.role;
+                        token.isActive = true;
+
+                        const { getUserAccessContext } = await import('@/lib/iam/permissions');
+                        const ctx = await getUserAccessContext(token.id as string, { rbac: token.rbac });
+                        token.rbac = {
+                            featurePermissions: ctx.featurePermissions,
+                            allowedCategories: ctx.allowedCategories,
+                            allowedEnvironments: ctx.allowedEnvironments,
+                            allowedCredentialIds: ctx.allowedCredentialIds,
+                            version: ctx.version
+                        };
+
+                        if (process.env.NODE_ENV === 'development') {
+                            const size = JSON.stringify(token.rbac).length;
+                            if (size > 5000) {
+                                console.warn(`RBAC payload too large: ${size} bytes`);
+                            }
+                        }
+                    } else if (dbUser && dbUser.status !== 'ACTIVE') {
+                        token.isActive = false;
                     }
                 } catch (e) {
                     // DB error in middleware/edge is common, safely continue with existing token
@@ -126,6 +146,10 @@ export const authConfig = {
                 session.user.vendorName = token.vendorName as string | null;
                 // @ts-ignore
                 session.user.externalAccessType = token.externalAccessType as string | null;
+                // @ts-ignore
+                session.user.isActive = token.isActive as boolean | undefined;
+                // @ts-ignore
+                session.user.rbac = token.rbac;
             }
             return session;
         }

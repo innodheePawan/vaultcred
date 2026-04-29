@@ -150,11 +150,15 @@ export default async function middleware(req: any) {
     const isActivationApi = path.startsWith('/api/activate') || path.startsWith('/api/internal/license-state');
     const isHealthEndpoint = path === '/api/health';
 
-    // C. NORMAL AUTH FLOW
-    // Server Components (layouts and pages) handle robust License Enforcement natively via Node.js Prisma
-    // This bypasses AWS Edge HTTP loopback issues.
+    // C. EXTERNAL API ROUTE GATEKEEPER
+    const isApiV1 = path.startsWith('/api/v1');
+    if (isApiV1) {
+        // Bypass NextAuth session for external APIs since they use OAuth/JWT tokens
+        // Specific endpoints enforce mTLS (x-client-fingerprint) dynamically based on Client Security Mode
+        return NextResponse.next();
+    }
 
-    // C. NORMAL AUTH FLOW
+    // NORMAL AUTH FLOW
     return (authHandler as any)(req);
 }
 

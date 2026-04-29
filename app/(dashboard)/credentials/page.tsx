@@ -5,9 +5,12 @@ import { Plus, Folder, Key, Lock, Terminal, FileText, ArrowUp, ArrowDown } from 
 import { formatDate } from '@/lib/utils';
 import { Suspense } from 'react';
 import CredentialFilters from '@/components/credentials/CredentialFilters';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 import { auth } from '@/lib/auth';
 import { getUserAccessContext, canAccess } from '@/lib/iam/permissions';
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 
 function getIconForType(type: string) {
     switch (type) {
@@ -67,18 +70,23 @@ export default async function CredentialsPage(props: {
         expiry?: string,
         scope?: string,
         sort?: string,
-        order?: 'asc' | 'desc'
+        order?: 'asc' | 'desc',
+        page?: string,
+        limit?: string
     }>
 }) {
     const session = await auth();
     if (!session?.user) redirect('/login');
 
     const searchParams = await props.searchParams;
-    const { q, type, category, environment, sort, order } = searchParams;
+    const { q, type, category, environment, sort, order, page, limit } = searchParams;
 
     const accessContext = await getUserAccessContext(session.user.id!);
 
-    const credentials = await getCredentials({
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    const { data: credentials, total, totalPages, page: currentPage } = await getCredentials({
         query: q,
         type,
         category,
@@ -86,7 +94,9 @@ export default async function CredentialsPage(props: {
         expiry: searchParams.expiry,
         scope: searchParams.scope,
         sort,
-        order
+        order,
+        page: pageNum,
+        limit: limitNum
     });
 
     const createLink = type ? `/credentials/create?type=${type}` : '/credentials/create';
@@ -104,15 +114,8 @@ export default async function CredentialsPage(props: {
     } else if (accessContext.role === 'ADMIN') {
         canCreate = true;
     } else {
-        if (category || environment) {
-            // Specific Context Check (User is filtering by Cat/Env)
-            canCreate = canAccess(accessContext, category || null, environment || null, 'CREATE');
-        } else {
-            // Generic Check: Does the user have CREATE permission for ANY category/env?
-            canCreate = Object.values(accessContext.permissions).some(envMap =>
-                Object.values(envMap).some(perms => perms.has('CREATE'))
-            );
-        }
+        // Use new feature-based permission check
+        canCreate = canAccess(accessContext, 'FEATURE:CREDENTIALS', 'CREATE');
     }
 
     return (
@@ -176,7 +179,7 @@ export default async function CredentialsPage(props: {
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {credentials.map((cred: any) => {
-                                const hasReadPerm = accessContext.role === 'ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, cred.category, cred.environment, 'READ', cred.id);
+                                const hasReadPerm = accessContext.role === 'ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'UNMASK');
 
                                 return (
                                     <tr key={cred.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -247,6 +250,13 @@ export default async function CredentialsPage(props: {
                     </table>
                 )}
             </div>
+            
+            <PaginationControls 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={total}
+                currentLimit={limitNum}
+            />
         </div>
     );
 }

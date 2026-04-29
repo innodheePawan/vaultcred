@@ -26,6 +26,7 @@ import StatusConfirmationDialog from './StatusConfirmationDialog';
 import { resendInvite, deleteInvite, deleteUser } from '@/lib/actions/admin';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 
 const GROUP_COLORS = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-800',
@@ -56,7 +57,7 @@ const getGroupColor = (name: string) => {
     return GROUP_COLORS[index];
 };
 
-export default function UserTable({ users, invites, groups, credentials, inviteUserAction, isSystemAdmin, canInvite }: any) {
+export default function UserTable({ users, invites, groups, credentials, inviteUserAction, isSystemAdmin, canInvite, currentUserId }: any) {
     const router = useRouter();
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<any>(null);
@@ -106,7 +107,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
     };
 
     // Filter Users
-    const filteredUsers = users.filter((u: any) =>
+    const filteredUsers = (users?.data || []).filter((u: any) =>
         u.email.toLowerCase().includes(search.toLowerCase()) ||
         u.name?.toLowerCase().includes(search.toLowerCase())
     );
@@ -147,7 +148,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                             <TableRow>
                                 <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</TableHead>
                                 <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</TableHead>
-                                <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Groups</TableHead>
+                                <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role & Scopes</TableHead>
                                 <TableHead className="relative px-6 py-3"><span className="sr-only">Actions</span></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -197,27 +198,52 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                         </div>
                                     </TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {user.role === 'ADMIN' ? (
-                                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
-                                                By Role: SUPER ADMIN
+                                        <div className="flex flex-col gap-1.5 items-start">
+                                            <span className={`px-2 py-1 inline-flex text-xs leading-4 font-bold rounded-md border ${
+                                                user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' 
+                                                    ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-800'
+                                                    : user.role === 'SCOPED_ADMIN' || user.role === 'ADMINISTRATOR'
+                                                        ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800'
+                                                        : user.role === 'AUDITOR'
+                                                            ? 'bg-gray-200 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600'
+                                                            : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800'
+                                            }`}>
+                                                ROLE: {user.role?.replace('_', ' ') || 'USER'}
                                             </span>
-                                        ) : (
-                                            <div className="flex flex-col gap-1 items-start">
-                                                {user.userGroups.length > 0 ? user.userGroups.map((ug: any) => (
-                                                    <div key={ug.groupId} className={`flex flex-col items-start rounded-full px-3 py-1 border ${getGroupColor(ug.group.name)}`}>
-                                                        <span className="font-bold text-xs">{ug.group.name}</span>
-                                                        {(ug.scopedCategories || ug.scopedEnvironments) && (
-                                                            <span className="text-[10px] opacity-80 mt-0.5">
-                                                                {[
-                                                                    ug.scopedCategories ? `Cat: ${ug.scopedCategories}` : null,
-                                                                    ug.scopedEnvironments ? `Env: ${ug.scopedEnvironments}` : null
-                                                                ].filter(Boolean).join(' | ')}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                )) : <span className="text-gray-400 italic">No Group Assigned</span>}
-                                            </div>
-                                        )}
+                                            
+                                            {user.isExternal && user.externalAccessType && (
+                                                <span className="px-2 py-0.5 text-[10px] uppercase font-bold rounded bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-200 dark:border-amber-800 w-max mt-0.5">
+                                                    Action: {user.externalAccessType}
+                                                </span>
+                                            )}
+
+                                            {/* Scope Display */}
+                                            {user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? (
+                                                <span className="text-[10px] text-gray-400 italic mt-0.5">Full System Access</span>
+                                            ) : (
+                                                <div className="flex flex-col text-[10px] text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+                                                    {user.allowedCategories && (
+                                                        <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Cat:</span> {user.allowedCategories}</span>
+                                                    )}
+                                                    {user.allowedEnvironments && (
+                                                        <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Env:</span> {user.allowedEnvironments}</span>
+                                                    )}
+                                                    {user.allowedCredentialIds && (
+                                                        <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Creds:</span> {user.allowedCredentialIds.split(',').length} specific item(s)</span>
+                                                    )}
+                                                    {(!user.allowedCategories && !user.allowedEnvironments && !user.allowedCredentialIds) && (
+                                                        <span className="italic text-gray-400">No specific scope limits</span>
+                                                    )}
+                                                    
+                                                    {/* Fallback for legacy group-based scopes if any */}
+                                                    {user.userGroups?.length > 0 && user.userGroups.map((ug: any) => (
+                                                        <span key={ug.groupId} className="opacity-70 mt-1">
+                                                            [Group: {ug.group?.name || 'Legacy'}]
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex justify-end gap-2 items-center">
@@ -311,6 +337,15 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                     )}
                 </div>
             </div>
+            
+            {users?.total > 0 && (
+                <PaginationControls
+                    currentPage={users.page}
+                    totalPages={users.totalPages}
+                    totalItems={users.total}
+                    currentLimit={users.data.length > 0 && users.data.length < users.total && users.data.length !== 10 && users.data.length !== 25 && users.data.length !== 50 && users.data.length !== 100 ? users.data.length : (search ? 10 : Math.max(10, Math.ceil(users.total / users.totalPages)))}
+                />
+            )}
 
             {/* Edit Dialog */}
             {editingUser && (
@@ -320,6 +355,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                     credentials={credentials}
                     open={!!editingUser}
                     onOpenChange={(open: boolean) => !open && setEditingUser(null)}
+                    currentUserId={currentUserId}
                 />
             )}
 

@@ -60,7 +60,12 @@ export async function getDatabaseInfo() {
 
 export async function verifySmtpConfig(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { success: false, message: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { success: false, message: 'Unauthorized' };
     }
 
@@ -91,7 +96,12 @@ export async function verifySmtpConfig(prevState: any, formData: FormData) {
 
 export async function updateGeneralSettings(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -157,7 +167,12 @@ export async function updateGeneralSettings(prevState: any, formData: FormData) 
 
 export async function updateSmtpSettings(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
@@ -211,24 +226,32 @@ export async function updateSmtpSettings(prevState: any, formData: FormData) {
 
 export async function updateSecuritySettings(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized' };
     }
 
     const auditPersonalCredentials = formData.get('auditPersonalCredentials') === 'true';
     const twoFactorMandatory = formData.get('twoFactorMandatory') === 'true';
+    const allowApiAccess = formData.get('allowApiAccess') === 'true';
 
     try {
         await prisma.systemSettings.upsert({
             where: { id: 1 },
             update: {
                 auditPersonalCredentials,
-                twoFactorMandatory
+                twoFactorMandatory,
+                allowApiAccess
             },
             create: {
                 id: 1,
                 auditPersonalCredentials,
-                twoFactorMandatory
+                twoFactorMandatory,
+                allowApiAccess
             },
         });
 
@@ -236,13 +259,14 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 
         await logAudit({
             action: 'UPDATE_SETTINGS',
-            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}`,
+            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}, Allow API Access=${allowApiAccess}`,
             userId: session.user.id
         });
 
         return { message: 'Security settings updated successfully.' };
-    } catch (error) {
-        return { error: 'Failed to update Security settings.' };
+    } catch (error: any) {
+        console.error("DEBUG Settings Update Error:", error);
+        return { error: 'Failed to update Security settings: ' + error.message };
     }
 }
 
@@ -250,7 +274,12 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 export async function updateSystemSettings(prevState: any, formData: FormData) {
 
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized: Only Admins can modify system settings.' };
+    }
+    const { getSafeUserContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT')) {
         return { error: 'Unauthorized: Only Admins can modify system settings.' };
     }
 

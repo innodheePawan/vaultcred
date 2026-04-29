@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { encrypt } from '@/lib/crypto';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { generateLicenseSignature, getMachineId, verifyLicenseServerSignature } from '@/lib/license-utils';
 import { LICENCE_PUBLIC_KEY } from '@/lib/public-key';
 import { revalidatePath } from 'next/cache';
@@ -10,7 +10,7 @@ import { invalidateLicenseCache, getLicenseState } from '@/lib/license-enforceme
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 
-const ACTIVATION_API_URL = 'https://main.d2qgnt0ki6h7ki.amplifyapp.com/api/activate';
+const ACTIVATION_API_URL = 'https://main.d1vhnqcsa3xxv0.amplifyapp.com/api/activate';
 
 export async function activateProduct(formData: FormData) {
     const activationKey = formData.get('activationKey') as string | null;
@@ -44,6 +44,34 @@ export async function activateProduct(formData: FormData) {
         } catch (e) {
 
             return { success: false, message: 'Invalid license file format.' };
+        }
+    }
+
+    // Attempt to fetch missing information from existing active license
+    if (!finalActivationKey || !finalApiKey || !finalApiSecret) {
+        try {
+            const allEntries = await prisma.licenseRegistry.findMany({
+                where: { isActive: true }
+            });
+
+            for (const entry of allEntries) {
+                try {
+                    const decryptedKey = decrypt(entry.regKey);
+                    if (decryptedKey === 'ACTIVATION_KEY' && !finalActivationKey) {
+                        finalActivationKey = decrypt(entry.regValue.toString('utf8'));
+                    }
+                    if (decryptedKey === 'API_KEY' && !finalApiKey) {
+                        finalApiKey = decrypt(entry.regValue.toString('utf8'));
+                    }
+                    if (decryptedKey === 'API_SECRET' && !finalApiSecret) {
+                        finalApiSecret = decrypt(entry.regValue.toString('utf8'));
+                    }
+                } catch (e) {
+                    // Ignore decryption errors
+                }
+            }
+        } catch (e) {
+            // Ignore DB errors here, fall through to the missing info check
         }
     }
 
@@ -114,7 +142,7 @@ export async function activateProduct(formData: FormData) {
             // We recursively generate all top-level key permutations of the payload object to guarantee we find the exact string signed.
             const payloadObject = { ...data };
             delete payloadObject.signature;
-            
+
             // Helper to generate all permutations of an array
             const permute = (arr: string[]): string[][] => {
                 if (arr.length <= 1) return [arr];
@@ -132,14 +160,14 @@ export async function activateProduct(formData: FormData) {
 
             const keys = Object.keys(payloadObject);
             const keyPermutations = permute(keys);
-            
+
             const candidates: string[] = [];
-            
+
             // Push all combinations of raw minified JSON
             for (const perm of keyPermutations) {
                 const orderedObj: Record<string, any> = {};
                 for (const k of perm) orderedObj[k] = payloadObject[k];
-                
+
                 const minified = JSON.stringify(orderedObj);
                 const pretty2 = JSON.stringify(orderedObj, null, 2);
                 const pretty4 = JSON.stringify(orderedObj, null, 4);
@@ -151,17 +179,17 @@ export async function activateProduct(formData: FormData) {
                 candidates.push(pretty4);
                 candidates.push(pretty4 + '\n');
             }
-            
+
             // Add fallback legacy permutations (without 'message') in case the server only signed the core fields
             if (payloadObject.message) {
                 const legacyObj = { status: payloadObject.status, entitlements: payloadObject.entitlements };
                 const min = JSON.stringify(legacyObj);
                 const p2 = JSON.stringify(legacyObj, null, 2);
                 const p4 = JSON.stringify(legacyObj, null, 4);
-                
+
                 candidates.push(min, min + '\n', p2, p2 + '\n', p4, p4 + '\n');
             }
-            
+
             // Further fallback: What if the API server strictly ONLY signed the entitlements object recursively?
             if (payloadObject.entitlements) {
                 const entKeys = Object.keys(payloadObject.entitlements);
@@ -191,13 +219,13 @@ export async function activateProduct(formData: FormData) {
                     break;
                 }
             }
-            
+
             console.log("Passed Verification:", isSignatureValid);
             if (isSignatureValid) {
                 console.log("Matched Payload Format:", payloadToVerify);
             } else {
                 console.error("-> SIGNATURE VALIDATION FAILED against all " + candidates.length + " candidate permutations!");
-                
+
                 return { success: false, message: 'License signature verification failed. The provided license file has been tampered with or was generated by an untrusted source.' };
             }
 
@@ -251,7 +279,10 @@ export async function activateProduct(formData: FormData) {
                 { key: 'ACTIVE_USERS', value: entitlements.activeUsers.toString() },
                 { key: 'ACTIVATION_STATUS', value: 'ACTIVE' },
                 { key: 'SIGNATURE', value: signature.trim() },
-                { key: 'RAW_PAYLOAD', value: payloadToVerify }
+                { key: 'RAW_PAYLOAD', value: payloadToVerify },
+                { key: 'ACTIVATION_KEY', value: finalActivationKey },
+                { key: 'API_KEY', value: finalApiKey },
+                { key: 'API_SECRET', value: finalApiSecret }
             ];
 
             // Run this in an atomic transaction to preserve history
@@ -263,18 +294,15 @@ export async function activateProduct(formData: FormData) {
                 });
 
                 // Insert the new records
-                for (const item of storageTasks) {
-                    const encryptedKey = encrypt(item.key);
-                    const encryptedValue = encrypt(item.value);
+                const newRecords = storageTasks.map(item => ({
+                    regKey: encrypt(item.key),
+                    regValue: Buffer.from(encrypt(item.value)),
+                    isActive: true
+                }));
 
-                    await tx.licenseRegistry.create({
-                        data: {
-                            regKey: encryptedKey,
-                            regValue: Buffer.from(encryptedValue),
-                            isActive: true
-                        }
-                    });
-                }
+                await tx.licenseRegistry.createMany({
+                    data: newRecords
+                });
 
                 // Perform Audit Logging for License Update
                 const oldValidityTill = currentState && currentState.state !== 'UNACTIVATED' && currentState.state !== 'COMPROMISED' && currentState.validityTill
@@ -305,6 +333,9 @@ export async function activateProduct(formData: FormData) {
                 await tx.auditLog.create({
                     data: auditData
                 });
+            }, {
+                maxWait: 5000, // 5s max wait to connect
+                timeout: 15000 // 15s timeout
             });
 
             // Immediately clear the application's global license cache locally
@@ -323,12 +354,12 @@ export async function activateProduct(formData: FormData) {
             };
         }
     } catch (error: any) {
-
-        return { success: false, message: 'An internal error occurred during activation.' };
+        console.error("Activation Error:", error);
+        return { success: false, message: 'An internal error occurred during activation. See server logs for details.' };
     }
 }
 
-import { decrypt } from '@/lib/crypto';
+
 
 /**
  * Checks if the application is activated.

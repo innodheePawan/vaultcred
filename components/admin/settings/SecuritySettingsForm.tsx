@@ -10,12 +10,12 @@ const initialState = {
     error: null,
 };
 
-export default function SecuritySettingsForm({ initialSettings }: { initialSettings: any }) {
+export default function SecuritySettingsForm({ initialSettings, canEdit = true }: { initialSettings: any, canEdit?: boolean }) {
     const [state, formAction, isPending] = useActionState(updateSecuritySettings, initialState as any);
 
     // Security State
     const [auditPersonal, setAuditPersonal] = useState(initialSettings.auditPersonalCredentials ?? true);
-    const [twoFactorMandatory, setTwoFactorMandatory] = useState(initialSettings.twoFactorMandatory ?? false);
+    const [allowApiAccess, setAllowApiAccess] = useState(initialSettings.allowApiAccess ?? false);
 
     return (
         <form action={formAction} className="space-y-6 max-w-2xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
@@ -48,7 +48,8 @@ export default function SecuritySettingsForm({ initialSettings }: { initialSetti
                             value="true"
                             checked={auditPersonal}
                             onChange={(e) => setAuditPersonal(e.target.checked)}
-                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                            disabled={!canEdit}
+                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div className="ml-3 text-sm">
@@ -66,49 +67,54 @@ export default function SecuritySettingsForm({ initialSettings }: { initialSetti
                 </div>
             </div>
 
-            {/* 2FA Settings */}
+
+
+            {/* API Settings */}
             <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5" />
-                    Authentication Policy
+                    Global API Policy
                 </h3>
                 <div className="flex items-start">
                     <div className="flex items-center h-5">
                         <input
-                            id="twoFactorMandatory"
-                            name="twoFactorMandatory"
+                            id="allowApiAccess"
+                            name="allowApiAccess"
                             type="checkbox"
                             value="true"
-                            checked={twoFactorMandatory}
-                            onChange={(e) => setTwoFactorMandatory(e.target.checked)}
-                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                            checked={allowApiAccess}
+                            onChange={(e) => setAllowApiAccess(e.target.checked)}
+                            disabled={!canEdit}
+                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div className="ml-3 text-sm">
-                        <label htmlFor="twoFactorMandatory" className="font-medium text-gray-700 dark:text-gray-300">
-                            Mandatory Two-Factor Authentication
+                        <label htmlFor="allowApiAccess" className="font-medium text-gray-700 dark:text-gray-300">
+                            Enable External API Access
                         </label>
                         <p className="text-gray-500 dark:text-gray-400">
-                            When enabled, all users are required to set up 2FA and cannot disable it.
+                            When enabled, authorized external API Clients and OAuth tokens will be able to access Vault APIs.
                             <br />
                             <span className="text-xs text-amber-600 dark:text-amber-400">
-                                Enabling this will force users who haven&apos;t set up 2FA to do so on their next login.
+                                This acts as a global master kill switch for ALL external APIs. Individual API Clients must still be explicitly granted permission!
                             </span>
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Saving...' : (
-                        <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Save Settings
-                        </>
-                    )}
-                </Button>
-            </div>
+            {canEdit && (
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                    <Button type="submit" disabled={isPending}>
+                        {isPending ? 'Saving...' : (
+                            <>
+                                <Save className="w-4 h-4 mr-2" />
+                                Save Settings
+                            </>
+                        )}
+                    </Button>
+                </div>
+            )}
         </form>
     );
 }

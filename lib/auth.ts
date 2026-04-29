@@ -25,6 +25,13 @@ declare module "next-auth" {
             accessExpiresAt: string | null;
             vendorName: string | null;
             externalAccessType: string | null;
+            isActive?: boolean;
+            rbac?: {
+                featurePermissions: Record<string, string>;
+                allowedCategories: string[];
+                allowedEnvironments: string[];
+                version: number;
+            };
         }
     }
 }
@@ -38,6 +45,8 @@ declare module "@auth/core/jwt" {
         accessExpiresAt: string | null;
         vendorName: string | null;
         externalAccessType: string | null;
+        isActive?: boolean;
+        rbac?: any;
     }
 }
 

@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { getSafeUserContext, canAccess, canEdit, forbiddenError } from '@/lib/iam/permissions';
+import { logForbiddenThrottled } from '@/lib/iam/authorize';
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/utils/logger';
 
@@ -99,24 +101,52 @@ export async function logUserLogout() {
 export async function getLoginLogs(params: {
     page?: number;
     limit?: number;
-    email?: string;
+    search?: string;
     outcome?: string;
     category?: string;
     ipAddress?: string;
+    startDate?: string;
+    endDate?: string;
 }) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-        throw new Error('Unauthorized');
+    if (!session?.user?.id) throw forbiddenError();
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ACTIVITY_LOGIN', 'VIEW')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_LOGIN', 'VIEW');
+        throw forbiddenError();
     }
 
-    const { page = 1, limit = 20, email, outcome, category, ipAddress } = params;
+    const { page = 1, limit = 20, search, outcome, category, ipAddress, startDate, endDate } = params;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (email) where.email = { contains: email };
+    if (search) {
+        where.OR = [
+            { email: { contains: search } },
+            { outcome: { contains: search } },
+            { category: { contains: search } },
+            { reasonCode: { contains: search } },
+            { reasonMessage: { contains: search } },
+            { authMethod: { contains: search } },
+            { ipAddress: { contains: search } },
+            { userAgent: { contains: search } },
+            { riskLevel: { contains: search } }
+        ];
+    }
     if (outcome && outcome !== 'ALL') where.outcome = outcome;
     if (category && category !== 'ALL') where.category = category;
     if (ipAddress) where.ipAddress = { contains: ipAddress };
+
+    if (startDate || endDate) {
+        where.timestamp = {};
+        if (startDate) where.timestamp.gte = new Date(startDate);
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            where.timestamp.lte = end;
+        }
+    }
 
     try {
         const [logs, total] = await Promise.all([
@@ -146,8 +176,12 @@ export async function getLoginLogs(params: {
  */
 export async function archiveLoginLogs() {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-        throw new Error('Unauthorized');
+    if (!session?.user?.id) throw forbiddenError();
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canEdit(ctx, 'FEATURE:ACTIVITY_LOGIN')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_LOGIN', 'EDIT');
+        throw forbiddenError();
     }
 
     try {
@@ -227,7 +261,10 @@ export async function archiveLoginLogs() {
  */
 export async function getArchivalStatus() {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') return null;
+    if (!session?.user?.id) return null;
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ACTIVITY_LOGIN', 'VIEW')) return null;
 
     const settings = await prisma.systemSettings.findUnique({
         where: { id: 1 },

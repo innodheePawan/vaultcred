@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Shield, Upload, FileText, CheckCircle2, XCircle, RefreshCw, Lock, Terminal, Info, Key, AlertTriangle, Keyboard } from 'lucide-react';
 import { activateProduct } from '@/lib/actions/license';
+import { getSystemSettings } from '@/lib/actions/settings';
 import { clsx } from 'clsx';
 
 export default function ActivationPage() {
+    const [settings, setSettings] = useState({ applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd' });
     const [isPasting, setIsPasting] = useState(false);
     const [isManualEntry, setIsManualEntry] = useState(false);
     const [licenseContent, setLicenseContent] = useState('');
@@ -14,6 +16,17 @@ export default function ActivationPage() {
     const [response, setResponse] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        getSystemSettings().then(res => {
+            if (res) {
+                setSettings({ 
+                    applicationName: res.applicationName || 'CredSecure', 
+                    companyName: res.companyName || 'Innodhee Services Pvt Ltd' 
+                });
+            }
+        });
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -113,7 +126,7 @@ export default function ActivationPage() {
                         </div>
                         <h1 className="text-3xl font-extrabold tracking-tight">Product Activation</h1>
                         <p className="mt-2 text-indigo-100 text-center max-w-md">
-                            Activate your CRED Secure instance to unlock enterprise-grade credential management.
+                            Activate your {settings.applicationName} instance to unlock enterprise-grade credential management.
                         </p>
                     </div>
                 </div>
@@ -272,7 +285,7 @@ export default function ActivationPage() {
                                         Activating...
                                     </>
                                 ) : (
-                                    "Activate CRED Secure"
+                                    `Activate ${settings.applicationName}`
                                 )}
                             </button>
                             <button
@@ -346,7 +359,7 @@ export default function ActivationPage() {
             </div>
 
             <p className="text-center text-gray-500 text-xs mt-8 pb-8">
-                &copy; {new Date().getFullYear()} Innodhee Services Pvt Ltd. All rights reserved.
+                &copy; {new Date().getFullYear()} {settings.companyName}. All rights reserved.
             </p>
         </div>
     );

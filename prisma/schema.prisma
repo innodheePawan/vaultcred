@@ -56,6 +56,9 @@ model User {
   // IAM Relations
   userGroups              UserGroupMapping[]
   oneTimeSecrets          OneTimeSecret[]
+  
+  // API Clients
+  createdApiClients       ApiClient[]        @relation("CreatedByClient")
 
   @@map("users")
 }
@@ -180,11 +183,31 @@ model AccessGroupPolicy {
   accessGroup     AccessGroup @relation(fields: [accessGroupId], references: [id], onDelete: Cascade)
 
   // Policy Rules
-  category        String?     // NULL = ALL, or specific category
-  environment     String?     // NULL = ALL, or specific env
-  permission      String      // READ, EDIT, CREATE, DOWNLOAD, ADMIN
+  featureKey    String?     @map("feature_key")             // e.g. FEATURE:CREDENTIALS — populated by seed
+  category      String?                                     // NULL = ALL categories
+  environment   String?                                     // NULL = ALL environments
+  permission    String                                      // ALL | ALL_SCOPED | VIEW | VIEW_MASKED | NO_ACCESS
 
+  @@unique([accessGroupId, featureKey])                     // One policy per feature per group
+  @@index([featureKey])                                     // Fast feature-based lookups
   @@map("iam_access_group_policy")
+}
+
+// --------------------------------------
+// IAM FEATURE REGISTRY
+// --------------------------------------
+
+model IamFeature {
+  id          String   @id @default(uuid()) @map("feature_id")
+  featureKey  String   @unique @map("feature_key")  // e.g. FEATURE:CREDENTIALS
+  module      String   @map("module")
+  submodule   String?  @map("submodule")
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")  // false = deprecated feature
+  createdAt   DateTime @default(now()) @map("created_on")
+
+  @@index([isActive])
+  @@map("iam_features")
 }
 
 // --------------------------------------
@@ -226,6 +249,8 @@ model CredentialMaster {
 
   @@index([type])
   @@index([status])
+  @@index([category, environment])
+  @@index([createdOn])
   @@map("credential_master")
 }
 
@@ -337,8 +362,12 @@ model AuditLog {
   performedOn   DateTime  @default(now()) @map("performed_on")
   ipAddress     String?   @map("ip_address")
 
+  apiClientId   String?   @map("api_client_id")
+  apiClient     ApiClient? @relation(fields: [apiClientId], references: [id])
+
   @@index([credentialId])
   @@index([performedById])
+  @@index([apiClientId])
   @@map("audit_log")
 }
 
@@ -361,6 +390,7 @@ model SystemSettings {
   themeColor      String?  @map("theme_color")
   auditPersonalCredentials Boolean @default(true) @map("audit_personal_credentials")
   twoFactorMandatory      Boolean @default(false) @map("two_factor_mandatory")
+  allowApiAccess          Boolean @default(false) @map("allow_api_access")
   
   // SMTP Email Configuration
   smtpHost      String?  @map("smtp_host")
@@ -375,6 +405,10 @@ model SystemSettings {
 
   lastLoginArchivedAt DateTime? @map("last_login_archived_at")
   lastArchiveBatchId  String?   @map("last_archive_batch_id")
+
+  // RBAC version — increment on seed run, role change, or group mapping change
+  // Used for version-based cache invalidation of userContext and globalActiveFeatures
+  rbacVersion Int @default(1) @map("rbac_version")
 
   @@map("system_settings")
 }
@@ -499,3 +533,92 @@ model LicenseAlertLog {
   @@map("license_alert_log")
 }
 
+// --------------------------------------
+// EXTERNAL API CLIENTS
+// --------------------------------------
+
+model ApiClient {
+  id                    String    @id @default(uuid()) @map("api_client_id")
+  name                  String    @map("client_name")
+  clientId              String    @unique @map("client_id")
+  clientSecretHash      String    @map("client_secret_hash") @db.Text
+  certificateThumbprint String?   @map("cert_thumbprint")  
+  securityMode          String    @default("BASIC") @map("security_mode")
+  allowFileDownload     Boolean   @default(false) @map("allow_file_download")
+  
+  scopes                String    @map("scopes") @db.Text  // JSON: { "applications": [], "environments": [], "credentialTypes": [], "accessMode": "READ_ONLY" }
+  isActive              Boolean   @default(true) @map("is_active")
+  tokenValiditySeconds  Int       @default(300) @map("token_validity_seconds")
+  secretExpiresAt       DateTime? @map("secret_expires_at")
+  lastUsedAt            DateTime? @map("last_used_at")
+
+  createdById           String    @map("created_by")
+  createdBy             User      @relation("CreatedByClient", fields: [createdById], references: [id])
+  createdAt             DateTime  @default(now()) @map("created_on")
+  
+  updatedAt             DateTime  @updatedAt @map("updated_on")
+
+  auditLogs             AuditLog[]
+
+  @@map("api_clients")
+}
+
+model ApiActivityLog {
+  id                  String   @id @default(uuid()) @map("log_id")
+  apiClientId         String?  @map("api_client_id")
+  clientName          String?  @map("client_name")
+  
+  endpoint            String   @map("endpoint")
+  method              String   @map("method")
+  timestamp           DateTime @default(now())
+  requestId           String?  @map("request_id")
+  
+  authType            String?  @map("auth_type") // OAUTH_ONLY, OAUTH_CERT, OAUTH_CERT_VALIDATION
+  certificateIdentity String?  @map("certificate_identity")
+  validationStatus    String?  @map("validation_status") // SUCCESS, FAILED
+  
+  responseStatus      String   @map("response_status") // SUCCESS, FAILURE
+  httpStatusCode      Int      @map("http_code")
+  errorMessage        String?  @map("error_message") @db.Text
+  
+  credentialId        String?  @map("credential_id")
+  application         String?  @map("application")
+  environment         String?  @map("environment")
+  action              String   @map("action") // LIST, VIEW
+  
+  requestedScope      String?  @map("requested_scope")
+  assignedScope       String?  @map("assigned_scope") @db.Text
+
+  ipAddress           String?  @map("ip_address")
+  userAgent           String?  @map("user_agent") @db.Text
+
+  @@index([apiClientId])
+  @@index([endpoint])
+  @@map("api_activity_log")
+}
+
+// --------------------------------------
+// RELEASE NOTES / CHANGELOG
+// --------------------------------------
+
+model ReleaseNote {
+  id          String   @id @default(uuid()) @map("note_id")
+  version     String   @map("version") @db.VarChar(20)       // e.g. "v2.4.0"
+  title       String   @map("title")                          // Short summary
+  tag         String   @map("tag") @db.VarChar(20)            // Fix, Feature, Enhancement, Performance
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([isActive, createdAt])
+  @@map("release_notes")
+}
+
+model UserNotificationRead {
+  userId        String   @map("user_id")
+  lastReadNoteId String? @map("last_read_note_id")            // ID of the latest ReleaseNote they viewed
+  readAt        DateTime @default(now()) @map("read_at")
+
+  @@id([userId])
+  @@map("user_notification_read")
+}

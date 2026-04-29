@@ -1,216 +1,404 @@
 import { prisma } from '@/lib/prisma';
+import { cache } from 'react';
 
-export type Permission = 'READ' | 'EDIT' | 'CREATE' | 'DOWNLOAD' | 'ADMIN' | 'AUDIT' | 'CREATE_ONE_TIME';
+// ─────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────
+
+export type FeaturePermission = 'ALL' | 'ALL_SCOPED' | 'VIEW' | 'VIEW_MASKED' | 'NO_ACCESS';
+export type FeatureAction = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE' | 'UNMASK';
+
+// Hierarchy: index = rank (higher index = more access)
+export const PERMISSION_HIERARCHY: FeaturePermission[] = [
+    'NO_ACCESS',
+    'VIEW_MASKED',
+    'VIEW',
+    'ALL_SCOPED',
+    'ALL',
+];
+
+export const VALID_ACTIONS: FeatureAction[] = ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'UNMASK'];
 
 export interface UserAccessContext {
     userId: string;
     role: string;
+    featurePermissions: Record<string, FeaturePermission>; // { 'CREDENTIALS': 'VIEW_MASKED' }
+    activeFeatures: Set<string>;                           // globally loaded active feature keys
     allowedCategories: string[];
     allowedEnvironments: string[];
-    // Map of Category -> Environment -> PermissionSet
-    permissions: Record<string, Record<string, Set<Permission>>>;
     allowedCredentialIds: string[];
     isExternal: boolean;
+    externalAccessType?: string;
+    version?: number;
 }
 
-/**
- * Fetches and aggregates all permissions for a user based on their User Groups and Access Groups.
- */
-export async function getUserAccessContext(userId: string): Promise<UserAccessContext> {
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-            userGroups: {
-                include: {
-                    group: {
-                        include: {
-                            access: {
-                                include: {
-                                    accessGroup: {
-                                        include: {
-                                            policies: true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+export const FEATURES = {
+    CREDENTIALS: 'CREDENTIALS',
+    ONE_TIME_SECRETS: 'ONE_TIME_SECRETS',
+    ACTIVITY_SYSTEM_LOG: 'ACTIVITY_SYSTEM_LOG',
+    ACTIVITY_LOGIN: 'ACTIVITY_LOGIN',
+    ACTIVITY_SECURITY: 'ACTIVITY_SECURITY',
+    ACTIVITY_TELEMETRY: 'ACTIVITY_TELEMETRY',
+    API_CLIENTS: 'ADMIN_API_CLIENTS',
+    ADMIN_OTS_CLEANUP: 'ADMIN_OTS_CLEANUP',
+    IAM_USERS: 'ADMIN_USERS_GROUPS',
+    IAM_GROUPS: 'ADMIN_USERS_GROUPS',
+    IAM_ROLES: 'ADMIN_USERS_GROUPS'
+};
+
+export function normalizeFeatureKey(key: string): string {
+    return key.replace(/^FEATURE:/i, '').toUpperCase();
+}
+
+// ─────────────────────────────────────────────
+// GLOBAL FEATURE CACHE (version-based)
+// ─────────────────────────────────────────────
+
+let _globalActiveFeatures: Set<string> = new Set();
+let _currentFeatureVersion = -1;
+
+export async function loadGlobalActiveFeatures(version: number): Promise<Set<string>> {
+    if (version !== _currentFeatureVersion) {
+        const features = await prisma.iamFeature.findMany({
+            where: { isActive: true },
+            select: { featureKey: true },
+        });
+        _globalActiveFeatures = new Set(features.map((f) => normalizeFeatureKey(f.featureKey)));
+        _currentFeatureVersion = version;
+    }
+    return _globalActiveFeatures;
+}
+
+// ─────────────────────────────────────────────
+// USER ACCESS CONTEXT
+// ─────────────────────────────────────────────
+
+export async function getUserAccessContext(userId: string, sessionUser?: any, forceFresh = false): Promise<UserAccessContext> {
+    if (sessionUser?.rbac && !forceFresh) {
+        // Safe Fallback: if version is corrupted, fetch from DB
+        if (!sessionUser.rbac.version) {
+            return await _getUserAccessContextDB(userId);
         }
+        const featurePerms = sessionUser.rbac.featurePermissions || {};
+        // Maximum Return Speed: TRUST session context completely by default
+        return {
+            userId: sessionUser.id,
+            role: sessionUser.role,
+            isExternal: sessionUser.isExternal || false,
+            externalAccessType: sessionUser.externalAccessType,
+            featurePermissions: featurePerms,
+            allowedCategories: sessionUser.rbac.allowedCategories || [],
+            allowedEnvironments: sessionUser.rbac.allowedEnvironments || [],
+            allowedCredentialIds: sessionUser.rbac.allowedCredentialIds || [],
+            version: sessionUser.rbac.version,
+            activeFeatures: new Set(Object.keys(featurePerms))
+        } as UserAccessContext;
+    }
+
+    // Fallback ALWAYS safe
+    return await _getUserAccessContextDB(userId);
+}
+
+const _getUserAccessContextDB = cache(async (userId: string): Promise<UserAccessContext> => {
+    // 1. Load current rbacVersion for cache key
+    const settings = await prisma.systemSettings.findFirst({
+        select: { rbacVersion: true },
+    });
+    const rbacVersion = settings?.rbacVersion ?? 1;
+
+    // 2. Load global active features (version-based cache)
+    const activeFeatures = await loadGlobalActiveFeatures(rbacVersion);
+
+    // 3. Fetch user explicitly avoiding Prisma Cartesian joins
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
     });
 
     if (!user) {
-        return {
-            userId: userId,
-            role: 'GUEST',
-            allowedCategories: [],
-            allowedEnvironments: [],
-            permissions: {},
-            allowedCredentialIds: [],
-            isExternal: false
-        };
+        return emptyContext(userId, activeFeatures);
     }
 
-    if (user.role === 'ADMIN') {
-        return {
-            userId: user.id,
-            role: 'ADMIN',
-            allowedCategories: ['*'],
-            allowedEnvironments: ['*'],
-            permissions: {}, // Admins bypass detailed checks
-            allowedCredentialIds: ['*'], // Admin sees all
-            isExternal: false
-        };
-    }
+    // Fast multi-lookup to get policies without Cartesian explosion
+    const userGroups = await prisma.userGroupMapping.findMany({
+        where: { userId },
+        select: { groupId: true, scopedCategories: true, scopedEnvironments: true }
+    });
+    const groupIds = userGroups.map(g => g.groupId);
 
-    const context: UserAccessContext = {
+    const groupAccess = await prisma.userGroupAccess.findMany({
+        where: { userGroupId: { in: groupIds } },
+        select: { accessGroupId: true }
+    });
+    const accessGroupIds = groupAccess.map(a => a.accessGroupId);
+
+    const policies = accessGroupIds.length > 0 
+        ? await prisma.accessGroupPolicy.findMany({
+            where: { accessGroupId: { in: accessGroupIds } }
+        })
+        : [];
+
+    const isExternal = (user as any).isExternal || false;
+    const externalType = (user as any).externalAccessType;
+
+    const ctx: UserAccessContext = {
         userId: user.id,
         role: user.role,
+        featurePermissions: {},
+        activeFeatures,
         allowedCategories: [],
         allowedEnvironments: [],
-        permissions: {},
-        allowedCredentialIds: (user as any).allowedCredentialIds ? (user as any).allowedCredentialIds.split(',').filter(Boolean) : [],
-        isExternal: (user as any).isExternal || false
+        allowedCredentialIds: (user as any).allowedCredentialIds
+            ? (user as any).allowedCredentialIds.split(',').filter(Boolean)
+            : [],
+        isExternal,
+        externalAccessType: externalType,
+        version: rbacVersion,
     };
 
-    const isExternal = (user as any).isExternal;
-    const externalType = (user as any).externalAccessType; // VIEW, CREATE
+    // 4. Aggregate permissions across all groups (highest-wins per feature)
+    const allCategories = new Set<string>();
+    const allEnvironments = new Set<string>();
 
+    for (const groupMapping of userGroups) {
+        const scopeCats = groupMapping.scopedCategories
+            ? groupMapping.scopedCategories.split(',').filter(Boolean)
+            : ['*'];
+        const scopeEnvs = groupMapping.scopedEnvironments
+            ? groupMapping.scopedEnvironments.split(',').filter(Boolean)
+            : ['*'];
 
+        scopeCats.forEach((c) => allCategories.add(c));
+        scopeEnvs.forEach((e) => allEnvironments.add(e));
+    }
 
-    // Helper: Add permission to the map
-    const addPermission = (category: string, env: string, perm: string) => {
-        if (!context.permissions[category]) context.permissions[category] = {};
-        if (!context.permissions[category][env]) context.permissions[category][env] = new Set();
-        context.permissions[category][env].add(perm as Permission);
-    };
+    for (const policy of policies) {
+        if (!policy.featureKey) continue;
 
-    // Iterate through all groups and policies
-    for (const groupMapping of user.userGroups) {
-        for (const access of groupMapping.group.access) {
-            for (const policy of access.accessGroup.policies) {
-                const policyCat = policy.category || '*';
-                const policyEnv = policy.environment || '*';
+        const featureKey = normalizeFeatureKey(policy.featureKey);
+        const incomingPerm = policy.permission as FeaturePermission;
 
-                // Get Scopes from Mapping
-                let scopeCats = groupMapping.scopedCategories ? groupMapping.scopedCategories.split(',').filter(Boolean) : (isExternal ? [] : ['*']);
-                let scopeEnvs = groupMapping.scopedEnvironments ? groupMapping.scopedEnvironments.split(',').filter(Boolean) : (isExternal ? [] : ['*']);
+        if (!PERMISSION_HIERARCHY.includes(incomingPerm)) continue;
 
-                // SPECIAL OVERRIDE REMOVED: 
-                // To enforce the Principle of Least Privilege, External Vendors with no explicit
-                // scopes (Category/Environment) will strictly receive an empty scope array ([]).
-                // They will ONLY be able to access specific allowedCredentialIds explicitly shared with them.
+        // Highest-wins aggregation
+        const currentRank = PERMISSION_HIERARCHY.indexOf(
+            ctx.featurePermissions[featureKey] ?? 'NO_ACCESS'
+        );
+        const incomingRank = PERMISSION_HIERARCHY.indexOf(incomingPerm);
 
-                const intersect = (pol: string, scopes: string[]) => {
-                    if (scopes.includes('*')) return pol;
-                    if (pol === '*') return scopes;
-                    if (scopes.includes(pol)) return pol;
-                    return null;
-                };
-
-                const effectiveCat = intersect(policyCat, scopeCats);
-                const effectiveEnv = intersect(policyEnv, scopeEnvs);
-
-                if (effectiveCat && effectiveEnv) {
-                    const finalCats = Array.isArray(effectiveCat) ? effectiveCat : [effectiveCat];
-                    const finalEnvs = Array.isArray(effectiveEnv) ? effectiveEnv : [effectiveEnv];
-
-                    for (const c of finalCats) {
-                        for (const e of finalEnvs) {
-                            let permToGrant = policy.permission;
-
-                            // Enforce External Type Limits
-                            if (isExternal) {
-                                if (externalType === 'VIEW' && !['READ', 'DOWNLOAD'].includes(permToGrant)) {
-                                    continue;
-                                }
-                                if (externalType === 'CREATE' && !['READ', 'DOWNLOAD', 'CREATE'].includes(permToGrant)) {
-                                    continue;
-                                }
-                            }
-
-                            addPermission(c, e, permToGrant);
-
-                            if (c === '*' && !context.allowedCategories.includes('*')) context.allowedCategories.push('*');
-                            else if (c !== '*' && !context.allowedCategories.includes(c)) context.allowedCategories.push(c);
-
-                            if (e === '*' && !context.allowedEnvironments.includes('*')) context.allowedEnvironments.push('*');
-                            else if (e !== '*' && !context.allowedEnvironments.includes(e)) context.allowedEnvironments.push(e);
-                        }
-                    }
-                }
-            }
+        if (incomingRank > currentRank) {
+            ctx.featurePermissions[featureKey] = incomingPerm;
         }
     }
 
-    // SPECIAL: Inject direct Creation Scopes for External Vendors (if no matching group policies)
-    if (isExternal && externalType === 'CREATE') {
-        const directCats = (user as any).allowedCategories ? (user as any).allowedCategories.split(',').filter(Boolean) : [];
-        const directEnvs = (user as any).allowedEnvironments ? (user as any).allowedEnvironments.split(',').filter(Boolean) : [];
+    // Deduplicated scope UNION
+    ctx.allowedCategories = Array.from(allCategories);
+    ctx.allowedEnvironments = Array.from(allEnvironments);
 
-
-
-        for (const cat of directCats) {
-            for (const env of directEnvs) {
-                // External creates get 'CREATE' and 'READ' on their scope
-                addPermission(cat, env, 'CREATE');
-                addPermission(cat, env, 'READ');
-
-                if (!context.allowedCategories.includes(cat)) context.allowedCategories.push(cat);
-                if (!context.allowedEnvironments.includes(env)) context.allowedEnvironments.push(env);
-            }
+    // 5. Default NO_ACCESS fill — every active feature gets an explicit entry
+    for (const featureKey of activeFeatures) {
+        if (!ctx.featurePermissions[featureKey]) {
+            ctx.featurePermissions[featureKey] = 'NO_ACCESS';
         }
     }
 
+    return ctx;
+});
 
-
-    return context;
+function emptyContext(userId: string, activeFeatures: Set<string>): UserAccessContext {
+    const featurePermissions: Record<string, FeaturePermission> = {};
+    for (const key of activeFeatures) {
+        featurePermissions[normalizeFeatureKey(key)] = 'NO_ACCESS';
+    }
+    return {
+        userId,
+        role: 'GUEST',
+        featurePermissions,
+        activeFeatures,
+        allowedCategories: [],
+        allowedEnvironments: [],
+        allowedCredentialIds: [],
+        isExternal: false,
+        version: 0,
+    };
 }
 
-/**
- * Checks if a user has the specific permission for a target resource.
- */
+// ─────────────────────────────────────────────
+// SAFE WRAPPER (for server actions)
+// ─────────────────────────────────────────────
+
+export async function getSafeUserContext(userId: string): Promise<UserAccessContext> {
+    try {
+        return await getUserAccessContext(userId);
+    } catch (err) {
+        console.error('[RBAC] getUserAccessContext failed:', err);
+        throw new Error('INTERNAL_ERROR');
+    }
+}
+
+// ─────────────────────────────────────────────
+// canAccess — core evaluator
+// ─────────────────────────────────────────────
+
+// Throttle map for misconfiguration logs
+const _misconfigThrottle = new Map<string, number>();
+
+function logMisconfigurationThrottled(userId: string, featureKey: string, reason: string) {
+    const key = `${userId}:${featureKey}:${reason}`;
+    const last = _misconfigThrottle.get(key) ?? 0;
+    if (Date.now() - last > 60_000) {
+        console.warn(`[RBAC_MISCONFIG] userId=${userId} feature=${featureKey} reason=${reason}`);
+        _misconfigThrottle.set(key, Date.now());
+    }
+}
+
 export function canAccess(
-    context: UserAccessContext,
-    targetCategory: string | null,
-    targetEnvironment: string | null,
-    requiredPermission: Permission,
-    credentialId?: string
+    ctx: UserAccessContext,
+    featureKey: string,
+    action: FeatureAction
 ): boolean {
-    if (context.role === 'ADMIN') return true;
+    const normalizedKey = normalizeFeatureKey(featureKey);
 
-    // Direct Credential Check (Granular Sharing)
-    if (credentialId && context.allowedCredentialIds.includes(credentialId)) {
-        // External vendors: STRICTLY READ-ONLY for shared items.
-        // Even if their "Access Type" is CREATE, they cannot edit/delete shared specific items.
-        // They can only edit/delete items they created (checked via isOwner in caller).
-        if (context.isExternal) {
-            // Allow VIEW, READ, DOWNLOAD. Deny EDIT, DELETE, CREATE (on this specific item logic).
-            if (['READ', 'DOWNLOAD'].includes(requiredPermission)) {
-                return true;
-            }
-            return false;
-        }
-
-        // Internal users: Implicitly allow access if ID is in allowed list.
-        // TODO: Refine this for Internal if we want granular ID assignment to imply specific permissions.
-        // For now, assuming granular assignment implies generalized access.
-        return true;
+    // Guard 1: Invalid action
+    if (!VALID_ACTIONS.includes(action)) {
+        logMisconfigurationThrottled(ctx.userId, normalizedKey, `Invalid action: ${action}`);
+        return false;
     }
 
-    const cat = targetCategory || 'Uncategorized';
-    const env = targetEnvironment || 'General';
+    // Guard 2: Unknown feature key (not in registry)
+    if (!ctx.activeFeatures.has(normalizedKey)) {
+        logMisconfigurationThrottled(ctx.userId, normalizedKey, 'Unknown or inactive featureKey');
+        return false;
+    }
 
-    const hasPerm = (set: Set<Permission> | undefined) => {
-        if (!set) return false;
-        return set.has(requiredPermission) || set.has('ADMIN');
+    // Guard 3: Get resolved permission (guaranteed by default fill, but defensive)
+    const permission = ctx.featurePermissions[normalizedKey];
+    if (!permission) {
+        logMisconfigurationThrottled(ctx.userId, normalizedKey, 'No permission entry found');
+        return false;
+    }
+
+    // Guard 4: NO_ACCESS = deny everything
+    if (permission === 'NO_ACCESS') return false;
+
+    // Guard 5: ALL_SCOPED scope validation
+    if (permission === 'ALL_SCOPED') {
+        if (ctx.allowedCategories.length === 0 && ctx.allowedEnvironments.length === 0) {
+            logMisconfigurationThrottled(
+                ctx.userId,
+                featureKey,
+                'ALL_SCOPED with empty scope → NO_ACCESS'
+            );
+            return false;
+        }
+    }
+
+    // Action matrix enforcement
+    switch (action) {
+        case 'VIEW':
+            // ALL, ALL_SCOPED, VIEW, VIEW_MASKED all allow viewing
+            return ['ALL', 'ALL_SCOPED', 'VIEW', 'VIEW_MASKED'].includes(permission);
+
+        case 'CREATE':
+        case 'EDIT':
+        case 'DELETE':
+            // Only ALL and ALL_SCOPED allow mutations
+            return ['ALL', 'ALL_SCOPED'].includes(permission);
+
+        case 'UNMASK':
+            // VIEW_MASKED NEVER allows unmask — hard boundary
+            // Only ALL, ALL_SCOPED, and VIEW allow unmask
+            return ['ALL', 'ALL_SCOPED', 'VIEW'].includes(permission);
+
+        default:
+            return false;
+    }
+}
+
+// ─────────────────────────────────────────────
+// HELPER FUNCTIONS
+// ─────────────────────────────────────────────
+
+export function canView(ctx: UserAccessContext, featureKey: string): boolean {
+    return canAccess(ctx, featureKey, 'VIEW');
+}
+
+export function canEdit(ctx: UserAccessContext, featureKey: string): boolean {
+    return canAccess(ctx, featureKey, 'EDIT');
+}
+
+export function canDelete(ctx: UserAccessContext, featureKey: string): boolean {
+    return canAccess(ctx, featureKey, 'DELETE');
+}
+
+export function canCreate(ctx: UserAccessContext, featureKey: string): boolean {
+    return canAccess(ctx, featureKey, 'CREATE');
+}
+
+export function canUnmask(ctx: UserAccessContext, featureKey: string): boolean {
+    return canAccess(ctx, featureKey, 'UNMASK');
+}
+
+// ─────────────────────────────────────────────
+// SCOPE HELPERS
+// ─────────────────────────────────────────────
+
+/**
+ * Returns a Prisma WHERE clause for scope filtering.
+ * ONLY applies filters when permission is ALL_SCOPED.
+ * ALL permission = global, no filters applied regardless of scope arrays.
+ */
+export function getScopeFilter(
+    ctx: UserAccessContext,
+    featureKey: string
+): { category?: { in: string[] }; environment?: { in: string[] } } {
+    const normalizedKey = normalizeFeatureKey(featureKey);
+    const permission = ctx.featurePermissions[normalizedKey];
+    const isScoped = permission === 'ALL_SCOPED';
+
+    if (!isScoped) return {}; // ALL = global, no filter
+
+    return {
+        ...(ctx.allowedCategories.length > 0 && {
+            category: { in: ctx.allowedCategories },
+        }),
+        ...(ctx.allowedEnvironments.length > 0 && {
+            environment: { in: ctx.allowedEnvironments },
+        }),
     };
+}
 
-    if (context.permissions[cat]?.[env] && hasPerm(context.permissions[cat][env])) return true;
-    if (context.permissions[cat]?.['*'] && hasPerm(context.permissions[cat]['*'])) return true;
-    if (context.permissions['*']?.[env] && hasPerm(context.permissions['*'][env])) return true;
-    if (context.permissions['*']?.['*'] && hasPerm(context.permissions['*']['*'])) return true;
+// ─────────────────────────────────────────────
+// STANDARD FORBIDDEN ERROR
+// ─────────────────────────────────────────────
 
-    return false;
+export const FORBIDDEN_RESPONSE = {
+    success: false,
+    error: {
+        code: 'FORBIDDEN',
+        message: 'Access denied',
+        status: 403,
+    },
+};
+
+export const UNAUTHORIZED_RESPONSE = {
+    success: false,
+    error: {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required',
+        status: 401,
+    },
+};
+
+export function forbiddenError(): Error {
+    const err = new Error('Access denied');
+    (err as any).code = 'FORBIDDEN';
+    (err as any).status = 403;
+    return err;
+}
+
+export function internalError(): Error {
+    const err = new Error('Internal server error');
+    (err as any).code = 'INTERNAL_ERROR';
+    (err as any).status = 500;
+    return err;
 }

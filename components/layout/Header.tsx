@@ -1,18 +1,75 @@
 "use client";
 
-import React, { useState } from 'react';
+// Inline formatRole — no rbac.ts dependency
+function formatRole(role?: string): string {
+    if (!role) return 'User';
+    return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Search, Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { clsx } from 'clsx';
 import { useLayout } from './LayoutContext';
 import { Menu } from 'lucide-react';
 
-export function Header({ settings, user, publicView = false }: { settings?: any, user?: any, publicView?: boolean }) {
+export function Header({ settings, user, publicView = false, showSettings = false }: { settings?: any, user?: any, publicView?: boolean, showSettings?: boolean }) {
     const { data: session } = useSession();
     const router = useRouter();
+    const pathname = usePathname();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // ── Dynamic Release Notes from DB ──
+    const [notifications, setNotifications] = useState<{ id: string; text: string; tag: string; version: string; isNew: boolean }[]>([]);
+    const [hasUnread, setHasUnread] = useState(false);
+
+    useEffect(() => {
+        async function loadNotes() {
+            try {
+                const { getReleaseNotes } = await import('@/lib/actions/release-notes');
+                const payload = await getReleaseNotes();
+                setNotifications(
+                    payload.notes.map(n => ({
+                        id: n.id,
+                        text: n.title,
+                        tag: n.tag,
+                        version: n.version,
+                        isNew: payload.hasUnread,
+                    }))
+                );
+                setHasUnread(payload.hasUnread);
+            } catch (e) {
+                // Silently fail — notifications are non-critical
+            }
+        }
+        loadNotes();
+    }, []);
+
+    const profileRef = useRef<HTMLDivElement>(null);
+    const notificationRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
+            }
+            if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+                setIsNotificationOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Clear search on path change (navigated away)
+    useEffect(() => {
+        setSearchQuery('');
+    }, [pathname]);
 
     // Conditional hook usage or mock? useLayout throws if not in provider. 
     // We will ensure LayoutProvider is used in public layout too.
@@ -86,11 +143,13 @@ export function Header({ settings, user, publicView = false }: { settings?: any,
                             </div>
                             <input
                                 type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 focus:outline-none text-black focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
                                 placeholder="Search users, credentials..."
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        router.push(`/credentials?q=${encodeURIComponent(e.currentTarget.value)}`);
+                                    if (e.key === 'Enter' && searchQuery.trim()) {
+                                        router.push(`/credentials?q=${encodeURIComponent(searchQuery.trim())}`);
                                     }
                                 }}
                             />
@@ -102,12 +161,66 @@ export function Header({ settings, user, publicView = false }: { settings?: any,
                 <div className="flex items-center gap-4 flex-shrink-0">
                     {!publicView && (
                         <>
-                            <button className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-                                <Bell className="h-5 w-5" />
-                            </button>
+                            {/* Notifications Dropdown */}
+                            <div className="relative" ref={notificationRef}>
+                                <button
+                                    onClick={async () => {
+                                        setIsNotificationOpen(!isNotificationOpen);
+                                        if (!isNotificationOpen && hasUnread) {
+                                            setHasUnread(false);
+                                            setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+                                            try {
+                                                const { markNotificationsRead } = await import('@/lib/actions/release-notes');
+                                                await markNotificationsRead();
+                                            } catch (e) {
+                                                // Non-critical
+                                            }
+                                        }
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 relative focus:outline-none"
+                                >
+                                    <Bell className="h-5 w-5" />
+                                    {hasUnread && (
+                                        <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+                                    )}
+                                </button>
+
+                                {isNotificationOpen && (
+                                    <div className="absolute right-0 mt-2 w-96 rounded-md shadow-lg py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 animate-in fade-in zoom-in-95 duration-100 z-50">
+                                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-600 flex items-center justify-between">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">What&apos;s New</p>
+                                            {notifications.length > 0 && (
+                                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{notifications[0]?.version}</span>
+                                            )}
+                                        </div>
+                                        <div className="max-h-80 overflow-y-auto">
+                                            {notifications.length > 0 ? (
+                                                notifications.map(notification => (
+                                                    <div key={notification.id} className="px-4 py-3 border-b border-gray-50 dark:border-gray-600 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-600/50">
+                                                        <div className="flex items-start gap-2">
+                                                            <span className={`mt-0.5 shrink-0 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                                                                notification.tag === 'Fix' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' :
+                                                                notification.tag === 'Feature' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' :
+                                                                notification.tag === 'Enhancement' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
+                                                                notification.tag === 'Performance' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' :
+                                                                'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
+                                                            }`}>{notification.tag}</span>
+                                                            <p className="text-sm text-gray-700 dark:text-gray-200">{notification.text}</p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                                    No release notes yet
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* User Profile Dropdown */}
-                            <div className="relative">
+                            <div className="relative" ref={profileRef}>
                                 <button
                                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                                     className="flex items-center gap-2 focus:outline-none"
@@ -129,11 +242,14 @@ export function Header({ settings, user, publicView = false }: { settings?: any,
                                         <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-600">
                                             <p className="text-xs text-gray-500 dark:text-gray-400">Signed in as</p>
                                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userEmail}</p>
+                                            <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-semibold rounded-full dark:bg-blue-900 dark:text-blue-200">
+                                                {formatRole(displayUser?.role)}
+                                            </span>
                                         </div>
                                         <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
                                             <User className="h-4 w-4" /> Profile
                                         </Link>
-                                        {displayUser?.role !== 'EXTERNAL' && (
+                                        {showSettings && (
                                             <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
                                                 <Settings className="h-4 w-4" /> Settings
                                             </Link>

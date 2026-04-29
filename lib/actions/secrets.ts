@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/actions/audit';
 import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { sendOneTimeSecretEmail } from '@/lib/email';
+import { getUserAccessContext, canAccess } from '@/lib/iam/permissions';
 
 export interface CreateSecretInput {
     secretData: string;
@@ -23,11 +24,19 @@ export interface CreateSecretInput {
  */
 export async function createOneTimeSecret(input: CreateSecretInput) {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
+    if (!session?.user || session.user.isActive === false) {
+        return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session invalid' } };
+    }
 
     // Block External Users from creating One-Time Secrets
     if (session.user.role === 'EXTERNAL') {
-        return { error: 'Unauthorized: External users cannot create one-time secrets.' };
+        return { success: false, error: { code: 'FORBIDDEN', message: 'External users cannot create one-time secrets.' } };
+    }
+
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const accessContext = await getUserAccessContext(session.user.id, session.user);
+    if (!canAccess(accessContext, 'ONE_TIME_SECRETS', 'CREATE')) {
+        return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
     }
 
     const { secretData, name, maxViews, ttlHours, sharedVia, recipientEmail, recipientMessage } = input;
@@ -79,28 +88,37 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
  * Admins/Super Admins can see ALL secrets (but maybe not decrypt them unless they use the token flow, 
  * but dashboard requirement says "View all created one-time secrets... See status... Revoke").
  */
-export async function getMySecrets() {
+export async function getMySecrets(page = 1, limit = 10) {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
-
-    if (session.user.role === 'EXTERNAL') {
-        return { error: 'Unauthorized' };
+    if (!session?.user || session.user.isActive === false) {
+        return { data: [], total: 0, page: 1, totalPages: 0, permissions: { CREATE: false, DELETE: false, VIEW: false }, error: { code: 'UNAUTHORIZED' } };
     }
 
-    const isAdmin = session.user.role === 'ADMIN';
+    if (session.user.role === 'EXTERNAL') {
+        return { data: [], total: 0, page: 1, totalPages: 0, permissions: { CREATE: false, DELETE: false, VIEW: false }, error: { code: 'FORBIDDEN' } };
+    }
 
-    const where = isAdmin ? {} : { createdById: session.user.id };
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const accessContext = await getUserAccessContext(session.user.id, session.user);
+    const hasGlobalView = canAccess(accessContext, 'ONE_TIME_SECRETS', 'VIEW') || accessContext.role === 'ADMIN';
+
+    const where = hasGlobalView ? {} : { createdById: session.user.id };
 
     try {
-        const secrets = await prisma.oneTimeSecret.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                createdBy: {
-                    select: { name: true, email: true }
+        const [secrets, total] = await Promise.all([
+            prisma.oneTimeSecret.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+                include: {
+                    createdBy: {
+                        select: { name: true, email: true }
+                    }
                 }
-            }
-        });
+            }),
+            prisma.oneTimeSecret.count({ where })
+        ]);
 
         // Lazy expire check for the dashboard list
         const now = new Date();
@@ -124,10 +142,20 @@ export async function getMySecrets() {
             secretsToExpire.forEach((s) => s.status = 'EXPIRED');
         }
 
-        return secrets;
+        return {
+            data: secrets,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            permissions: {
+                CREATE: canAccess(accessContext, 'ONE_TIME_SECRETS', 'CREATE'),
+                DELETE: canAccess(accessContext, 'ADMIN_OTS_CLEANUP', 'DELETE'),
+                VIEW: hasGlobalView
+            }
+        };
     } catch (error) {
 
-        return [];
+        return { data: [], total: 0, page: 1, totalPages: 0, permissions: { CREATE: false, DELETE: false, VIEW: false } };
     }
 }
 
@@ -136,16 +164,18 @@ export async function getMySecrets() {
  */
 export async function revokeSecret(secretId: string) {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
+    if (!session?.user || session.user.isActive === false) {
+        return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session invalid' } };
+    }
 
     try {
         const secret = await prisma.oneTimeSecret.findUnique({ where: { id: secretId } });
-        if (!secret) return { error: 'Secret not found' };
+        if (!secret) return { success: false, error: { code: 'NOT_FOUND', message: 'Secret not found' } };
 
         // Only owner or Admin can revoke
         const isAdmin = session.user.role === 'ADMIN';
         if (secret.createdById !== session.user.id && !isAdmin) {
-            return { error: 'Unauthorized' };
+            return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
         }
 
         await prisma.oneTimeSecret.update({
@@ -318,17 +348,24 @@ export async function revealSecret(token: string) {
  */
 export async function deleteExpiredSecrets() {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
+    if (!session?.user || session.user.isActive === false) return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session invalid' } };
 
-    const isAdmin = session.user.role === 'ADMIN';
+    const ctx = await getUserAccessContext(session.user.id, session.user);
+    if (!canAccess(ctx, 'ADMIN_OTS_CLEANUP', 'DELETE')) {
+        return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
+    }
 
     // Criteria: Status is EXPIRED or REVOKED.
     // AND (if not admin) createdById is me.
+    // But since ADMIN_OTS_CLEANUP is scoped explicitly via RBAC matrix:
+    // ALL handles universal cleanup.
+    // ALL_SCOPED could be mapped. In our formalized logic Scoped Admin has ALL.
     const where: any = {
         status: { in: ['EXPIRED', 'REVOKED'] }
     };
 
-    if (!isAdmin) {
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+        // Fallback or explicit mapping protection if ever exposed to lesser roles natively
         where.createdById = session.user.id;
     }
 
@@ -338,8 +375,8 @@ export async function deleteExpiredSecrets() {
         });
 
         await logAudit({
-            action: 'DELETE_EXPIRED_SECRETS',
-            details: `Cleaned up ${result.count} expired/revoked secrets`,
+            action: 'OTS_CLEANUP',
+            details: `Cleaned up ${result.count} expired/revoked secrets systematically`,
             userId: session.user.id
         });
 

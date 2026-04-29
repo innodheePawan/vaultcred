@@ -66,7 +66,7 @@ export function LicenseWarningBanner({ licenseInfo }: LicenseWarningBannerProps)
             <span className={`text-sm font-semibold ${bannerConfig.textClass}`}>
                 {bannerConfig.message}
             </span>
-            <a href="/activation" className="px-3 py-1 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600 rounded text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+            <a href="/settings/license" className="px-3 py-1 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600 rounded text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                 Renew Now
             </a>
         </div>

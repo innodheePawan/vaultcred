@@ -1,5 +1,7 @@
 "use client";
 
+// Note: hasAccess (rbac.ts) removed — sidebar uses server-resolved featurePermissions prop
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -45,9 +47,9 @@ const MENU_ITEMS: MenuItem[] = [
         icon: <Shield className="w-5 h-5" />,
         children: [
             { title: 'Users & Groups', href: '/admin/users' },
-            { title: 'Audit Logs', href: '/admin/audit' },
-            { title: 'Security Events', href: '/admin/security-events' },
+            { title: 'API Clients', href: '/admin/api-clients' },
             { title: 'Bulk Import', href: '/credentials/bulk-import' },
+            { title: 'Activity Center', href: '/admin/activity-center' },
         ],
     },
     {
@@ -57,33 +59,61 @@ const MENU_ITEMS: MenuItem[] = [
     },
 ];
 
-export function Sidebar({ className, role: initialRole, showSettings, showAdminMenu }: { className?: string; role?: string; showSettings?: boolean; showAdminMenu?: boolean }) {
+export function Sidebar({
+    className,
+    role: initialRole,
+    showSettings,
+    showAdminMenu,
+    featurePermissions = {},
+}: {
+    className?: string;
+    role?: string;
+    showSettings?: boolean;
+    showAdminMenu?: boolean;
+    featurePermissions?: Record<string, string>;
+}) {
     const [expandedItems, setExpandedItems] = useState<string[]>(['Credentials', 'Admin']);
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const currentType = searchParams.get('type');
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const { isCollapsed } = useLayout();
 
     // Use server-passed role (immediate) or client-side session role (fallback/update)
     const userRole = initialRole || session?.user?.role;
     const isExternal = (session?.user as any)?.isExternal ?? false;
 
-    const filteredItems = MENU_ITEMS.filter(item => {
-        // If external, ONLY show Credentials
-        if (isExternal) {
-            return item.title === 'Credentials';
-        }
+    // Helper: returns true if the feature has any access (not NO_ACCESS)
+    const hasFeatureAccess = (featureKey: string) => {
+        const perm = featurePermissions[featureKey];
+        return !!perm && perm !== 'NO_ACCESS';
+    };
 
-        if (item.title === 'Admin') {
-            // Show if explicit prop is true OR if session role is ADMIN (fallback)
-            return showAdminMenu || (userRole === 'ADMIN');
-        }
-        if (item.title === 'Settings') {
-            // Show if explicit prop is true OR if session role is ADMIN (fallback)
-            return showSettings || (userRole === 'ADMIN');
-        }
+    const filteredItems = MENU_ITEMS.filter(item => {
+        // External users: only show Credentials
+        if (isExternal) return item.title === 'Credentials';
+
+        if (item.title === 'Admin')     return showAdminMenu;
+        if (item.title === 'Settings')  return showSettings;
+        if (item.title === 'One-Time Secrets') return hasFeatureAccess('ONE_TIME_SECRETS');
         return true;
+    }).map(item => {
+        if (item.title === 'Admin' && item.children) {
+            const children = item.children.filter(child => {
+                if (child.title === 'Users & Groups')  return hasFeatureAccess('ADMIN_USERS_GROUPS');
+                if (child.title === 'API Clients')     return hasFeatureAccess('ADMIN_API_CLIENTS');
+                if (child.title === 'Bulk Import')     return hasFeatureAccess('ADMIN_BULK_IMPORT');
+                if (child.title === 'Activity Center') return [
+                    'ACTIVITY_SYSTEM_LOG',
+                    'ACTIVITY_API_LOG',
+                    'ACTIVITY_IP_BLOCK',
+                    'ACTIVITY_LOGIN',
+                ].some(hasFeatureAccess);
+                return true;
+            });
+            return { ...item, children };
+        }
+        return item;
     });
 
     const toggleExpand = (title: string) => {
@@ -116,6 +146,25 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
 
         return false;
     };
+
+    if (status === 'loading') {
+        return (
+            <aside className={clsx(
+                "bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full z-30 relative transition-all duration-300",
+                isCollapsed ? "w-20" : "w-64",
+                className
+            )}>
+                <div className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex gap-3 items-center px-3 py-2 animate-pulse">
+                            <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-md shrink-0"></div>
+                            {!isCollapsed && <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md w-3/4"></div>}
+                        </div>
+                    ))}
+                </div>
+            </aside>
+        );
+    }
 
     return (
         <aside className={clsx(
@@ -155,8 +204,6 @@ export function Sidebar({ className, role: initialRole, showSettings, showAdminM
                                         <div className="mt-1 ml-9 space-y-1 border-l-2 border-gray-100 dark:border-gray-700 pl-2">
                                             {item.children.map((child) => {
                                                 // Role-based visibility for specific child items
-                                                if (child.title === 'Security Events' && userRole !== 'ADMIN') return null;
-
                                                 return (
                                                     <Link
                                                         key={child.title}

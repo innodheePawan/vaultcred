@@ -16,7 +16,7 @@ export default function SettingsNav({ role }: { role?: string }) {
     const pathname = usePathname();
 
     const visibleTabs = [...tabs];
-    if (role === 'ADMIN') {
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
         visibleTabs.push({ name: 'License', href: '/settings/license', icon: Key });
     }
 

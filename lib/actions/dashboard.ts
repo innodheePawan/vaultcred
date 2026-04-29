@@ -26,12 +26,12 @@ export type DashboardStats = {
 
 export async function getDashboardStats(): Promise<DashboardStats> {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user || session.user.isActive === false) {
         throw new Error('Unauthorized');
     }
 
     const userId = session.user.id!;
-    const accessContext = await getUserAccessContext(userId);
+    const accessContext = await getUserAccessContext(userId, session.user);
     const now = new Date();
     const nearFuture = new Date();
     nearFuture.setDate(now.getDate() + 60);
@@ -67,30 +67,32 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         AND: []
     };
 
-    if (accessContext.role !== 'ADMIN') {
-        const orConditions: any[] = [];
+    const permission = accessContext.featurePermissions?.['CREDENTIALS'];
+    const isGlobal = permission === 'ALL';
+    const isScoped = permission === 'ALL_SCOPED';
+    const hasAnyAccess = permission && permission !== 'NO_ACCESS';
 
-        // Scope based
-        if (!accessContext.allowedCategories.includes('*') || !accessContext.allowedEnvironments.includes('*')) {
-            const scope: any = {};
-            if (!accessContext.allowedCategories.includes('*')) scope.category = { in: accessContext.allowedCategories };
-            if (!accessContext.allowedEnvironments.includes('*')) scope.environment = { in: accessContext.allowedEnvironments };
-            orConditions.push(scope);
-        } else if (accessContext.allowedCategories.includes('*') && accessContext.allowedEnvironments.includes('*')) {
-            // If they have all categories/environments, no extra filter needed for scope
-            // but we'll handle below
-        }
+    if (accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN') {
+        if (isGlobal) {
+            // Can see all shared
+        } else if (hasAnyAccess) {
+            const cats = accessContext.allowedCategories || [];
+            const envs = accessContext.allowedEnvironments || [];
+            
+            const scopeCondition: any = {};
+            if (!cats.includes('*')) scopeCondition.category = { in: cats };
+            if (!envs.includes('*')) scopeCondition.environment = { in: envs };
 
-        // Granular based
-        if (accessContext.allowedCredentialIds.length > 0) {
-            orConditions.push({ id: { in: accessContext.allowedCredentialIds } });
-        }
+            const visibilityOr: any[] = [scopeCondition];
 
-        if (orConditions.length > 0) {
-            sharedWhere.OR = orConditions;
-        } else if (!accessContext.allowedCategories.includes('*') || !accessContext.allowedEnvironments.includes('*')) {
-            // No direct creds and no global scope - restricted
-            sharedWhere.OR = [{ category: 'none' }]; // effectively none
+            if (accessContext.allowedCredentialIds && accessContext.allowedCredentialIds.length > 0) {
+                visibilityOr.push({ id: { in: accessContext.allowedCredentialIds } });
+            }
+
+            sharedWhere.AND = [{ OR: visibilityOr }];
+        } else {
+            // NO ACCESS
+            sharedWhere.id = 'none';
         }
     }
 

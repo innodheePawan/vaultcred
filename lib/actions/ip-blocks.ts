@@ -1,21 +1,47 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/actions/audit';
 import { revalidatePath } from 'next/cache';
+import { getSafeUserContext, canAccess, canEdit, forbiddenError } from '@/lib/iam/permissions';
+import { logForbiddenThrottled } from '@/lib/iam/authorize';
 
 /**
  * Fetch all IP security records.
  * Restricted to Super Admins only.
  */
-export async function getIpSecurityRecords() {
+export async function getIpSecurityRecords(page = 1, limit = 50, startDate?: string, endDate?: string, search?: string) {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
-        throw new Error('Unauthorized');
+    if (!session?.user?.id) throw forbiddenError();
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canAccess(ctx, 'FEATURE:ACTIVITY_IP_BLOCK', 'VIEW')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_IP_BLOCK', 'VIEW');
+        throw forbiddenError();
     }
 
     try {
+        const skip = (page - 1) * limit;
+        
+        const conditions: Prisma.Sql[] = [];
+        if (startDate) {
+            conditions.push(Prisma.sql`last_block_at >= ${new Date(startDate)}`);
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            conditions.push(Prisma.sql`last_block_at <= ${end}`);
+        }
+        if (search) {
+            conditions.push(Prisma.sql`ip_address LIKE ${'%' + search + '%'}`);
+        }
+        
+        const whereClause = conditions.length > 0 
+            ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}` 
+            : Prisma.empty;
+
         // Use raw SQL to fetch from security_ip_blocks for robustness against stale Prisma client
         const records: any[] = await prisma.$queryRaw`
             SELECT 
@@ -29,13 +55,22 @@ export async function getIpSecurityRecords() {
                 is_permanent_block as isPermanentBlock,
                 updated_at as updatedAt
             FROM security_ip_blocks
+            ${whereClause}
             ORDER BY last_block_at DESC, updated_at DESC
+            LIMIT ${limit} OFFSET ${skip}
         `;
 
-        return records;
-    } catch (error) {
+        const totalRes: any[] = await prisma.$queryRaw`SELECT COUNT(*) as c FROM security_ip_blocks ${whereClause}`;
+        const total = Number(totalRes[0].c || 0);
 
-        return [];
+        return {
+            data: records,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        };
+    } catch (error) {
+        return { data: [], total: 0, page: 1, totalPages: 0 };
     }
 }
 
@@ -45,8 +80,12 @@ export async function getIpSecurityRecords() {
  */
 export async function unblockIp(ipAddress: string) {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
-        throw new Error('Unauthorized');
+    if (!session?.user?.id) throw forbiddenError();
+
+    const ctx = await getSafeUserContext(session.user.id);
+    if (!canEdit(ctx, 'FEATURE:ACTIVITY_IP_BLOCK')) {
+        logForbiddenThrottled(session.user.id, 'FEATURE:ACTIVITY_IP_BLOCK', 'EDIT');
+        throw forbiddenError();
     }
 
     try {

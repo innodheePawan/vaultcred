@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import SettingsNav from '@/components/admin/settings/SettingsNav';
+import { getSafeUserContext, canAccess } from '@/lib/iam/permissions';
 
 export default async function SettingsLayout({
     children,
@@ -11,8 +12,11 @@ export default async function SettingsLayout({
     const session = await auth();
     if (!session?.user) redirect('/login');
 
-    // Only Admins can access system settings
-    if (session.user.role !== 'ADMIN') {
+    // Guard: only roles with VIEW+ on FEATURE:SETTINGS can access
+    const ctx = await getSafeUserContext(session.user.id);
+    const canViewSettings = canAccess(ctx, 'FEATURE:SETTINGS', 'VIEW');
+
+    if (!canViewSettings) {
         return (
             <div className="max-w-4xl mx-auto py-8 px-4">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>

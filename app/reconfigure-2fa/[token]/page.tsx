@@ -97,7 +97,7 @@ export default function Reconfigure2FAPage({ params }: Reconfigure2FAPageProps) 
                             className="w-full bg-indigo-600 hover:bg-indigo-700"
                             onClick={() => router.push('/profile')}
                         >
-                            Go to Profile to Setup 2FA
+                            Login to Setup 2FA
                         </Button>
                     ) : status === 'error' ? (
                         <Button

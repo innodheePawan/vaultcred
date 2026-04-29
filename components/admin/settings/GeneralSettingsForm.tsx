@@ -10,7 +10,7 @@ const initialState = {
     error: null,
 };
 
-export default function GeneralSettingsForm({ initialSettings }: { initialSettings: any }) {
+export default function GeneralSettingsForm({ initialSettings, canEdit = true }: { initialSettings: any, canEdit?: boolean }) {
     const [state, formAction, isPending] = useActionState(updateGeneralSettings, initialState as any);
     const [logoPreview, setLogoPreview] = useState<string | null>(initialSettings.logoUrl);
     const [removeLogo, setRemoveLogo] = useState(false);
@@ -68,7 +68,8 @@ export default function GeneralSettingsForm({ initialSettings }: { initialSettin
                         id="applicationName"
                         defaultValue={initialSettings.applicationName}
                         required
-                        className="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                        disabled={!canEdit}
+                        className="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
@@ -91,7 +92,8 @@ export default function GeneralSettingsForm({ initialSettings }: { initialSettin
                         id="companyName"
                         defaultValue={initialSettings.companyName || 'My Company'}
                         required
-                        className="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                        disabled={!canEdit}
+                        className="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
@@ -124,26 +126,32 @@ export default function GeneralSettingsForm({ initialSettings }: { initialSettin
                                 onChange={handleLogoChange}
                             />
                             <div className="flex gap-3">
-                                <label
-                                    htmlFor="logo"
-                                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                    <Upload className="w-4 h-4 mr-2" />
-                                    {logoPreview ? 'Change Logo' : 'Upload New Logo'}
-                                </label>
+                                {canEdit ? (
+                                    <>
+                                        <label
+                                            htmlFor="logo"
+                                            className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <Upload className="w-4 h-4 mr-2" />
+                                            {logoPreview ? 'Change Logo' : 'Upload New Logo'}
+                                        </label>
 
-                                {logoPreview && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                        onClick={() => {
-                                            setLogoPreview(null);
-                                            setRemoveLogo(true);
-                                        }}
-                                    >
-                                        Remove Logo
-                                    </Button>
+                                        {logoPreview && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                                onClick={() => {
+                                                    setLogoPreview(null);
+                                                    setRemoveLogo(true);
+                                                }}
+                                            >
+                                                Remove Logo
+                                            </Button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <span className="text-gray-500 text-sm italic">Logo modification restricted</span>
                                 )}
                             </div>
                             <input type="hidden" name="removeLogo" value={removeLogo ? 'true' : 'false'} />
@@ -155,16 +163,18 @@ export default function GeneralSettingsForm({ initialSettings }: { initialSettin
                 </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Saving...' : (
-                        <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Save Settings
-                        </>
-                    )}
-                </Button>
-            </div>
+            {canEdit && (
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                    <Button type="submit" disabled={isPending}>
+                        {isPending ? 'Saving...' : (
+                            <>
+                                <Save className="w-4 h-4 mr-2" />
+                                Save Settings
+                            </>
+                        )}
+                    </Button>
+                </div>
+            )}
         </form>
     );
 }

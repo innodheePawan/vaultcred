@@ -114,7 +114,7 @@ const toString = (buf: Buffer | null | undefined, encoding: 'utf-8' | 'base64' =
 
 export async function createCredential(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
+    if (!session?.user || session.user.isActive === false) return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session invalid' } };
 
     const rawData = Object.fromEntries(formData.entries());
     const validation = CredentialSchema.safeParse(rawData);
@@ -128,7 +128,7 @@ export async function createCredential(prevState: any, formData: FormData) {
 
     // RBAC: Enforce Creation Scopes
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const accessContext = await getUserAccessContext(session.user.id!);
+    const accessContext = await getUserAccessContext(session.user.id, session.user);
 
     // STRICT: Backend Safeguard for External View-Only
     const isExternal = (session.user as any).isExternal;
@@ -151,7 +151,7 @@ export async function createCredential(prevState: any, formData: FormData) {
             }
         }
 
-        if (accessContext.role !== 'ADMIN' && !canAccess(accessContext, data.category || null, data.environment || null, 'CREATE')) {
+        if (accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !canAccess(accessContext, 'CREDENTIALS', 'CREATE')) {
             return { error: 'Unauthorized: You do not have permission to create credentials here.' };
         }
     }
@@ -277,14 +277,16 @@ export async function getCredentials(params?: {
     scope?: string;
     sort?: string;
     order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
 }) {
     const session = await auth();
-    if (!session?.user) return [];
+    if (!session?.user) return { data: [], total: 0, page: 1, totalPages: 0 };
 
-    const { query, type: typeFilter, category, environment, expiry, scope, sort, order } = params || {};
+    const { query, type: typeFilter, category, environment, expiry, scope, sort, order, page = 1, limit = 10 } = params || {};
 
     // 1. Get User IAM Context
-    const accessContext = await getUserAccessContext(session.user.id!);
+    const accessContext = await getUserAccessContext(session.user.id, session.user);
 
 
     // 2. Build Permission Filters
@@ -302,7 +304,7 @@ export async function getCredentials(params?: {
         where.OR.push({ id: { in: accessContext.allowedCredentialIds } });
     }
 
-    if (accessContext.role === 'ADMIN') {
+    if (accessContext.role === 'ADMIN' || accessContext.role === 'SUPER_ADMIN') {
         // Admin sees all SHARED items
         where.OR.push({ isPersonal: false });
     } else if (accessContext.isExternal) {
@@ -313,40 +315,27 @@ export async function getCredentials(params?: {
         // They DO NOT see items based on "Scoping Permissions" (Category/Env).
         // That scope is effectively "Write-Only" or "Blind Create" permission in this context.
     } else {
-        // INTERNAL USER: Check RBAC for SHARED items
-        const orConditions: any[] = [];
-        const { permissions } = accessContext;
+        // INTERNAL USER: Check RBAC for SHARED items using new feature-based scope
+        const permission = accessContext.featurePermissions?.['CREDENTIALS'];
+        const isGlobal = permission === 'ALL';
+        const isScoped = permission === 'ALL_SCOPED';
+        const hasAnyAccess = permission && permission !== 'NO_ACCESS';
 
-        const hasSubstantiveAccess = (set?: Set<string>) => {
-            if (!set) return false;
-            return set.has('READ') || set.has('EDIT') || set.has('CREATE') || set.has('ADMIN') || set.has('AUDIT') || (set as any).has('DOWNLOAD');
-        };
-
-        if (hasSubstantiveAccess(permissions['*']?.['*'])) {
-            // Access to all SHARED (due to global permission)
+        if (isGlobal) {
+            // Full global access — see all shared
             where.OR.push({ isPersonal: false });
-        } else {
-            Object.keys(permissions).forEach(cat => {
-                Object.keys(permissions[cat]).forEach(env => {
-                    if (hasSubstantiveAccess(permissions[cat][env])) {
-                        const condition: any = {};
-                        if (cat !== '*') condition.category = cat;
-                        if (env !== '*') condition.environment = env;
-                        orConditions.push(condition);
-                    }
-                });
-            });
+        } else if (hasAnyAccess) {
+            // Scoped, View, View_Masked, Edit — filter by allowed categories/environments intersecting
+            const cats = accessContext.allowedCategories || [];
+            const envs = accessContext.allowedEnvironments || [];
 
-            if (orConditions.length > 0) {
-                where.OR.push({
-                    AND: [
-                        { isPersonal: false },
-                        { OR: orConditions }
-                    ]
-                });
-            }
+            const scopeCondition: any = { isPersonal: false };
+            if (!cats.includes('*')) scopeCondition.category = { in: cats };
+            if (!envs.includes('*')) scopeCondition.environment = { in: envs };
+
+            where.OR.push(scopeCondition);
         }
-    }
+    } // end of else (internal user)
 
     // 3. Apply Filters
     const finalWhere: any = {
@@ -404,17 +393,28 @@ export async function getCredentials(params?: {
     }
 
     try {
-        const credentials = await prisma.credentialMaster.findMany({
-            where: finalWhere,
-            orderBy,
-            include: {
-                createdBy: { select: { name: true, email: true } }
-            }
-        });
-        return credentials;
-    } catch (error) {
+        const skip = (page - 1) * limit;
+        const [credentials, total] = await Promise.all([
+            prisma.credentialMaster.findMany({
+                where: finalWhere,
+                orderBy,
+                skip,
+                take: limit,
+                include: {
+                    createdBy: { select: { name: true, email: true } }
+                }
+            }),
+            prisma.credentialMaster.count({ where: finalWhere })
+        ]);
 
-        return [];
+        return {
+            data: credentials,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        };
+    } catch (error) {
+        return { data: [], total: 0, page: 1, totalPages: 0 };
     }
 }
 
@@ -439,17 +439,15 @@ export async function getCredentialById(id: string) {
     if (!credential) return null;
 
     // IAM Access Check
-    const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'READ', credential.id);
-
-    // Allow creator to always access (optional, but typical)
+    const accessContext = await getUserAccessContext(session.user.id, session.user);
+    const hasAccess = canAccess(accessContext, 'CREDENTIALS', 'VIEW');
     const isOwner = credential.createdById === session.user.id;
 
     if (credential.isPersonal) {
         if (!isOwner) return null; // STRICT: Only owner sees personal
     } else {
         // Shared
-        if (accessContext.role !== 'ADMIN' && !isOwner && !hasAccess) return null;
+        if (accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !isOwner && !hasAccess) return null;
     }
 
     await logAudit({
@@ -538,18 +536,18 @@ export async function getCredentialById(id: string) {
 
 export async function deleteCredential(id: string) {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
+    if (!session?.user || session.user.isActive === false) return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session invalid' } };
 
     const credential = await prisma.credentialMaster.findUnique({ where: { id } });
     if (!credential) return { error: 'Not found' };
 
     // Check permission logic
-    const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'ADMIN', credential.id); // Need Admin or Owner
+    const accessContext = await getUserAccessContext(session.user.id, session.user);
+    const hasAccess = canAccess(accessContext, 'CREDENTIALS', 'DELETE');
     const isOwner = credential.createdById === session.user.id;
 
-    if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {
-        return { error: 'Unauthorized' };
+    if (!isOwner && accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !hasAccess) {
+        return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
     }
 
     const master = await prisma.$transaction(async (tx) => {
@@ -574,7 +572,7 @@ export async function deleteCredential(id: string) {
 
 export async function updateCredential(id: string, prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session?.user) return { error: 'Unauthorized' };
+    if (!session?.user || session.user.isActive === false) return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session invalid' } };
 
     const rawData = Object.fromEntries(formData.entries());
     // For Update, secrets are optional (if empty, keep existing).
@@ -599,12 +597,12 @@ export async function updateCredential(id: string, prevState: any, formData: For
 
     // PERMISSIONS
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-    const accessContext = await getUserAccessContext(session.user.id);
-    const hasAccess = canAccess(accessContext, credential.category, credential.environment, 'EDIT', credential.id);
+    const accessContext = await getUserAccessContext(session.user.id, session.user);
+    const hasAccess = canAccess(accessContext, 'CREDENTIALS', 'EDIT');
     const isOwner = credential.createdById === session.user.id; // Corrected from ownerId
 
-    if (!isOwner && accessContext.role !== 'ADMIN' && !hasAccess) {
-        return { error: 'Unauthorized' };
+    if (!isOwner && accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !hasAccess) {
+        return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
     }
 
     // CONSTRUCT OLD DATA (Decrypted for Diff)
