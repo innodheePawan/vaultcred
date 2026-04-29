@@ -57,7 +57,7 @@ const getGroupColor = (name: string) => {
     return GROUP_COLORS[index];
 };
 
-export default function UserTable({ users, invites, groups, credentials, inviteUserAction, isSystemAdmin, canInvite, currentUserId }: any) {
+export default function UserTable({ users, invites, groups, credentials, inviteUserAction, isSystemAdmin, canInvite, currentUserId, currentUserRole }: any) {
     const router = useRouter();
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<any>(null);
@@ -186,14 +186,16 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                                 {user.status}
                                             </span>
                                             {/* Quick Status Action */}
-                                            {user.status === 'ACTIVE' ? (
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-red-600" onClick={() => setStatusUser(user)} title="Deactivate User">
-                                                    <Ban className="h-3 w-3" />
-                                                </Button>
-                                            ) : (
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-green-600" onClick={() => setStatusUser(user)} title="Activate User">
-                                                    <CheckCircle className="h-3 w-3" />
-                                                </Button>
+                                            {(!user.role || user.role !== 'SUPER_ADMIN' || currentUserRole === 'SUPER_ADMIN') && (
+                                                user.status === 'ACTIVE' ? (
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-red-600" onClick={() => setStatusUser(user)} title="Deactivate User">
+                                                        <Ban className="h-3 w-3" />
+                                                    </Button>
+                                                ) : (
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-green-600" onClick={() => setStatusUser(user)} title="Activate User">
+                                                        <CheckCircle className="h-3 w-3" />
+                                                    </Button>
+                                                )
                                             )}
                                         </div>
                                     </TableCell>
@@ -247,17 +249,23 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                     </TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex justify-end gap-2 items-center">
-                                            <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)}>
-                                                <Edit className="w-4 h-4 text-gray-500 hover:text-indigo-600" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-gray-400 hover:text-red-600"
-                                                onClick={() => setItemToDelete({ id: user.id, email: user.email, type: 'USER' })}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            {(!user.role || user.role !== 'SUPER_ADMIN' || currentUserRole === 'SUPER_ADMIN') ? (
+                                                <>
+                                                    <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)}>
+                                                        <Edit className="w-4 h-4 text-gray-500 hover:text-indigo-600" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-gray-400 hover:text-red-600"
+                                                        onClick={() => setItemToDelete({ id: user.id, email: user.email, type: 'USER' })}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs text-gray-400 italic">Protected</span>
+                                            )}
                                         </div>
                                     </TableCell>
                                 </TableRow>

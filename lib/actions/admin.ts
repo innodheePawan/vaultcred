@@ -81,7 +81,8 @@ export async function getUsersAndInvites(page = 1, limit = 10) {
         }, 
         invites, 
         isSystemAdmin, 
-        canInvite 
+        canInvite,
+        currentUserRole: currentUser?.role
     };
 }
 
@@ -308,6 +309,11 @@ export async function updateUser(userId: string, formData: FormData) {
 
         if (!existingUser) return { error: 'User not found' };
 
+        // Role hierarchy validation: Only SUPER_ADMIN can edit SUPER_ADMIN
+        if (existingUser.role === 'SUPER_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+            return { error: 'Unauthorized: Only Super Admins can manage Super Admin users.' };
+        }
+
         let updateData: any = { status };
         let groupsToAssign: { groupId: string; categories: string | null; environments: string | null }[] = [];
 
@@ -342,6 +348,10 @@ export async function updateUser(userId: string, formData: FormData) {
             // INTERNAL USER UPDATE
             const systemRole = formData.get('systemRole') as string; // 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'AUDITOR' | 'VIEWER'
             let newRole = systemRole || 'USER';
+
+            if (newRole === 'SUPER_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+                return { error: 'Unauthorized: Only Super Admins can assign the Super Admin role.' };
+            }
 
             const roleToGroupName: Record<string, string> = {
                 'SUPER_ADMIN': 'Super Admin',
@@ -479,6 +489,10 @@ export async function deleteUser(userId: string) {
         });
 
         if (user?.role === 'SUPER_ADMIN') {
+            if (session.user.role !== 'SUPER_ADMIN') {
+                return { error: 'Unauthorized: Only Super Admins can delete Super Admin users.' };
+            }
+
             const activeAdminCount = await prisma.user.count({
                 where: {
                     role: 'SUPER_ADMIN',

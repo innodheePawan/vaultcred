@@ -15,7 +15,7 @@ export default async function UserManagementPage(props: {
     const pageNum = searchParams.page ? parseInt(searchParams.page, 10) : 1;
     const limitNum = searchParams.limit ? parseInt(searchParams.limit, 10) : 10;
 
-    const { users, invites, isSystemAdmin, canInvite } = await getUsersAndInvites(pageNum, limitNum);
+    const { users, invites, isSystemAdmin, canInvite, currentUserRole } = await getUsersAndInvites(pageNum, limitNum);
     const groups = await getAllGroups();
     const credentials = await getAllCredentialsSummary();
 
@@ -41,6 +41,7 @@ export default async function UserManagementPage(props: {
                 isSystemAdmin={isSystemAdmin}
                 canInvite={canInvite}
                 currentUserId={session?.user?.id}
+                currentUserRole={currentUserRole}
             />
         </div>
     );
