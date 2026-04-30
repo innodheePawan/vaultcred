@@ -224,25 +224,34 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                                 <span className="text-[10px] text-gray-400 italic mt-0.5">Full System Access</span>
                                             ) : (
                                                 <div className="flex flex-col text-[10px] text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
-                                                    {user.allowedCategories && (
-                                                        <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Cat:</span> {user.allowedCategories}</span>
-                                                    )}
-                                                    {user.allowedEnvironments && (
-                                                        <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Env:</span> {user.allowedEnvironments}</span>
-                                                    )}
-                                                    {user.allowedCredentialIds && (
-                                                        <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Creds:</span> {user.allowedCredentialIds.split(',').length} specific item(s)</span>
-                                                    )}
-                                                    {(!user.allowedCategories && !user.allowedEnvironments && !user.allowedCredentialIds) && (
-                                                        <span className="italic text-gray-400">No specific scope limits</span>
-                                                    )}
-                                                    
-                                                    {/* Fallback for legacy group-based scopes if any */}
-                                                    {user.userGroups?.length > 0 && user.userGroups.map((ug: any) => (
-                                                        <span key={ug.groupId} className="opacity-70 mt-1">
-                                                            [Group: {ug.group?.name || 'Legacy'}]
-                                                        </span>
-                                                    ))}
+                                                    {(() => {
+                                                        const displayCats = user.isExternal ? user.allowedCategories : user.userGroups?.[0]?.scopedCategories;
+                                                        const displayEnvs = user.isExternal ? user.allowedEnvironments : user.userGroups?.[0]?.scopedEnvironments;
+                                                        const displayCreds = user.isExternal ? user.allowedCredentialIds : null;
+
+                                                        return (
+                                                            <>
+                                                                {displayCats && (
+                                                                    <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Cat:</span> {displayCats}</span>
+                                                                )}
+                                                                {displayEnvs && (
+                                                                    <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Env:</span> {displayEnvs}</span>
+                                                                )}
+                                                                {displayCreds && (
+                                                                    <span className="flex gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Creds:</span> {displayCreds.split(',').length} specific item(s)</span>
+                                                                )}
+                                                                {(!displayCats && !displayEnvs && !displayCreds) && (
+                                                                    <span className="italic text-gray-400">No specific scope limits</span>
+                                                                )}
+                                                                
+                                                                {user.userGroups?.length > 0 && user.userGroups.map((ug: any) => (
+                                                                    <span key={ug.groupId} className="opacity-70 mt-1">
+                                                                        [Group: {ug.group?.name || 'Legacy'}]
+                                                                    </span>
+                                                                ))}
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
                                             )}
                                         </div>
