@@ -14,7 +14,7 @@ import { LayoutProvider } from "@/components/layout/LayoutContext";
 import { getLicenseState } from "@/lib/license-enforcement";
 import { LicenseWarningBanner } from "@/components/layout/LicenseWarningBanner";
 import { redirect } from 'next/navigation';
-
+import ForceLogout from '@/components/auth/ForceLogout';
 
 export default async function DashboardLayout({
     children,
@@ -28,6 +28,11 @@ export default async function DashboardLayout({
         settings = { applicationName: 'CredSecure', logoUrl: null };
     }
     const session = await auth();
+
+    // Catch invalidated sessions (e.g. user was deleted or disabled while logged in)
+    if (session?.user && session.user.isActive === false) {
+        return <ForceLogout />;
+    }
 
     let currentUser = null;
     if (process.env.DATABASE_URL && session?.user?.id) {

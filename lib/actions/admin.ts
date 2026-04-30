@@ -20,7 +20,7 @@ export async function getUsersAndInvites(page = 1, limit = 10) {
 
     const [users, totalUsers] = await Promise.all([
         prisma.user.findMany({
-            where: { status: { not: 'INVITED' } },
+            where: { status: { notIn: ['INVITED', 'DELETED'] } },
             skip,
             take: limit,
         select: {
@@ -47,7 +47,7 @@ export async function getUsersAndInvites(page = 1, limit = 10) {
         },
         orderBy: { name: 'asc' }
     }),
-    prisma.user.count({ where: { status: { not: 'INVITED' } } })
+    prisma.user.count({ where: { status: { notIn: ['INVITED', 'DELETED'] } } })
     ]);
 
     const invites = await prisma.invite.findMany({
@@ -314,6 +314,37 @@ export async function updateUser(userId: string, formData: FormData) {
             return { error: 'Unauthorized: Only Super Admins can manage Super Admin users.' };
         }
 
+        // Target user scope validation for Scoped Admins
+        if (session.user.role !== 'SUPER_ADMIN') {
+            const targetCtx = await getUserAccessContext(userId, null, false);
+            
+            // If target has full category scope and actor doesn't
+            if (targetCtx.allowedCategories.includes('*') && !ctx.allowedCategories.includes('*')) {
+                return { error: 'Unauthorized: Cannot manage a user with global category access.' };
+            }
+            // If target has specific categories, actor must possess them all
+            if (!ctx.allowedCategories.includes('*')) {
+                for (const cat of targetCtx.allowedCategories) {
+                    if (!ctx.allowedCategories.includes(cat)) {
+                        return { error: `Unauthorized: Target user has access to category '${cat}' which you do not possess.` };
+                    }
+                }
+            }
+
+            // If target has full environment scope and actor doesn't
+            if (targetCtx.allowedEnvironments.includes('*') && !ctx.allowedEnvironments.includes('*')) {
+                return { error: 'Unauthorized: Cannot manage a user with global environment access.' };
+            }
+            // If target has specific environments, actor must possess them all
+            if (!ctx.allowedEnvironments.includes('*')) {
+                for (const env of targetCtx.allowedEnvironments) {
+                    if (!ctx.allowedEnvironments.includes(env)) {
+                        return { error: `Unauthorized: Target user has access to environment '${env}' which you do not possess.` };
+                    }
+                }
+            }
+        }
+
         let updateData: any = { status };
         let groupsToAssign: { groupId: string; categories: string | null; environments: string | null }[] = [];
 
@@ -328,6 +359,27 @@ export async function updateUser(userId: string, formData: FormData) {
             const allowedEnvironments = formData.get('scopedEnvironments') as string;
             const allowedCredentialIds = formData.getAll('credentialIds') as string[];
 
+            if (session.user.role !== 'SUPER_ADMIN') {
+                if (allowedCategories && !ctx.allowedCategories.includes('*')) {
+                    const requestedCats = allowedCategories.split(',').filter(Boolean);
+                    for (const c of requestedCats) {
+                        if (!ctx.allowedCategories.includes(c)) return { error: `Unauthorized: Cannot grant Category scope '${c}' which you do not possess.` };
+                    }
+                }
+                if (!allowedCategories && !ctx.allowedCategories.includes('*')) {
+                    return { error: `Unauthorized: Cannot grant global Category scope ('*') which you do not possess.` };
+                }
+
+                if (allowedEnvironments && !ctx.allowedEnvironments.includes('*')) {
+                    const requestedEnvs = allowedEnvironments.split(',').filter(Boolean);
+                    for (const e of requestedEnvs) {
+                        if (!ctx.allowedEnvironments.includes(e)) return { error: `Unauthorized: Cannot grant Environment scope '${e}' which you do not possess.` };
+                    }
+                }
+                if (!allowedEnvironments && !ctx.allowedEnvironments.includes('*')) {
+                    return { error: `Unauthorized: Cannot grant global Environment scope ('*') which you do not possess.` };
+                }
+            }
             if (!vendorName) return { error: 'Vendor Name is required.' };
             if (!accessExpiresAtRaw) return { error: 'Expiry Date is required.' };
 
@@ -370,6 +422,28 @@ export async function updateUser(userId: string, formData: FormData) {
             if (newRole !== 'SUPER_ADMIN') {
                 const categories = formData.get('scopedCategories') as string;
                 const environments = formData.get('scopedEnvironments') as string;
+
+                if (session.user.role !== 'SUPER_ADMIN') {
+                    if (categories && !ctx.allowedCategories.includes('*')) {
+                        const requestedCats = categories.split(',').filter(Boolean);
+                        for (const c of requestedCats) {
+                            if (!ctx.allowedCategories.includes(c)) return { error: `Unauthorized: Cannot grant Category scope '${c}' which you do not possess.` };
+                        }
+                    }
+                    if (!categories && !ctx.allowedCategories.includes('*')) {
+                        return { error: `Unauthorized: Cannot grant global Category scope ('*') which you do not possess.` };
+                    }
+
+                    if (environments && !ctx.allowedEnvironments.includes('*')) {
+                        const requestedEnvs = environments.split(',').filter(Boolean);
+                        for (const e of requestedEnvs) {
+                            if (!ctx.allowedEnvironments.includes(e)) return { error: `Unauthorized: Cannot grant Environment scope '${e}' which you do not possess.` };
+                        }
+                    }
+                    if (!environments && !ctx.allowedEnvironments.includes('*')) {
+                        return { error: `Unauthorized: Cannot grant global Environment scope ('*') which you do not possess.` };
+                    }
+                }
 
                 if (targetGroup) {
                     groupsToAssign.push({
@@ -506,38 +580,75 @@ export async function deleteUser(userId: string) {
             }
         }
 
-        try {
-            await prisma.user.delete({
-                where: { id: userId }
-            });
-        } catch (dbError: any) {
-            if (dbError.code === 'P2003') {
-                // Foreign key constraint failed. Soft delete to preserve audit history and relations.
-                await prisma.$transaction([
-                    prisma.user.update({
-                        where: { id: userId },
-                        data: {
-                            status: 'INACTIVE',
-                            email: `deleted_${Date.now()}_${userId.substring(0, 8)}@deleted.local`,
-                            name: 'Deleted User',
-                            passwordHash: null,
-                            twoFactorEnabled: false,
-                            twoFactorSecret: null,
-                            inviteToken: null,
-                            profileImage: null,
-                            isExternal: false,
-                        }
-                    }),
-                    prisma.userGroupMapping.deleteMany({
-                        where: { userId }
-                    })
-                ]);
-            } else {
-                throw dbError;
+        // Target user scope validation for Scoped Admins
+        if (session.user.role !== 'SUPER_ADMIN') {
+            const targetCtx = await getUserAccessContext(userId, null, false);
+            
+            // If target has full category scope and actor doesn't
+            if (targetCtx.allowedCategories.includes('*') && !ctx.allowedCategories.includes('*')) {
+                return { error: 'Unauthorized: Cannot delete a user with global category access.' };
+            }
+            // If target has specific categories, actor must possess them all
+            if (!ctx.allowedCategories.includes('*')) {
+                for (const cat of targetCtx.allowedCategories) {
+                    if (!ctx.allowedCategories.includes(cat)) {
+                        return { error: `Unauthorized: Target user has access to category '${cat}' which you do not possess.` };
+                    }
+                }
+            }
+
+            // If target has full environment scope and actor doesn't
+            if (targetCtx.allowedEnvironments.includes('*') && !ctx.allowedEnvironments.includes('*')) {
+                return { error: 'Unauthorized: Cannot delete a user with global environment access.' };
+            }
+            // If target has specific environments, actor must possess them all
+            if (!ctx.allowedEnvironments.includes('*')) {
+                for (const env of targetCtx.allowedEnvironments) {
+                    if (!ctx.allowedEnvironments.includes(env)) {
+                        return { error: `Unauthorized: Target user has access to environment '${env}' which you do not possess.` };
+                    }
+                }
             }
         }
 
-        revalidatePath('/settings/database');
+        // Perform Soft Delete
+        const now = new Date();
+        const dateStr = now.toISOString().replace(/T/, '_').replace(/:/g, '').split('.')[0]; // YYYYMMDD_HHMMSS approx
+
+        // Fetch original email to append deleted timestamp
+        const existingUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true }
+        });
+
+        const newEmail = existingUser?.email 
+            ? `${existingUser.email.split('@')[0]}_deleteduser_${dateStr}@${existingUser.email.split('@')[1] || 'deleted.local'}`
+            : `deleted_${dateStr}_${userId.substring(0, 8)}@deleted.local`;
+
+        await prisma.$transaction([
+            // Invalidate/delete active login sessions for this user (if you have a Session model or similar, assuming Prisma handles session via tokens, we just wipe the DB secrets)
+            // Note: VaultCred uses NextAuth JWT, but if there's a Session model, we delete it. If not, wiping passwordHash and MFA invalidates future tokens.
+            // Update User record to DELETED and wipe sensitive fields
+            prisma.user.update({
+                where: { id: userId },
+                data: {
+                    status: 'DELETED',
+                    email: newEmail,
+                    passwordHash: null,
+                    twoFactorEnabled: false,
+                    twoFactorSecret: null,
+                    inviteToken: null,
+                    inviteExpires: null,
+                }
+            }),
+            // Optionally, clear group mappings
+            prisma.userGroupMapping.deleteMany({
+                where: { userId }
+            })
+        ]);
+
+        revalidatePath('/dashboard/admin/users');
+        revalidatePath('/admin/users');
         return { success: true, message: 'User deleted successfully' };
     } catch (error: any) {
         return { error: error.message };

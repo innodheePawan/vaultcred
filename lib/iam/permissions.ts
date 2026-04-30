@@ -75,6 +75,11 @@ export async function loadGlobalActiveFeatures(version: number): Promise<Set<str
 
 export async function getUserAccessContext(userId: string, sessionUser?: any, forceFresh = false): Promise<UserAccessContext> {
     if (sessionUser?.rbac && !forceFresh) {
+        // Fast fail for deactivated/deleted users cached in session
+        if (sessionUser.isActive === false) {
+            throw new Error('Unauthorized: Session invalidated');
+        }
+
         // Safe Fallback: if version is corrupted, fetch from DB
         if (!sessionUser.rbac.version) {
             return await _getUserAccessContextDB(userId);
@@ -111,10 +116,11 @@ const _getUserAccessContextDB = cache(async (userId: string): Promise<UserAccess
 
     // 3. Fetch user explicitly avoiding Prisma Cartesian joins
     const user = await prisma.user.findUnique({
-        where: { id: userId }
+        where: { id: userId },
+        select: { id: true, role: true, status: true, isExternal: true, externalAccessType: true, allowedCredentialIds: true }
     });
 
-    if (!user) {
+    if (!user || user.status !== 'ACTIVE') {
         return emptyContext(userId, activeFeatures);
     }
 

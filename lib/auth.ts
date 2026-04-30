@@ -207,7 +207,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             // Use the shared JWT logic from authConfig which handles DB refresh
             if (authConfig.callbacks?.jwt) {
                 const refreshedToken = await authConfig.callbacks.jwt({ token, user, trigger } as any);
-                if (refreshedToken === null) return token; // Not perfect for NextAuth core, but `null` destroys it in Auth.js v5
+                if (refreshedToken === null) return null; // Destroys the session in Auth.js v5
                 token = refreshedToken;
             }
             return token;
