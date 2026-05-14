@@ -20,9 +20,9 @@ export default function ActivationPage() {
     useEffect(() => {
         getSystemSettings().then(res => {
             if (res) {
-                setSettings({ 
-                    applicationName: res.applicationName || 'CredSecure', 
-                    companyName: res.companyName || 'Innodhee Services Pvt Ltd' 
+                setSettings({
+                    applicationName: res.applicationName || 'CredSecure',
+                    companyName: res.companyName || 'Innodhee Services Pvt Ltd'
                 });
             }
         });

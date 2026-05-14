@@ -10,7 +10,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         const validation = await validateExternalApiPipeline(req, id, "REVEAL_CREDENTIAL");
         if (validation.errorResponse) return validation.errorResponse;
 
-        const { credential, clientRow, logActivity, authType } = validation;
+        const { credential, clientRow, logActivity, authType, rateLimitHeaders } = validation;
         
         let payload: any = { 
             name: credential.name, 
@@ -101,7 +101,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
         await logActivity({ credentialId: id, application: credential.category || "", environment: credential.environment || "", apiClientId: clientRow.api_client_id, clientName: clientRow.client_name, authType, responseStatus: "SUCCESS", httpStatusCode: 200 });
         
-        return NextResponse.json({ data: payload });
+        return NextResponse.json({ data: payload }, { headers: rateLimitHeaders });
     } catch (e) {
         console.error("Reveal API Error:", e);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

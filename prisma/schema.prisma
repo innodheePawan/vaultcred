@@ -392,6 +392,13 @@ model SystemSettings {
   twoFactorMandatory      Boolean @default(false) @map("two_factor_mandatory")
   allowApiAccess          Boolean @default(false) @map("allow_api_access")
   
+  // API Throttling & Security
+  exposeRateLimitHeaders  Boolean @default(false) @map("expose_rate_limit_headers")
+  apiLimitAuthToken       Int     @default(10) @map("api_limit_auth_token")
+  apiLimitCredentials     Int     @default(50) @map("api_limit_credentials")
+  apiLimitCredentialReveal Int    @default(200) @map("api_limit_credential_reveal")
+  apiLimitCredentialFile  Int     @default(30) @map("api_limit_credential_file")
+  
   // SMTP Email Configuration
   smtpHost      String?  @map("smtp_host")
   smtpPort      Int?     @map("smtp_port")

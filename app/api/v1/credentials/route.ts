@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyApiJwt, validateApiHmacContext } from "@/lib/api-auth";
 import { checkGlobalApiAccess, STANDARD_404_HTML } from "@/lib/api-pipeline";
+import { rateLimitApi } from "@/lib/api-rate-limit";
 import { decrypt } from "@/lib/crypto";
 
 import crypto from 'crypto';
@@ -26,11 +27,7 @@ export async function GET(req: Request) {
     };
 
     try {
-        const isGlobalEnabled = await checkGlobalApiAccess();
-        if (!isGlobalEnabled) {
-            await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
-            return new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } });
-        }
+        // 1. Global Config Check is now handled via rateLimitApi caching below.
 
         const authHeader = req.headers.get("authorization");
         if (!authHeader?.startsWith("Bearer ")) {
@@ -39,6 +36,60 @@ export async function GET(req: Request) {
         }
 
         const token = authHeader.split(" ")[1];
+        
+        // Lightweight Auth Context Extraction
+        let clientIdForRateLimit = ipAddress;
+        try {
+            const payloadPart = token.split('.')[1];
+            if (payloadPart) {
+                const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf-8'));
+                if (payload.clientId) clientIdForRateLimit = payload.clientId;
+            }
+        } catch(e) {}
+
+        // Apply Throttling and Security Checks
+        const rateLimitResult = await rateLimitApi(clientIdForRateLimit, ipAddress, 'credentials');
+        
+        if (rateLimitResult.disabled) {
+            await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
+            return new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } });
+        }
+
+        if (rateLimitResult.isIpBlocked) {
+            return NextResponse.json({ error: "Forbidden. IP is blocked due to abuse." }, { status: 403 });
+        }
+
+        const headers: Record<string, string> = {};
+        if (rateLimitResult.exposeHeaders) {
+            headers['X-RateLimit-Limit'] = rateLimitResult.limit.toString();
+            headers['X-RateLimit-Remaining'] = rateLimitResult.remaining.toString();
+            if (!rateLimitResult.allowed) {
+                headers['X-RateLimit-Reset'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+                headers['Retry-After'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+            }
+        }
+
+        if (!rateLimitResult.allowed) {
+            let dbClientId = undefined;
+            let dbClientName = undefined;
+            if (clientIdForRateLimit && clientIdForRateLimit !== ipAddress) {
+                try {
+                    const clientRecord = await prisma.apiClient.findUnique({ where: { clientId: clientIdForRateLimit } });
+                    if (clientRecord) {
+                        dbClientId = clientRecord.id;
+                        dbClientName = clientRecord.name;
+                    }
+                } catch(e) {}
+            }
+            await logActivity({ apiClientId: dbClientId, clientName: dbClientName, responseStatus: "FAILURE", httpStatusCode: 429, errorMessage: "Rate limit exceeded" });
+            return NextResponse.json({ 
+                error: "Too Many Requests", 
+                message: "Rate limit exceeded. Please try again later.",
+                retryAfter: Math.ceil(rateLimitResult.retryAfterMs / 1000)
+            }, { status: 429, headers });
+        }
+
+        // Full Cryptographic Auth Validation
         const clientContext = await verifyApiJwt(token);
         
         if (!clientContext) {
@@ -181,7 +232,7 @@ export async function GET(req: Request) {
         };
 
         await logActivity({ apiClientId: client.id, clientName: client.name, authType, responseStatus: "SUCCESS", httpStatusCode: 200 });
-        return NextResponse.json({ data: credentials, pagination });
+        return NextResponse.json({ data: credentials, pagination }, { headers });
 
     } catch (error) {
         console.error("API GET /credentials error:", error);

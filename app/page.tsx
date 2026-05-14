@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getSystemSettings } from "@/lib/actions/settings";
 import { headers } from "next/headers";
+import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import {
     Shield,
     Lock,
@@ -290,6 +291,9 @@ export default async function LandingPage() {
                     </div>
                 </div>
             </footer>
+
+            {/* Floating Security Widget */}
+            <FloatingCredentialWidget />
         </div>
     );
 }

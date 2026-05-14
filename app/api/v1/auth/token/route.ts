@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/crypto";
 import { generateApiJwt } from "@/lib/api-auth";
 import { checkGlobalApiAccess, STANDARD_404_HTML } from "@/lib/api-pipeline";
+import { rateLimitApi } from "@/lib/api-rate-limit";
 
 import crypto from 'crypto';
 
@@ -36,11 +37,7 @@ export async function POST(req: Request) {
     };
 
     try {
-        const isGlobalEnabled = await checkGlobalApiAccess();
-        if (!isGlobalEnabled) {
-            await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
-            return new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } });
-        }
+        // 1. Global Config Check is now handled via rateLimitApi caching below.
 
         let clientId = "";
         let clientSecret = "";
@@ -74,6 +71,48 @@ export async function POST(req: Request) {
                 clientId = body.clientId || body.client_id || "";
                 clientSecret = body.clientSecret || body.client_secret || "";
             } catch(e) {}
+        }
+
+        // Apply Throttling and Security Checks
+        const rateLimitResult = await rateLimitApi(clientId || ipAddress, ipAddress, 'auth_token');
+        
+        if (rateLimitResult.disabled) {
+            await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
+            return new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } });
+        }
+
+        if (rateLimitResult.isIpBlocked) {
+            return NextResponse.json({ error: "Forbidden. IP is blocked due to abuse." }, { status: 403 });
+        }
+
+        const headers: Record<string, string> = {};
+        if (rateLimitResult.exposeHeaders) {
+            headers['X-RateLimit-Limit'] = rateLimitResult.limit.toString();
+            headers['X-RateLimit-Remaining'] = rateLimitResult.remaining.toString();
+            if (!rateLimitResult.allowed) {
+                headers['X-RateLimit-Reset'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+                headers['Retry-After'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+            }
+        }
+
+        if (!rateLimitResult.allowed) {
+            let dbClientId = undefined;
+            let dbClientName = undefined;
+            if (clientId) {
+                try {
+                    const clientRecord = await prisma.apiClient.findUnique({ where: { clientId } });
+                    if (clientRecord) {
+                        dbClientId = clientRecord.id;
+                        dbClientName = clientRecord.name;
+                    }
+                } catch(e) {}
+            }
+            await logActivity({ apiClientId: dbClientId, clientName: dbClientName, responseStatus: "FAILURE", httpStatusCode: 429, errorMessage: "Rate limit exceeded" });
+            return NextResponse.json({ 
+                error: "Too Many Requests", 
+                message: "Rate limit exceeded. Please try again later.",
+                retryAfter: Math.ceil(rateLimitResult.retryAfterMs / 1000)
+            }, { status: 429, headers });
         }
 
         if (!clientId) {
@@ -141,7 +180,7 @@ export async function POST(req: Request) {
             access_token: token,
             token_type: "Bearer",
             expires_in: client.tokenValiditySeconds || 300
-        });
+        }, { headers });
 
     } catch (error: any) {
         console.error("API Auth Error:", error);

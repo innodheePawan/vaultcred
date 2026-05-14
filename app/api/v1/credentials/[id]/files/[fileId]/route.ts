@@ -7,10 +7,10 @@ export async function GET(req: Request, props: { params: Promise<{ id: string, f
         const params = await props.params;
         const { id, fileId } = params;
 
-        const validation = await validateExternalApiPipeline(req, id, "DOWNLOAD_FILE");
+        const validation = await validateExternalApiPipeline(req, id, "DOWNLOAD_FILE", "credential_file");
         if (validation.errorResponse) return validation.errorResponse;
 
-        const { credential, clientRow, logActivity, authType } = validation;
+        const { credential, clientRow, logActivity, authType, rateLimitHeaders } = validation;
         
         let contentStr = '';
         let fileName = 'credential_file';
@@ -74,7 +74,8 @@ export async function GET(req: Request, props: { params: Promise<{ id: string, f
             headers: {
                 "Content-Type": "application/octet-stream",
                 "Content-Disposition": `attachment; filename="${fileName}"`,
-                "Content-Length": responseBuffer.length.toString()
+                "Content-Length": responseBuffer.length.toString(),
+                ...rateLimitHeaders
             }
         });
     } catch (e) {

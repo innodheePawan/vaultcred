@@ -238,6 +238,11 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
     const auditPersonalCredentials = formData.get('auditPersonalCredentials') === 'true';
     const twoFactorMandatory = formData.get('twoFactorMandatory') === 'true';
     const allowApiAccess = formData.get('allowApiAccess') === 'true';
+    const exposeRateLimitHeaders = formData.get('exposeRateLimitHeaders') === 'true';
+    const apiLimitAuthToken = parseInt(formData.get('apiLimitAuthToken') as string || '10');
+    const apiLimitCredentials = parseInt(formData.get('apiLimitCredentials') as string || '50');
+    const apiLimitCredentialReveal = parseInt(formData.get('apiLimitCredentialReveal') as string || '200');
+    const apiLimitCredentialFile = parseInt(formData.get('apiLimitCredentialFile') as string || '30');
 
     try {
         await prisma.systemSettings.upsert({
@@ -245,13 +250,23 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
             update: {
                 auditPersonalCredentials,
                 twoFactorMandatory,
-                allowApiAccess
+                allowApiAccess,
+                exposeRateLimitHeaders,
+                apiLimitAuthToken,
+                apiLimitCredentials,
+                apiLimitCredentialReveal,
+                apiLimitCredentialFile
             },
             create: {
                 id: 1,
                 auditPersonalCredentials,
                 twoFactorMandatory,
-                allowApiAccess
+                allowApiAccess,
+                exposeRateLimitHeaders,
+                apiLimitAuthToken,
+                apiLimitCredentials,
+                apiLimitCredentialReveal,
+                apiLimitCredentialFile
             },
         });
 
@@ -259,7 +274,7 @@ export async function updateSecuritySettings(prevState: any, formData: FormData)
 
         await logAudit({
             action: 'UPDATE_SETTINGS',
-            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}, Allow API Access=${allowApiAccess}`,
+            details: `Security Settings updated: Audit Personal=${auditPersonalCredentials}, 2FA Mandatory=${twoFactorMandatory}, Allow API Access=${allowApiAccess}, Expose Headers=${exposeRateLimitHeaders}`,
             userId: session.user.id
         });
 

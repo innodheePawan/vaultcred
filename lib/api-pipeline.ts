@@ -32,7 +32,7 @@ export async function checkGlobalApiAccess(): Promise<boolean> {
    return Number(globalRaw) === 1;
 }
 
-export async function validateExternalApiPipeline(req: Request, credentialId: string, action: string = "REVEAL_CREDENTIAL") {
+export async function validateExternalApiPipeline(req: Request, credentialId: string, action: string = "REVEAL_CREDENTIAL", endpointType: 'credential_reveal' | 'credential_file' = 'credential_reveal') {
    const endpoint = new URL(req.url).pathname;
    const method = req.method;
    const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "0.0.0.0";
@@ -60,12 +60,7 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
        } catch (e) { /* audit failure must never block the response */ }
    };
 
-    // 1. Global Config Check
-    const isGlobalEnabled = await checkGlobalApiAccess();
-    if (!isGlobalEnabled) {
-        await logActivity({ credentialId, responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
-        return { errorResponse: new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } }) };
-    }
+    // 1. Global Config Check is now handled via rateLimitApi caching below.
 
     // 2. Token Auth
     const authHeader = req.headers.get("authorization");
@@ -74,6 +69,59 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
         return { errorResponse: NextResponse.json({ error: "Missing or invalid Bearer token" }, { status: 401 }) };
     }
     const token = authHeader.split(" ")[1];
+
+    // 2.5 Rate Limiting
+    const { rateLimitApi } = await import('@/lib/api-rate-limit');
+    let clientIdForRateLimit = ipAddress;
+    try {
+        const payloadPart = token.split('.')[1];
+        if (payloadPart) {
+            const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf-8'));
+            if (payload.clientId) clientIdForRateLimit = payload.clientId;
+        }
+    } catch(e) {}
+
+    const rateLimitResult = await rateLimitApi(clientIdForRateLimit, ipAddress, endpointType);
+
+    if (rateLimitResult.disabled) {
+        await logActivity({ credentialId, responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
+        return { errorResponse: new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } }) };
+    }
+
+    if (rateLimitResult.isIpBlocked) {
+        return { errorResponse: NextResponse.json({ error: "Forbidden. IP is blocked due to abuse." }, { status: 403 }) };
+    }
+
+    const headers: Record<string, string> = {};
+    if (rateLimitResult.exposeHeaders) {
+        headers['X-RateLimit-Limit'] = rateLimitResult.limit.toString();
+        headers['X-RateLimit-Remaining'] = rateLimitResult.remaining.toString();
+        if (!rateLimitResult.allowed) {
+            headers['X-RateLimit-Reset'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+            headers['Retry-After'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+        }
+    }
+
+    if (!rateLimitResult.allowed) {
+        let dbClientId = undefined;
+        let dbClientName = undefined;
+        if (clientIdForRateLimit && clientIdForRateLimit !== ipAddress) {
+            try {
+                const clientRecord = await prisma.apiClient.findUnique({ where: { clientId: clientIdForRateLimit } });
+                if (clientRecord) {
+                    dbClientId = clientRecord.id;
+                    dbClientName = clientRecord.name;
+                }
+            } catch(e) {}
+        }
+        await logActivity({ credentialId, apiClientId: dbClientId, clientName: dbClientName, responseStatus: "FAILURE", httpStatusCode: 429, errorMessage: "Rate limit exceeded" });
+        return { errorResponse: NextResponse.json({ 
+            error: "Too Many Requests", 
+            message: "Rate limit exceeded. Please try again later.",
+            retryAfter: Math.ceil(rateLimitResult.retryAfterMs / 1000)
+        }, { status: 429, headers }) };
+    }
+
     const clientContext = await verifyApiJwt(token);
     if (!clientContext) {
         await logActivity({ credentialId, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Unauthorized or expired token" });
@@ -154,5 +202,5 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
         return { errorResponse: NextResponse.json({ error: "Access denied: Environment scope mismatch" }, { status: 403 }) };
     }
 
-    return { errorResponse: null, clientRow, credential, clientContext, logActivity, authType };
+    return { errorResponse: null, clientRow, credential, clientContext, logActivity, authType, rateLimitHeaders: headers };
 }
