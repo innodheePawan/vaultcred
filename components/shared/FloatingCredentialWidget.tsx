@@ -1,55 +1,76 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Copy, RefreshCw, Check, KeyRound, Minus, ShieldCheck } from 'lucide-react';
+import { Copy, RefreshCw, Check, KeyRound, Minus, ChevronUp, Sliders, Shield } from 'lucide-react';
 
 const UPPERCASE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const LOWERCASE_CHARS = 'abcdefghijklmnopqrstuvwxyz';
 const NUMBER_CHARS = '0123456789';
 const SPECIAL_CHARS = '!@#$%^*-_+=';
 
-export const GENERATOR_RULES = {
-    uppercase: UPPERCASE_CHARS,
-    lowercase: LOWERCASE_CHARS,
-    numbers: NUMBER_CHARS,
-    special: SPECIAL_CHARS,
-};
-
-function generateSecureCredential(length: number): string {
-    const allSets = [
-        GENERATOR_RULES.uppercase,
-        GENERATOR_RULES.lowercase,
-        GENERATOR_RULES.numbers,
-        GENERATOR_RULES.special,
-    ];
-
-    let result = '';
+function generateSecureCredential(
+    length: number,
+    uppercase: boolean,
+    lowercase: boolean,
+    numbers: boolean,
+    special: boolean
+): string {
+    let charPool = '';
+    const mandatoryChars: string[] = [];
 
     const pickRandomChar = (charset: string) => {
-        const randomValues = new Uint32Array(1);
-        window.crypto.getRandomValues(randomValues);
-        return charset[randomValues[0] % charset.length];
+        const cryptoObj = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
+        if (cryptoObj) {
+            const randomValues = new Uint32Array(1);
+            cryptoObj.getRandomValues(randomValues);
+            return charset[randomValues[0] % charset.length];
+        }
+        return charset[Math.floor(Math.random() * charset.length)];
     };
 
-    // 1. Mandatory inclusion: 1 char from each set
-    for (const charset of allSets) {
-        result += pickRandomChar(charset);
+    if (uppercase) {
+        charPool += UPPERCASE_CHARS;
+        mandatoryChars.push(pickRandomChar(UPPERCASE_CHARS));
+    }
+    if (lowercase) {
+        charPool += LOWERCASE_CHARS;
+        mandatoryChars.push(pickRandomChar(LOWERCASE_CHARS));
+    }
+    if (numbers) {
+        charPool += NUMBER_CHARS;
+        mandatoryChars.push(pickRandomChar(NUMBER_CHARS));
+    }
+    if (special) {
+        charPool += SPECIAL_CHARS;
+        mandatoryChars.push(pickRandomChar(SPECIAL_CHARS));
     }
 
-    // 2. Fill the rest randomly from all combined characters
-    const allChars = allSets.join('');
+    if (charPool.length === 0) return '';
+
+    let result = '';
+    // Add mandatory characters first to guarantee presence
+    for (const char of mandatoryChars) {
+        result += char;
+    }
+
+    // Fill remaining length
     for (let i = result.length; i < length; i++) {
-        result += pickRandomChar(allChars);
+        result += pickRandomChar(charPool);
     }
 
-    // 3. Security Shuffling
+    // Shuffle the result securely
     const resultArray = result.split('');
     for (let i = resultArray.length - 1; i > 0; i--) {
-        const randomValues = new Uint32Array(1);
-        window.crypto.getRandomValues(randomValues);
-        const j = randomValues[0] % (i + 1);
+        const cryptoObj = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
+        let j = 0;
+        if (cryptoObj) {
+            const randomValues = new Uint32Array(1);
+            cryptoObj.getRandomValues(randomValues);
+            j = randomValues[0] % (i + 1);
+        } else {
+            j = Math.floor(Math.random() * (i + 1));
+        }
         [resultArray[i], resultArray[j]] = [resultArray[j], resultArray[i]];
     }
 
@@ -57,48 +78,62 @@ function generateSecureCredential(length: number): string {
 }
 
 export function FloatingCredentialWidget() {
-    const [isMinimized, setIsMinimized] = useState<boolean>(false);
+    const [isOpen, setIsOpen] = useState<boolean>(false);
     const [length, setLength] = useState<number>(16);
     const [credential, setCredential] = useState<string>('');
     const [isCopied, setIsCopied] = useState(false);
-    
-    // Random animation states
-    const [headerAnim, setHeaderAnim] = useState('animate-[pulse_2s_ease-in-out_infinite]');
-    const [btnFloatAnim, setBtnFloatAnim] = useState('animate-bounce');
-    const [shieldAnim, setShieldAnim] = useState('animate-[spin_4s_linear_infinite]');
+
+    // Policy Toggles
+    const [policy, setPolicy] = useState({
+        uppercase: true,
+        lowercase: true,
+        numbers: true,
+        special: true,
+    });
+
+    // Mobile scroll lock when widget is open
+    useEffect(() => {
+        if (typeof document !== 'undefined') {
+            if (isOpen) {
+                document.body.classList.add('overflow-hidden', 'sm:overflow-auto');
+            } else {
+                document.body.classList.remove('overflow-hidden', 'sm:overflow-auto');
+            }
+        }
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.body.classList.remove('overflow-hidden', 'sm:overflow-auto');
+            }
+        };
+    }, [isOpen]);
+
+    // Ensure at least one policy is active
+    const handlePolicyToggle = (key: keyof typeof policy) => {
+        setPolicy((prev) => {
+            const next = { ...prev, [key]: !prev[key] };
+            const activeCount = Object.values(next).filter(Boolean).length;
+            if (activeCount === 0) return prev; // prevent unchecking last active toggle
+            return next;
+        });
+    };
+
+    // Callback to generate credential based on current rules
+    const handleGenerate = useCallback(() => {
+        const value = generateSecureCredential(
+            length,
+            policy.uppercase,
+            policy.lowercase,
+            policy.numbers,
+            policy.special
+        );
+        setCredential(value);
+        setIsCopied(false);
+    }, [length, policy]);
 
     // Initial auto-generation
     useEffect(() => {
-        setCredential(generateSecureCredential(length));
-        
-        // Pick random motions on load to keep it fresh
-        const headerAnims = [
-            'animate-[pulse_2s_ease-in-out_infinite]',
-            'animate-[spin_4s_linear_infinite]',
-            'animate-[bounce_3s_infinite]',
-        ];
-        const floatAnims = [
-            'animate-bounce', // Standard up/down
-            '[animation:float-horizontal_4s_ease-in-out_infinite]', // Left to right
-            '[animation:float-circular_5s_linear_infinite]', // Circular
-            '[animation:float-star_6s_ease-in-out_infinite]', // Star/Random line
-            '[animation:float-diagonal_4s_ease-in-out_infinite]', // Diagonal
-            '[animation:float-figure8_5s_ease-in-out_infinite]' // Figure 8
-        ];
-        const internalAnims = [
-            'animate-[pulse_2s_ease-in-out_infinite]',
-            'animate-[spin_4s_linear_infinite]',
-            'animate-[spin_3s_linear_reverse_infinite]',
-        ];
-        setHeaderAnim(headerAnims[Math.floor(Math.random() * headerAnims.length)]);
-        setBtnFloatAnim(floatAnims[Math.floor(Math.random() * floatAnims.length)]);
-        setShieldAnim(internalAnims[Math.floor(Math.random() * internalAnims.length)]);
-    }, []);
-
-    const handleGenerate = useCallback(() => {
-        setCredential(generateSecureCredential(length));
-        setIsCopied(false);
-    }, [length]);
+        handleGenerate();
+    }, [handleGenerate]);
 
     const handleCopy = async () => {
         if (!credential) return;
@@ -107,156 +142,173 @@ export function FloatingCredentialWidget() {
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2000);
         } catch (err) {
-            console.error("Failed to copy", err);
-            alert("Failed to copy to clipboard.");
+            console.error("Failed to copy to clipboard:", err);
         }
     };
 
-    const handleLengthChange = (newLength: number) => {
-        const val = Math.max(8, Math.min(64, newLength));
-        setLength(val);
-        setCredential(generateSecureCredential(val));
-        setIsCopied(false);
-    };
+    // Calculate Entropy
+    const entropy = useMemo(() => {
+        let poolSize = 0;
+        if (policy.uppercase) poolSize += 26;
+        if (policy.lowercase) poolSize += 26;
+        if (policy.numbers) poolSize += 10;
+        if (policy.special) poolSize += SPECIAL_CHARS.length; // 11
 
-    if (isMinimized) {
+        if (poolSize === 0) return 0;
+        return Math.round(length * Math.log2(poolSize));
+    }, [length, policy]);
+
+    // Derived classification and visual styling for strength
+    const strength = useMemo(() => {
+        if (entropy < 60) return { label: 'Low' };
+        if (entropy < 85) return { label: 'Medium' };
+        if (entropy < 110) return { label: 'Strong' };
+        return { label: 'Enterprise' };
+    }, [entropy]);
+
+    if (!isOpen) {
         return (
-            <>
-                <style dangerouslySetInnerHTML={{__html: `
-                    @keyframes float-horizontal {
-                        0%, 100% { transform: translateX(0); }
-                        50% { transform: translateX(-20px); }
-                    }
-                    @keyframes float-circular {
-                        0% { transform: rotate(0deg) translateX(15px) rotate(0deg); }
-                        100% { transform: rotate(360deg) translateX(15px) rotate(-360deg); }
-                    }
-                    @keyframes float-star {
-                        0%, 100% { transform: translate(0, 0); }
-                        20% { transform: translate(-20px, -15px); }
-                        40% { transform: translate(10px, -25px); }
-                        60% { transform: translate(20px, 10px); }
-                        80% { transform: translate(-10px, 20px); }
-                    }
-                    @keyframes float-diagonal {
-                        0%, 100% { transform: translate(0, 0); }
-                        50% { transform: translate(-20px, -20px); }
-                    }
-                    @keyframes float-figure8 {
-                        0%, 100% { transform: translate(0, 0); }
-                        25% { transform: translate(-20px, -15px); }
-                        50% { transform: translate(0, -30px); }
-                        75% { transform: translate(20px, -15px); }
-                    }
-                `}} />
-                <div className={`fixed bottom-6 right-10 z-50 ${btnFloatAnim}`}>
-                <Button
-                    onClick={() => setIsMinimized(false)}
-                    className="h-14 w-14 rounded-full shadow-[0_0_30px_rgba(99,102,241,0.5)] bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-300 hover:scale-110 flex items-center justify-center"
-                    title="Open Security Utility"
+            <div className="fixed bottom-6 right-6 z-50">
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="flex items-center gap-2 h-9 px-3.5 rounded-lg bg-[#090d16] hover:bg-[#0f172a] text-slate-300 hover:text-white border border-white/10 hover:border-white/20 shadow-md transition-all font-sans text-xs font-medium cursor-pointer"
                 >
-                    <ShieldCheck className={`w-6 h-6 ${shieldAnim}`} />
-                </Button>
+                    <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Credential Utility</span>
+                </button>
             </div>
-            </>
         );
     }
 
     return (
-        <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-10 z-50 w-full sm:w-80 transition-all duration-300 animate-in slide-in-from-bottom-5">
-            <div className="bg-[#0f172a]/95 backdrop-blur-xl border border-slate-800 sm:rounded-2xl rounded-t-2xl shadow-[0_0_40px_-10px_rgba(99,102,241,0.3)] overflow-hidden flex flex-col">
+        <>
+            {/* Backdrop overlay for mobile */}
+            <div 
+                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[1px] sm:hidden transition-opacity duration-150 animate-in fade-in-0"
+                onClick={() => setIsOpen(false)}
+            />
+
+            <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-80 border-t sm:border border-white/10 bg-[#090d16] sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col font-sans text-slate-200 transition-all duration-150 ease-out animate-in fade-in-0 slide-in-from-bottom-6 sm:slide-in-from-bottom-2">
+                {/* Mobile Drag Indicator */}
+                <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/50">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.01]">
                     <div className="flex items-center gap-2">
-                        <div className="relative flex items-center justify-center">
-                            <div className="absolute inset-0 bg-indigo-400/50 rounded-full blur-[6px] animate-pulse"></div>
-                            <KeyRound className={`w-4 h-4 text-indigo-300 relative z-10 ${headerAnim}`} />
+                        <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                        <div>
+                            <h3 className="text-[11px] font-bold text-white tracking-wider uppercase">Credential Utility</h3>
+                            <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wide">Generate Scoped Secret Payload</p>
                         </div>
-                        <h3 className="text-sm font-semibold text-slate-100">Password Generator</h3>
                     </div>
                     <button
-                        onClick={() => setIsMinimized(true)}
+                        onClick={() => setIsOpen(false)}
                         className="text-slate-400 hover:text-white transition-colors p-1"
                         title="Minimize"
                     >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="w-3.5 h-3.5" />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="p-4 flex flex-col gap-4">
-                    {/* Display & Actions */}
+                <div className="p-4 space-y-4">
+                    {/* Generated Output */}
                     <div className="space-y-2">
-                        <div className="flex space-x-2">
-                            <Input
-                                value={credential}
-                                readOnly
-                                className="font-mono text-sm tracking-wider bg-slate-900 border-slate-700 text-emerald-400 focus-visible:ring-0"
-                            />
+                        <div className="relative flex items-center bg-black/40 border border-white/10 rounded-lg p-2.5 font-mono text-[12px] text-indigo-300 select-all overflow-x-auto break-all min-h-[42px] leading-relaxed">
+                            {credential}
+                        </div>
+
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={handleCopy}
+                                className="flex-1 h-8 bg-white hover:bg-slate-100 text-slate-950 text-xs font-semibold rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                                {isCopied ? (
+                                    <>
+                                        <Check className="w-3 h-3 text-emerald-600" />
+                                        <span>Copied</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Copy to Clipboard</span>
+                                    </>
+                                )}
+                            </Button>
                             <Button
                                 variant="outline"
                                 size="icon"
                                 onClick={handleGenerate}
-                                className="bg-slate-800 border-slate-700 hover:bg-slate-700 hover:text-white shrink-0"
+                                className="h-8 w-8 bg-transparent border-white/10 hover:bg-white/[0.04] text-slate-400 hover:text-white shrink-0 cursor-pointer"
                                 title="Regenerate"
                             >
-                                <RefreshCw className="h-4 w-4" />
+                                <RefreshCw className="w-3 h-3" />
                             </Button>
                         </div>
-                        <Button
-                            onClick={handleCopy}
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-lg shadow-indigo-600/20"
-                        >
-                            {isCopied ? (
-                                <>
-                                    <Check className="h-4 w-4 mr-2" />
-                                    Copied to Clipboard
-                                </>
-                            ) : (
-                                <>
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Copy Password
-                                </>
-                            )}
-                        </Button>
                     </div>
 
-                    {/* Length Selector */}
-                    <div className="space-y-3 pt-2 border-t border-slate-800/50">
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium text-slate-400">
-                                Length: {length}
-                            </label>
-                            <Input
-                                type="number"
+                    {/* Muted Entropy Monospace Text */}
+                    <div className="pt-2 flex items-center justify-between border-t border-white/5 mt-1">
+                        <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Entropy Signature</span>
+                        <span className="text-[10px] text-slate-400 font-mono font-medium">
+                            {entropy}-bit &bull; {strength.label}
+                        </span>
+                    </div>
+
+                    {/* Length Slider */}
+                    <div className="space-y-1.5 pt-2.5 border-t border-white/5">
+                        <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400 font-medium">Bit Depth Length</span>
+                            <span className="font-mono font-bold text-indigo-400">{length} chars</span>
+                        </div>
+                        <div className="flex items-center">
+                            <input
+                                type="range"
                                 min={8}
                                 max={64}
+                                step={1}
                                 value={length}
-                                onChange={(e) => handleLengthChange(parseInt(e.target.value) || 8)}
-                                className="w-16 h-7 text-xs text-center bg-slate-900 border-slate-700 focus-visible:ring-1"
+                                onChange={(e) => setLength(parseInt(e.target.value))}
+                                className="flex-1 h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-white focus:outline-none"
                             />
                         </div>
-                        <input
-                            type="range"
-                            min={8}
-                            max={64}
-                            step={1}
-                            value={length}
-                            onChange={(e) => handleLengthChange(parseInt(e.target.value))}
-                            className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 focus:outline-none"
-                        />
                     </div>
 
+                    {/* Policies Checklist */}
+                    <div className="space-y-2 pt-2.5 border-t border-white/5">
+                        <div className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">Policy Enforcements</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                            {[
+                                { label: 'Uppercase [A-Z]', key: 'uppercase' },
+                                { label: 'Lowercase [a-z]', key: 'lowercase' },
+                                { label: 'Numbers [0-9]', key: 'numbers' },
+                                { label: 'Special [!@#$]', key: 'special' },
+                            ].map((item) => (
+                                <label
+                                    key={item.key}
+                                    className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer select-none"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={policy[item.key as keyof typeof policy]}
+                                        onChange={() => handlePolicyToggle(item.key as keyof typeof policy)}
+                                        className="w-3.5 h-3.5 rounded border-white/20 bg-white/[0.02] text-indigo-600 focus:ring-0 focus:ring-offset-0 accent-indigo-500 cursor-pointer"
+                                    />
+                                    <span className="text-[11px]">{item.label}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Informational Note */}
-                <div className="px-4 py-3 bg-slate-900/80 border-t border-slate-800">
-                    <p className="text-[10px] leading-relaxed text-slate-500 text-center">
-                        Credentials are generated locally in your browser and are never stored or transmitted.
-                    </p>
+                {/* Footer */}
+                <div className="px-4 py-2.5 border-t border-white/5 bg-white/[0.01] text-center">
+                    <span className="text-[9px] font-mono text-slate-600 tracking-wider uppercase">
+                        Runtime-generated &bull; Never stored
+                    </span>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
+

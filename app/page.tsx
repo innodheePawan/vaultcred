@@ -1,273 +1,566 @@
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getSystemSettings } from "@/lib/actions/settings";
-import { headers } from "next/headers";
+import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { ExpandableFeatureCard } from "@/components/marketing/ExpandableFeatureCard";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import {
-    Shield,
-    Lock,
-    Zap,
-    History,
-    Users,
-    ShieldCheck,
-    ShieldAlert,
     ArrowRight,
-    KeyRound,
     CheckCircle2,
-    Code,
-    Terminal,
+    Timer,
+    UserX,
+    EyeOff,
+    Globe,
+    Network,
+    SearchX,
+    Database,
+    ShieldCheck,
+    Lock,
+    KeyRound,
+    Fingerprint,
+    Server,
+    Activity,
+    FileSearch,
+    AlertTriangle,
+    Workflow,
     ChevronRight,
 } from "lucide-react";
 
 export default async function LandingPage() {
     const session = await auth();
     const settings = await getSystemSettings();
-    const headersList = await headers();
-    const host = headersList.get('host') || 'vault.credsecure.io';
 
     return (
         <div className="relative min-h-screen bg-[#030712] text-slate-50 selection:bg-indigo-500/30 overflow-x-hidden font-sans">
-            {/* Background elements */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-900/20 blur-[120px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-900/20 blur-[120px]" />
-                <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] rounded-full bg-purple-900/10 blur-[100px]" />
-            </div>
-
             {/* Navbar */}
-            <nav className="fixed top-0 w-full z-50 bg-[#030712]/60 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
-                        <div className="flex items-center gap-3 group cursor-pointer">
-                            <div className="relative flex items-center justify-center p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-indigo-500/20">
-                                <Shield className="w-6 h-6 text-white" strokeWidth={2.5} />
-                            </div>
-                            <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-white">
-                                {settings.applicationName || "CredSecure"}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-8">
-                            <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-                                <Link href="#features" className="hover:text-white transition-colors">Features</Link>
-                                <Link href="#compliance" className="hover:text-white transition-colors">Compliance</Link>
-                            </div>
-                            {session?.user ? (
-                                <Link href="/dashboard">
-                                    <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-5 rounded-full transition-all duration-300 shadow-[0_0_20px_-5px_rgba(99,102,241,0.4)] hover:shadow-[0_0_25px_-5px_rgba(99,102,241,0.6)]">
-                                        Open Dashboard
+            <MarketingNavbar
+                applicationName={settings.applicationName || "CredSecure"}
+                isLoggedIn={!!session?.user}
+            />
+
+            <main className="relative z-10 w-full overflow-x-hidden pt-16">
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 1 — HERO
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                        {/* Left Side: Dominant Copy (7 Cols) */}
+                        <div className="space-y-6 lg:col-span-7">
+                            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.12] text-white text-balance">
+                                Govern Enterprise Credentials with{" "}
+                                <span className="text-indigo-400">Visibility, Traceability, and Control.</span>
+                            </h1>
+                            <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-xl">
+                                Secure, govern, and trace system accounts, API client scopes, database keys, and operational credentials across your enterprise landscapes.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-start gap-3 pt-2">
+                                <Link href="/request-demo">
+                                    <Button className="h-10 px-5 bg-white hover:bg-slate-100 text-slate-900 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                                        Request Demo
+                                        <ArrowRight className="w-3.5 h-3.5" />
                                     </Button>
                                 </Link>
-                            ) : (
-                                <div className="flex items-center gap-4">
-                                    <Link href="/login" className="hidden sm:block text-sm font-medium text-slate-300 hover:text-white transition-colors">
-                                        Sign In
-                                    </Link>
-                                    <Link href="/login">
-                                        <Button className="bg-white hover:bg-slate-200 text-slate-900 font-bold px-6 py-5 rounded-full transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] hover:shadow-[0_0_25px_-5px_rgba(255,255,255,0.5)]">
-                                            Get Started <ArrowRight className="w-4 h-4 ml-2" />
-                                        </Button>
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            <main className="relative z-10 w-full overflow-x-hidden">
-                {/* Hero Section */}
-                <section className="pt-40 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-semibold tracking-wide mb-8 animate-fade-in hover:bg-indigo-500/20 transition-colors cursor-default backdrop-blur-md">
-                        <ShieldCheck className="w-4 h-4" />
-                        <span>Enterprise Grade Secret Management</span>
-                    </div>
-
-                    <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 text-balance leading-[1.05]">
-                        Zero Trust. <br className="hidden sm:block" />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 animate-gradient-x">Infinite Scale.</span>
-                    </h1>
-
-                    <p className="text-lg sm:text-xl text-slate-400 mb-12 max-w-3xl text-balance leading-relaxed">
-                        The ultimate vault for modern engineering teams. Secure, auditable, and automated credential orchestration. Built for uncompromising data integrity.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row items-center gap-5 w-full sm:w-auto">
-                        <Link href="/login" className="w-full sm:w-auto">
-                            <Button className="w-full sm:w-auto h-14 px-10 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl group flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)]">
-                                Start Securing Free
-                                <Zap className="w-5 h-5 fill-current group-hover:text-yellow-300 transition-colors duration-300" />
-                            </Button>
-                        </Link>
-                        {/* <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-slate-900/50 hover:bg-slate-800 text-white border-slate-700 font-bold rounded-2xl group flex items-center justify-center gap-3 backdrop-blur-sm transition-all duration-300 hover:scale-105 active:scale-95">
-                            <Code className="w-5 h-5" />
-                            API Documentation
-                        </Button> */}
-                    </div>
-
-                    <div className="mt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-slate-500 text-sm font-medium">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" /> AES-256-GCM
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" /> SOC2 Compliant
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 99.99% SLA
-                        </div>
-                    </div>
-                </section>
-
-                {/* Dashboard Showcase Mockup */}
-                <section className="relative px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto mb-32 -mt-4 lg:-mt-8 w-full" style={{ perspective: "1200px" }}>
-                    <div style={{ transform: 'rotateX(4deg) scale(0.98)' }} className="transform-gpu transition-all duration-1000 hover:rotateX-0 hover:scale-100 ease-out">
-                        <div className="relative rounded-2xl border border-slate-800 bg-[#0f172a]/90 backdrop-blur-2xl shadow-[0_0_50px_-12px_rgba(99,102,241,0.25)] p-2 animate-float ring-1 ring-white/10 overflow-hidden">
-
-                            {/* Mockup Header */}
-                            <div className="flex items-center px-4 py-3 border-b border-slate-800 bg-slate-900/80 rounded-t-xl gap-4">
-                                <div className="flex gap-2 min-w-fit">
-                                    <div className="w-3 h-3 rounded-full bg-rose-500/90 shadow-sm"></div>
-                                    <div className="w-3 h-3 rounded-full bg-amber-500/90 shadow-sm"></div>
-                                    <div className="w-3 h-3 rounded-full bg-emerald-500/90 shadow-sm"></div>
-                                </div>
-                                <div className="mx-auto flex items-center justify-center gap-2 bg-[#020617] px-6 py-1.5 rounded-full border border-slate-800 text-xs text-slate-400 font-mono shadow-inner w-full max-w-md">
-                                    <Lock className="w-3 h-3 text-emerald-400" /> {host}
-                                </div>
-                                <div className="min-w-[48px] hidden sm:block"></div>
+                                <Link href="/platform">
+                                    <Button variant="outline" className="h-10 px-5 bg-transparent border-white/10 text-slate-300 text-xs font-medium rounded-lg hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer">
+                                        Explore Platform
+                                    </Button>
+                                </Link>
                             </div>
+                        </div>
 
-                            {/* Mockup Content Layout */}
-                            <div className="flex flex-col sm:flex-row bg-[#020617] rounded-b-xl overflow-hidden shadow-inner">
-                                {/* Sidebar */}
-                                <div className="w-full sm:w-64 bg-slate-900/60 p-4 space-y-4 border-r border-slate-800 hidden sm:block">
-                                    <div className="h-8 bg-slate-800/80 rounded-lg w-full mb-8 border border-white/5"></div>
-                                    {[1, 2, 3, 4, 5].map((_, i) => (
-                                        <div key={i} className="flex items-center gap-3 opacity-60 hover:opacity-100 transition-opacity cursor-pointer p-2 rounded-md hover:bg-white/5">
-                                            <div className="w-5 h-5 bg-slate-700 rounded-sm"></div>
-                                            <div className="h-2.5 bg-slate-600 rounded w-2/3"></div>
+                        {/* Right Side: Receding Architectural Visualization (5 Cols) */}
+                        <div className="hidden lg:block lg:col-span-5 opacity-90 hover:opacity-100 transition-opacity duration-200">
+                            <div className="relative border border-white/[0.06] rounded-xl bg-[#0b0f19] p-6 shadow-xl">
+                                <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-5 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/60" />
+                                    <span>Credential Governance Lifecycle</span>
+                                </div>
+                                <div className="space-y-0 font-sans">
+                                    {[
+                                        { step: "01", label: "Request", desc: "Access request initiated", active: false },
+                                        { step: "02", label: "Validate", desc: "RBAC policy evaluated", active: false },
+                                        { step: "03", label: "Deliver", desc: "Scoped credential issued", active: false },
+                                        { step: "04", label: "Monitor", desc: "Real-time usage tracked", active: true },
+                                        { step: "05", label: "Revoke", desc: "Time-bound expiry enforced", active: false },
+                                        { step: "06", label: "Audit", desc: "Immutable trail recorded", active: false },
+                                    ].map((item, idx) => (
+                                        <div key={idx} className="flex items-start gap-4 group">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-7 h-7 rounded-full border transition-colors flex items-center justify-center text-[9px] font-mono font-bold ${item.active
+                                                    ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]"
+                                                    : "border-white/[0.04] bg-white/[0.01] text-slate-500"
+                                                    }`}>
+                                                    {item.step}
+                                                </div>
+                                                {idx < 5 && <div className="w-px h-5 bg-white/[0.04]" />}
+                                            </div>
+                                            <div className="pb-4 pt-0.5">
+                                                <div className={`text-xs font-semibold tracking-wide ${item.active ? "text-indigo-400" : "text-slate-400"}`}>
+                                                    {item.label}
+                                                </div>
+                                                <div className="text-[10px] text-slate-600 font-mono mt-0.5">{item.desc}</div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                                {/* Main Content */}
-                                <div className="flex-1 p-4 sm:p-8 space-y-8 bg-gradient-to-br from-[#020617] to-slate-900/20">
-                                    <div className="flex justify-between items-center border-b border-slate-800/50 pb-6">
-                                        <div className="space-y-2">
-                                            <div className="h-6 bg-slate-200 rounded w-48 shadow-sm"></div>
-                                            <div className="h-3 bg-slate-600 rounded w-32"></div>
-                                        </div>
-                                        <div className="h-10 bg-indigo-600/20 border border-indigo-500/30 rounded-lg w-32 flex items-center justify-center">
-                                            <div className="h-2.5 bg-indigo-400 rounded w-16"></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        {[1, 2, 3].map((_, i) => (
-                                            <div key={i} className="p-5 bg-slate-900/40 border border-slate-800 rounded-xl space-y-4 shadow-sm hover:border-slate-700 transition-colors">
-                                                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center mb-2">
-                                                    <div className="w-3 h-3 rounded-sm bg-slate-600"></div>
-                                                </div>
-                                                <div className="h-3 bg-slate-500 rounded w-1/2"></div>
-                                                <div className="h-6 bg-slate-300 rounded w-3/4"></div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4 shadow-sm">
-                                        {[1, 2, 3].map((_, i) => (
-                                            <div key={i} className="flex justify-between items-center p-3 hover:bg-white/5 rounded-lg transition-colors group">
-                                                <div className="flex items-center gap-4 w-1/2">
-                                                    <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 shadow-sm flex items-center justify-center">
-                                                        <div className="w-4 h-4 rounded-sm bg-slate-600"></div>
-                                                    </div>
-                                                    <div className="space-y-2 w-full">
-                                                        <div className="h-3 bg-slate-300 rounded w-1/3 group-hover:bg-white transition-colors"></div>
-                                                        <div className="h-2.5 bg-slate-600 rounded w-1/2"></div>
-                                                    </div>
-                                                </div>
-                                                <div className="h-6 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs text-emerald-400 px-3 py-1.5 flex items-center font-medium shadow-sm">Active</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
-
-                            {/* Inner glow */}
-                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl pointer-events-none"></div>
                         </div>
-                        {/* Glow effect under the mockup */}
-                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[60%] h-16 bg-indigo-600/20 blur-[80px] -z-10 rounded-full"></div>
                     </div>
                 </section>
 
-                {/* Features Grid */}
-                <section id="features" className="py-24 relative bg-slate-900/10 border-t border-slate-800/50 backdrop-blur-sm">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-20">
-                            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                                Engineered for Paranoia
-                            </h2>
-                            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-                                We designed {settings.applicationName || "CredSecure"} with a "zero trust" architecture. Every action, every secret, and every user is verified, encrypted, and logged.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* Feature Cards */}
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 2 — TRUST BAR
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="border-y border-white/[0.05] bg-[#060a13]">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
                             {[
-                                { title: "AES-256-GCM Encryption", desc: "Military-grade encryption applied client-side before touching our infrastructure.", icon: Lock, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20", border: "hover:border-blue-500/50", glow: "hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.15)]" },
-                                { title: "Identity & RBAC", desc: "Granular access controls mapped seamlessly to Environments and Categories.", icon: Users, color: "text-indigo-400", bg: "bg-indigo-400/10 border-indigo-400/20", border: "hover:border-indigo-500/50", glow: "hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.15)]" },
-                                { title: "Immutable Audit Trails", desc: "Cryptographically verifiable logs for every interaction, making compliance effortless.", icon: History, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20", border: "hover:border-emerald-500/50", glow: "hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.15)]" },
-                                { title: "Threat Protection", desc: "Built-in rate limiting, anomalous login detection, and automatic IP blacklisting.", icon: ShieldAlert, color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/20", border: "hover:border-rose-500/50", glow: "hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.15)]" },
-                                { title: "Hardware Key 2FA", desc: "Enforce WebAuthn or TOTP requirements for highly sensitive vault access.", icon: KeyRound, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20", border: "hover:border-amber-500/50", glow: "hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.15)]" },
-                                { title: "API Integrations", desc: "Developer-first API with scope-enforced tokens and global kill-switches.", icon: Terminal, color: "text-purple-400", bg: "bg-purple-400/10 border-purple-400/20", border: "hover:border-purple-500/50", glow: "hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.15)]" },
-                            ].map((feature, idx) => (
-                                <div key={idx} className={`group p-8 rounded-3xl bg-slate-900/40 border border-slate-800 transition-all duration-300 cursor-default ${feature.border} ${feature.glow}`}>
-                                    <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center mb-6 transition-colors ${feature.bg}`}>
-                                        <feature.icon className={`w-7 h-7 ${feature.color}`} />
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-3 text-slate-100 group-hover:text-white transition-colors">{feature.title}</h3>
-                                    <p className="text-slate-400 leading-relaxed text-sm">
-                                        {feature.desc}
-                                    </p>
+                                "AES-256-GCM Encryption",
+                                "Runtime-Only Decryption",
+                                "Immutable Audit Logging",
+                                "Zero Trust Access Validation",
+                                "SAP Landscape Ready",
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-1.5">
+                                    <span className="w-1 h-1 rounded-full bg-indigo-500/50" />
+                                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">{item}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Metrics/Scale Section */}
-                <section id="compliance" className="py-20 border-y border-slate-800/50 bg-[#020617]/50 backdrop-blur-xl">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-center divide-y sm:divide-y-0 sm:divide-x divide-slate-800/80">
-                            {/* <div className="pt-6 sm:pt-0">
-                                <div className="text-4xl font-black text-white mb-2 tracking-tight drop-shadow-sm">99.99%</div>
-                                <div className="text-slate-400 font-medium text-sm uppercase tracking-wider">Uptime SLA</div>
-                            </div> */}
-                            <div className="pt-6 sm:pt-0">
-                                <div className="text-4xl font-black text-white mb-2 tracking-tight drop-shadow-sm">10M+</div>
-                                <div className="text-slate-400 font-medium text-sm uppercase tracking-wider">Secrets Encrypted</div>
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 3 — COMBINED ENVIRONMENT STRIP (Social Proof & Continuity)
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="border-b border-white/[0.05] bg-[#05080f] py-4">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 font-bold">
+                            BUILT FOR CRITICAL WORKFLOWS:
+                        </span>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                            {[
+                                "Enterprise Operations",
+                                "Integration Platforms",
+                                "Vendor Governance",
+                                "Compliance Reviews",
+                                "Production Support",
+                            ].map((item, idx) => (
+                                <span key={idx} className="text-[9px] px-2 py-0.5 rounded border border-white/5 bg-[#0a0e17] text-slate-400 font-mono tracking-wider uppercase font-semibold">
+                                    {item}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 4 — THE REAL PROBLEM
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                    <div className="text-center max-w-2xl mx-auto mb-16">
+                        <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Operational Risk</div>
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                            Most credential risks begin after storage.
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-lg mx-auto">
+                            Organizations secure static credentials but struggle to govern active usage, operational tracing, external access limits, and lifecycle ownership.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[
+                            { title: "Permanent Standing Access", desc: "Privileges left open indefinitely, creating persistent operational exposure across landscapes.", icon: Timer },
+                            { title: "Unmanaged Service Accounts", desc: "System-to-system connections lacking active ownership, policy boundaries, or lifecycle rotation.", icon: UserX },
+                            { title: "Audit Blind Spots", desc: "No unified, traceable log to prove who accessed what credentials, when, and for what purpose.", icon: EyeOff },
+                            { title: "External Vendor Exposure", desc: "Third-party access granted without rigid time constraints, scope bounds, or automatic revocation.", icon: Globe },
+                            { title: "Integration Credential Sprawl", desc: "Tokens and certificates scattered across middleware platforms without centralized governance.", icon: Network },
+                            { title: "Operational Traceability Gaps", desc: "Inability to connect access events back to specific authorized support windows and approvals.", icon: SearchX },
+                        ].map((card, idx) => (
+                            <div key={idx} className="p-5 rounded-lg border border-white/[0.05] bg-[#0b0f19]/40 hover:border-white/[0.1] transition-all duration-150">
+                                <card.icon className="w-4 h-4 text-slate-500 mb-3.5" strokeWidth={1.5} />
+                                <h3 className="text-xs font-semibold text-white tracking-wide uppercase mb-1.5">{card.title}</h3>
+                                <p className="text-[11px] text-slate-500 leading-relaxed font-mono">{card.desc}</p>
                             </div>
-                            <div className="pt-6 sm:pt-0">
-                                <div className="text-4xl font-black text-white mb-2 tracking-tight drop-shadow-sm">&lt; 50ms</div>
-                                <div className="text-slate-400 font-medium text-sm uppercase tracking-wider">API Response Time</div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 5 — GOVERNANCE DOMAINS
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05] bg-[#05080f]">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-16">
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-indigo-400 font-semibold mb-2">Governance Framework</div>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                                Built for Operational Credential Governance
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                                Six integrated domains designed to establish complete authority, lifecycle traceability, and runtime policy enforcement.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[
+                                { title: "Credential Governance", desc: "Lifecycle control for application, database, API, and infrastructure credentials across environments.", icon: Database, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Ownership Tracking • Expiry Triggers • Rotation Scopes" },
+                                { title: "Access Governance", desc: "Scoped permissions, temporary access, and approval-driven workflows with time-bound enforcement.", icon: Fingerprint, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Time-Bound Revocation • Scoped RBAC • Multi-Tier Approval" },
+                                { title: "Audit & Compliance", desc: "Immutable audit visibility across operational actions, access events, and credential lifecycle changes.", icon: FileSearch, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Immutable Event Trail • SIEM Export • Access Attestation" },
+                                { title: "API Security", desc: "OAuth, mTLS, HMAC validation, and scoped API exposure controls with configurable rate governance.", icon: Server, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Cryptographic Handshake • Rate Throttling • Scope Restriction" },
+                                { title: "Threat Protection", desc: "Adaptive abuse prevention, IP escalation controls, and runtime enforcement across authentication flows.", icon: AlertTriangle, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "IP Block Lists • Throttling Escalation • Challenge Prompts" },
+                                { title: "Operational Infrastructure", desc: "Licensing integrity, schema governance, deployment monitoring, and system health observability.", icon: Activity, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Cryptographic Signature • Health Checks • Deployment Logs" },
+                            ].map((domain, idx) => (
+                                <div key={idx} className={`p-5 rounded-lg border border-white/[0.05] bg-white/[0.01] border-l-2 ${domain.accent} hover:bg-white/[0.02] transition-all duration-150 flex flex-col justify-between`}>
+                                    <div className="flex items-start gap-3">
+                                        <domain.icon className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" strokeWidth={1.5} />
+                                        <div>
+                                            <h3 className="text-xs font-semibold text-white tracking-wide uppercase mb-1.5">{domain.title}</h3>
+                                            <p className="text-[11px] text-slate-500 leading-relaxed font-mono">{domain.desc}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-[9px] text-indigo-400/80 font-mono tracking-wider uppercase mt-4 border-t border-white/[0.03] pt-2.5">
+                                        {domain.meta}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="text-center mt-12">
+                            <Link href="/platform" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                                Explore Platform <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 5.5 — PRODUCT PREVIEW: "Operational Visibility in One Place"
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05]">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-16">
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Live Product Preview</div>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                                Operational Visibility in One Place
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
+                                A centralized dashboard designed for enterprise support teams, landscape integration governance, and real-time compliance audits.
+                            </p>
+                        </div>
+
+                        {/* Sharp-edged, matte browser UI mockup */}
+                        <div className="border border-white/[0.08] rounded-lg bg-[#0b0f19] shadow-2xl overflow-hidden font-sans text-slate-200">
+                            {/* Browser Header Bar */}
+                            <div className="bg-[#060a13] px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-white/10" />
+                                    <div className="w-2 h-2 rounded-full bg-white/10" />
+                                    <div className="w-2 h-2 rounded-full bg-white/10" />
+                                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest ml-4 font-semibold">CredSecure Dashboard v1.4</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider font-semibold">ALL GOVERNED SYSTEMS OPERATIONAL</span>
+                                </div>
+                            </div>
+
+                            {/* Dashboard Body Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.06] bg-[#080c14]/40">
+
+                                {/* Col 1: Access Approvals */}
+                                <div className="p-5 space-y-4">
+                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-white/5 pb-2">Active Scoped Approvals</div>
+                                    <div className="space-y-2">
+                                        {[
+                                            { id: "REQ-901", target: "Enterprise System Connectivity", status: "Approved", time: "2h remaining" },
+                                            { id: "REQ-884", target: "Vendor QA Api-Key Scopes", status: "Approved", time: "18m remaining" },
+                                            { id: "REQ-879", target: "Production Patch Deployment", status: "Terminated", time: "0m remaining" },
+                                        ].map((req, idx) => (
+                                            <div key={idx} className="p-3 rounded border border-white/5 bg-[#0b0f19] space-y-1.5">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-mono text-slate-400 font-bold">{req.id}</span>
+                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono uppercase font-bold border ${req.status === "Approved"
+                                                        ? "text-indigo-400 border-indigo-500/20 bg-indigo-500/5"
+                                                        : "text-slate-500 border-white/5 bg-white/[0.01]"
+                                                        }`}>{req.status}</span>
+                                                </div>
+                                                <div className="text-[10px] text-slate-300 font-medium">{req.target}</div>
+                                                <div className="text-[8.5px] text-slate-500 font-mono uppercase tracking-wide">Revocation: {req.time}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Col 2: Real-time Audit Timeline */}
+                                <div className="p-5 space-y-4 md:col-span-2">
+                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-white/5 pb-2">Governed Access Audit Stream</div>
+                                    <div className="space-y-1.5 font-mono text-[10px] text-slate-400 leading-relaxed">
+                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-600 shrink-0">[16:01:18]</span>
+                                            <span className="text-indigo-400">[SYSTEM]</span>
+                                            <span className="text-slate-300">Enforcing deterministic check-sum rotation on Enterprise Environment Certificatess.</span>
+                                        </div>
+                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-600 shrink-0">[15:58:04]</span>
+                                            <span className="text-slate-400">[USER-84]</span>
+                                            <span className="text-slate-300">Requested time-bound decryption of System Integration Connection credential (REQ-901).</span>
+                                        </div>
+                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-600 shrink-0">[15:54:12]</span>
+                                            <span className="text-emerald-500">[COMPLIANCE]</span>
+                                            <span className="text-slate-300">Validated 2FA TOTP handshake for administrative security settings sync.</span>
+                                        </div>
+                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-600 shrink-0">[15:40:00]</span>
+                                            <span className="text-rose-400">[SECURITY]</span>
+                                            <span className="text-slate-300">Enforced automatic session termination on REQ-879 (Support window expired).</span>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-slate-600 shrink-0">[15:32:45]</span>
+                                            <span className="text-indigo-400">[SYSTEM]</span>
+                                            <span className="text-slate-300">Computed zero-trust route permissions check. Target approved: Enterprise Integration Platform.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Dashboard Footer Info */}
+                            <div className="bg-[#060a13] px-4 py-2.5 border-t border-white/[0.06] text-center text-[9px] font-mono text-slate-500 tracking-wider uppercase">
+                                CRITICAL CREDENTIAL ACTIONS ARE SIGNED CRYPTOGRAPHICALLY AND NEVER STORED IN PLAIN TEXT
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* CTA Section */}
-                <section className="py-32 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-indigo-950/10"></div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none"></div>
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 6 — SECURITY ARCHITECTURE
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05] bg-[#05080f]">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-16">
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">High-Trust Architecture</div>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                                Designed for High-Trust Operational Environments
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
+                                Cryptographic and architectural constraints built to guarantee credential safety after storage.
+                            </p>
+                        </div>
 
-                    <div className="max-w-4xl mx-auto px-4 relative z-10 text-center">
-                        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-8 text-white">Ready to lock down your infrastructure?</h2>
-                        <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto text-balance">Join forward-thinking teams that prioritize security without sacrificing velocity.</p>
-                        <Link href="/login">
-                            <Button className="h-16 px-12 text-lg bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-full transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.5)]">
-                                Initialize Free Sandbox
-                                <ChevronRight className="w-5 h-5 ml-2" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+                            {[
+                                { title: "Runtime-Only Decryption", desc: "Secrets decrypted only within secure server-memory execution contexts. Never persisted in plaintext at rest or in transit.", icon: Lock },
+                                { title: "Decoupled Secret Storage", desc: "Metadata and encrypted payloads architecturally isolated across separate storage layers for defense-in-depth.", icon: Database },
+                                { title: "Zero Trust Validation", desc: "Every request validated against dynamic RBAC scopes, session context, and feature-level access policies in real time.", icon: ShieldCheck },
+                                { title: "Deterministic License Integrity", desc: "Cryptographically verified licensing prevents unauthorized operation and detects tampering without external dependencies.", icon: KeyRound },
+                            ].map((card, idx) => (
+                                <div key={idx} className="p-6 rounded-lg border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.1] transition-all duration-150">
+                                    <card.icon className="w-4 h-4 text-indigo-400 mb-3.5" strokeWidth={1.5} />
+                                    <h3 className="text-xs font-semibold text-white tracking-wide uppercase mb-2">{card.title}</h3>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed font-mono">{card.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="text-center mt-12">
+                            <Link href="/security" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                                View Security Architecture <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 7 — USE CASES
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05]">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-16">
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Operational Workflows</div>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                                Operational Workflows We Secure
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                                Scoped, traceable access security where credential containment is critical to business continuity.
+                            </p>
+                        </div>
+
+                        <div className="max-w-3xl mx-auto space-y-2">
+                            {[
+                                { title: "Enterprise Integration Credential Governance", desc: "Govern middleware tokens, RFC connections, and system-to-system credentials across SAP landscapes.", tier: 1 },
+                                { title: "Production maintenance access with automatic revocation", desc: "Time-bound engineer access for support windows with automatic, hard termination and audit trails.", tier: 1 },
+                                { title: "Third-party vendor access governance with zero standing privileges", desc: "Controlled external support access with scoped visibility, strict timers, and automatic termination.", tier: 1 },
+                                { title: "Automated service account lifecycle governance", desc: "Centralized ownership attribution, rotation scheduling, and key validity tracking.", tier: 2 },
+                                { title: "API Client Scope Security", desc: "External API exposure governed with client credentials, mTLS validation, and rates controls.", tier: 2 },
+                                { title: "Compliance Audits & Attestation", desc: "Instant evidence extraction and login differential mapping for regulatory review.", tier: 2 },
+                                { title: "Incident Response Playbooks", desc: "Emergency break-glass workflows with instant tracing, isolation, and automated termination.", tier: 2 },
+                            ].map((uc, idx) => (
+                                <div key={idx} className={`flex items-center justify-between px-5 py-3 rounded-lg border transition-all duration-150 ${uc.tier === 1
+                                    ? "border-indigo-500/15 bg-indigo-500/[0.02] hover:border-indigo-500/30"
+                                    : "border-white/[0.04] bg-white/[0.01] hover:border-white/[0.08]"
+                                    }`}>
+                                    <div className="flex items-start gap-3 min-w-0">
+                                        <Workflow className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${uc.tier === 1 ? "text-indigo-400" : "text-slate-500"}`} strokeWidth={1.5} />
+                                        <div className="min-w-0">
+                                            <h3 className="text-xs font-semibold text-white tracking-wide uppercase">{uc.title}</h3>
+                                            <p className="text-[11px] text-slate-500 leading-relaxed font-mono mt-0.5">{uc.desc}</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-slate-600 shrink-0 ml-3" />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="text-center mt-12">
+                            <Link href="/use-cases" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                                Explore All Use Cases <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 8 — FEATURE HIGHLIGHTS (Expandable)
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05] bg-[#05080f]">
+                    <div className="max-w-3xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-16">
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Platform Capabilities</div>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                                Platform Capabilities
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-400">
+                                Complete security and compliance modules grouped by technical domain.
+                            </p>
+                        </div>
+
+                        <div className="space-y-3">
+                            <ExpandableFeatureCard
+                                title="Identity & Access Management"
+                                items={[
+                                    "Role-Based Access Control (RBAC) with 5-level permission hierarchy",
+                                    "Dynamic access groups with policy-based credential scoping",
+                                    "Category and environment-scoped permissions",
+                                    "External vendor isolation with time-bound access windows",
+                                    "Sensitive field masking for restricted visibility roles",
+                                ]}
+                                defaultOpen={true}
+                            />
+                            <ExpandableFeatureCard
+                                title="Authentication Security"
+                                items={[
+                                    "Mandatory TOTP-based Two-Factor Authentication",
+                                    "Adaptive CAPTCHA triggered after suspicious activity",
+                                    "Configurable session timeout with automatic invalidation",
+                                    "Multi-tier IP blocking with progressive escalation",
+                                    "Enterprise password policy enforcement",
+                                ]}
+                            />
+                            <ExpandableFeatureCard
+                                title="API Gateway Security"
+                                items={[
+                                    "OAuth 2.0 Client Credentials flow with encrypted secrets",
+                                    "Mutual TLS (mTLS) certificate verification",
+                                    "HMAC request signature validation with timestamp windows",
+                                    "Per-endpoint configurable rate limiting",
+                                    "Global API access kill switch",
+                                ]}
+                            />
+                            <ExpandableFeatureCard
+                                title="Audit & Compliance"
+                                items={[
+                                    "Immutable, tamper-evident audit logs for all operations",
+                                    "Differential auditing with structured change tracking",
+                                    "Login activity logging with risk classification",
+                                    "SIEM-ready structured JSON log output",
+                                    "Configurable log archival with batch traceability",
+                                ]}
+                            />
+                        </div>
+
+                        <div className="text-center mt-12">
+                            <Link href="/features" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                                See Full Breakdown <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 9 — PLATFORM OUTCOMES (Tabular KPI/Retool metrics)
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="border-y border-white/[0.05] bg-[#060a13]">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 lg:divide-x divide-white/[0.05] text-left">
+                            {[
+                                { label: "Time-Bound Access", val: "100%", desc: "Mandatory Revocation" },
+                                { label: "Immutable Audit Visibility", val: "Complete", desc: "SIEM & Audits ready" },
+                                { label: "Runtime Payload Isolation", val: "Always-On", desc: "No plaintext persistence" },
+                                { label: "Access Scopes Computed", val: "Per-Request", desc: "Zero trust evaluation" },
+                                { label: "External Support Enforced", val: "Controlled", desc: "Time & Space Scoped" },
+                            ].map((metric, idx) => (
+                                <div key={idx} className="p-4 space-y-1">
+                                    <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-bold">{metric.label}</div>
+                                    <div className="text-xl font-bold text-white tracking-tight font-sans">{metric.val}</div>
+                                    <div className="text-[10px] text-slate-600 font-mono">{metric.desc}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 10.5 — DESIGNED FOR OPERATIONAL CONTINUITY
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-b border-white/[0.05] bg-[#05080f]">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-16">
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Operational Dependability</div>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                                Designed for Operational Continuity
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-400">
+                                Enterprise-grade reliability guarantees that keep support, integration, and security pipelines unbroken.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 font-mono">
+                            {[
+                                { title: "Runtime Validation", desc: "Scopes, signatures, and environment policies are evaluated in real time at every execution point with sub-millisecond overhead." },
+                                { title: "Scoped Access Enforcements", desc: "Decoupled permission layers allow independent fail-safe checks. Even during partial failures, core access bounds remain locked." },
+                                { title: "Audit Trail Preservation", desc: "State change events are streamed asynchronously to write-ahead compliance pipelines, preventing database load spikes from dropping audit logs." },
+                                { title: "High-Availability Architecture", desc: "Stateless verification routing guarantees active requests failover seamlessly without breaking continuous integration connections." },
+                                { title: "Integration-Safe Credential Delivery", desc: "Connectors operate with self-healing backoff schedules and cryptographic checksum validations for resilient Integration & Middleware Operations." },
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex items-start gap-4 p-4 rounded border border-white/[0.04] bg-white/[0.01]">
+                                    <div className="text-indigo-400 font-bold text-xs shrink-0 select-none">[{idx + 1}]</div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-xs font-semibold text-white tracking-wide uppercase">{item.title}</h3>
+                                        <p className="text-[11px] text-slate-500 leading-relaxed">{item.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 11 — FINAL CTA
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="py-24 relative overflow-hidden">
+                    <div className="max-w-2xl mx-auto px-4 relative z-10 text-center">
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 text-white">
+                            Operational Security Requires More Than Vaulting.
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-400 mb-8 leading-relaxed max-w-md mx-auto">
+                            Improve visibility, governance, operational traceability, and dynamic control across enterprise credential landscapes.
+                        </p>
+                        <Link href="/request-demo">
+                            <Button className="h-10 px-6 bg-white hover:bg-slate-100 text-slate-900 text-xs font-semibold rounded-lg transition-colors cursor-pointer">
+                                Request Demo
                             </Button>
                         </Link>
                     </div>
@@ -275,26 +568,13 @@ export default async function LandingPage() {
             </main>
 
             {/* Footer */}
-            <footer className="py-12 bg-[#020617] border-t border-slate-900 relative z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col md:flex-row justify-center items-center gap-6">
-                        <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-                            <Shield className="w-6 h-6 text-indigo-500" />
-                            <span className="text-xl font-bold tracking-tight text-white">
-                                {settings.applicationName || "CredSecure"}
-                            </span>
-                        </div>
+            <MarketingFooter
+                applicationName={settings.applicationName || "CredSecure"}
+                companyName={settings.companyName || "Innodhee Services Pvt Ltd"}
+            />
 
-                        <p className="text-sm text-slate-500 text-center">
-                            &copy; {new Date().getFullYear()} {settings.companyName || "Innodhee Services Pvt Ltd"}. All rights reserved.
-                        </p>
-                    </div>
-                </div>
-            </footer>
-
-            {/* Floating Security Widget */}
+            {/* Floating Credential Utility */}
             <FloatingCredentialWidget />
         </div>
     );
 }
-

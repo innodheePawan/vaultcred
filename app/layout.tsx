@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CredSecure | Enterprise Credential Management",
-  description: "Secure, enterprise-grade credential management",
+  title: "CredSecure | Operational Credential Governance Platform",
+  description: "Govern enterprise credentials with visibility, traceability, and control across SAP landscapes, integration platforms, service accounts, and operational workflows.",
+  keywords: ["SAP credential governance", "service account governance", "operational credential security", "API credential governance", "privileged access governance", "audit traceability platform"],
 };
 
 import { auth } from "@/lib/auth";

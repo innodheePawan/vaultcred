@@ -21,6 +21,7 @@ const authHandler = auth((req) => {
     const isShare = path.startsWith('/share');
     const isActivation = path.startsWith('/activation');
     const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa || isShare || isActivation;
+    const isMarketing = path.startsWith('/platform') || path.startsWith('/security') || path.startsWith('/use-cases') || path.startsWith('/features') || path.startsWith('/request-demo');
 
     // Auth Session
     const isLoggedIn = !!req.auth;
@@ -64,7 +65,7 @@ const authHandler = auth((req) => {
     // 2. 2FA Enforcement
     // Strictly enforce 2FA for all logged-in users who haven't set it up yet.
     // Exceptions: setup-2fa page itself, signout, internal next/api assets, and the root/setup paths.
-    if (isLoggedIn && !twoFactorEnabled && !isSetup2fa && !isSignout && !isApi && !isSetup && !isRoot) {
+    if (isLoggedIn && !twoFactorEnabled && !isSetup2fa && !isSignout && !isApi && !isSetup && !isRoot && !isMarketing) {
 
         return NextResponse.redirect(new URL('/setup-2fa', req.url));
     }
@@ -78,7 +79,7 @@ const authHandler = auth((req) => {
     }
 
     // 4. Protect private routes
-    if (!isLoggedIn && !isPublicAuth && !isApi && !isSetup && !isRoot && !isSetup2fa) {
+    if (!isLoggedIn && !isPublicAuth && !isApi && !isSetup && !isRoot && !isSetup2fa && !isMarketing) {
         // Avoid redirect loop if already at /login (though isLogin check above handles it)
         if (!isLogin) {
             return NextResponse.redirect(new URL('/login', req.url));
