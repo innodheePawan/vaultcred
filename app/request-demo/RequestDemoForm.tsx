@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { sendDemoRequestEmails } from "@/lib/email";
 
 const ROLES = [
     "IT Security / CISO",
@@ -27,6 +28,8 @@ const USE_CASES = [
 
 export function RequestDemoForm() {
     const [submitted, setSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -35,10 +38,23 @@ export function RequestDemoForm() {
         useCase: "",
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // For now, just show confirmation. Backend integration can be added later.
-        setSubmitted(true);
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const res = await sendDemoRequestEmails(form);
+            if (res.success) {
+                setSubmitted(true);
+            } else {
+                setError(res.error || "Failed to submit demo request.");
+            }
+        } catch (err: any) {
+            setError(err.message || "An unexpected error occurred.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (submitted) {
@@ -123,13 +139,29 @@ export function RequestDemoForm() {
                 </select>
             </div>
 
+            {error && (
+                <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-center font-medium">
+                    {error}
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Button
                     type="submit"
-                    className="flex-1 h-11 bg-white hover:bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    disabled={isSubmitting}
+                    className="flex-1 h-11 bg-white hover:bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                 >
-                    Request Demo
-                    <ArrowRight className="w-4 h-4" />
+                    {isSubmitting ? (
+                        <>
+                            Sending...
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        </>
+                    ) : (
+                        <>
+                            Request Demo
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
                 </Button>
                 <Button
                     type="button"

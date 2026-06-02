@@ -3,7 +3,7 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/crypto';
-import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate, getOneTimeSecretEmailTemplate } from '@/lib/email-templates';
+import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate, getOneTimeSecretEmailTemplate, getDemoRequestConfirmationEmailTemplate, getDemoRequestAdminNotificationEmailTemplate } from '@/lib/email-templates';
 
 /**
  * Sends an invite activation email.
@@ -296,3 +296,56 @@ export async function sendOneTimeSecretEmail(
 
     return sendEmail(email, `${senderName} shared a secure secret with you`, html);
 }
+
+/**
+ * Sends a demo request confirmation email to the user and a lead notification to the admin.
+ */
+export async function sendDemoRequestEmails(data: {
+    name: string;
+    email: string;
+    company: string;
+    role: string;
+    useCase: string;
+}) {
+    const { name, email, company, role, useCase } = data;
+
+    if (!name || !email || !company || !role || !useCase) {
+        return { success: false, error: 'All fields are required.' };
+    }
+
+    try {
+        const settings = await prisma.systemSettings.findFirst();
+        const appName = settings?.applicationName || 'CredSecure';
+        const logoUrl = settings?.logoUrl || null;
+        const adminEmail = settings?.smtpFromEmail;
+
+        // 1. Send confirmation email to the user requesting the demo
+        const confirmationHtml = getDemoRequestConfirmationEmailTemplate({
+            appName,
+            logoUrl,
+            name,
+            useCase,
+        });
+        await sendEmail(email, `Demo Request Received - ${appName}`, confirmationHtml);
+
+        // 2. Send notification email to the admin/sales address if configured
+        if (adminEmail) {
+            const adminHtml = getDemoRequestAdminNotificationEmailTemplate({
+                appName,
+                logoUrl,
+                name,
+                email,
+                company,
+                role,
+                useCase,
+            });
+            await sendEmail(adminEmail, `[New Lead] Demo Request - ${name} (${company})`, adminHtml);
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error sending demo request emails:', error);
+        return { success: false, error: error.message || 'Failed to send demo request.' };
+    }
+}
+

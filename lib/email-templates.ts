@@ -289,3 +289,133 @@ export function getOneTimeSecretEmailTemplate(props: OneTimeSecretTemplateProps)
 </html>
     `.trim();
 }
+
+interface DemoRequestConfirmationTemplateProps {
+    appName: string;
+    logoUrl: string | null;
+    name: string;
+    useCase: string;
+}
+
+export function getDemoRequestConfirmationEmailTemplate(props: DemoRequestConfirmationTemplateProps): string {
+    const { appName, logoUrl, name, useCase } = props;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>${getBaseStyles()}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                ${getLogoHtml(logoUrl, appName)}
+            </div>
+            
+            <h2 style="color: #111827; margin-top: 0;">Demo Request Received</h2>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                Hi <strong>${name}</strong>,
+            </p>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                Thank you for your interest in <strong>${appName}</strong>. We have received your request for a personalized product demo.
+            </p>
+            
+            <div style="background-color: #F3F4F6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                <p style="margin: 0 0 8px 0; color: #4B5563; font-size: 14px;"><strong>Selected Use Case:</strong></p>
+                <p style="margin: 0; color: #111827; font-size: 16px; font-weight: 500;">${useCase}</p>
+            </div>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                A member of our product engineering and solutions team will reach out to you within 2 business days to schedule a session tailored to your operational environment.
+            </p>
+            
+            <div class="footer">
+                <p>This is an automated confirmation of your request.</p>
+                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+}
+
+interface DemoRequestAdminNotificationTemplateProps {
+    appName: string;
+    logoUrl: string | null;
+    name: string;
+    email: string;
+    company: string;
+    role: string;
+    useCase: string;
+}
+
+export function getDemoRequestAdminNotificationEmailTemplate(props: DemoRequestAdminNotificationTemplateProps): string {
+    const { appName, logoUrl, name, email, company, role, useCase } = props;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>${getBaseStyles()}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                ${getLogoHtml(logoUrl, appName)}
+            </div>
+            
+            <h2 style="color: #4F46E5; margin-top: 0;">New Demo Request</h2>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                A new request for a product demo has been submitted.
+            </p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+                <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px; width: 120px;">Name</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Email</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">
+                        <a href="mailto:${email}" style="color: #4F46E5; text-decoration: none;">${email}</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Company</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${company}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Role</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${role}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Use Case</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${useCase}</td>
+                </tr>
+            </table>
+            
+            <div style="text-align: center; padding-top: 16px;">
+                <a href="mailto:${email}?subject=CredSecure Demo Inquiry" class="btn" style="color: #ffffff;">Reply to Lead</a>
+            </div>
+            
+            <div class="footer">
+                <p>This is an automated notification from ${appName}.</p>
+                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+}
+
