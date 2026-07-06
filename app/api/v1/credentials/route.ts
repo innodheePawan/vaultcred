@@ -167,6 +167,7 @@ export async function GET(req: Request) {
         const environmentFilter = reqUrlObject.searchParams.get("environment");
         const typeFilter = reqUrlObject.searchParams.get("type");
         const nameFilter = reqUrlObject.searchParams.get("name");
+        const lastModifiedOnFilter = reqUrlObject.searchParams.get("lastModifiedOn");
 
         const whereClause: any = { isPersonal: false, status: "ACTIVE" };
 
@@ -196,6 +197,15 @@ export async function GET(req: Request) {
 
         if (nameFilter) {
             whereClause.name = { contains: nameFilter }; // mysql string search is usually case-insensitive by default in prisma without mode: 'insensitive' (unless postgres)
+        }
+
+        if (lastModifiedOnFilter !== null) {
+            const parsedDate = new Date(lastModifiedOnFilter);
+            if (isNaN(parsedDate.getTime())) {
+                await logActivity({ apiClientId: client.id, clientName: client.name, authType, responseStatus: "FAILURE", httpStatusCode: 400, errorMessage: "Invalid lastModifiedOn parameter" });
+                return NextResponse.json({ error: "Invalid 'lastModifiedOn' parameter. Must be a valid ISO 8601 date string or timestamp." }, { status: 400 });
+            }
+            whereClause.lastModifiedOn = { gte: parsedDate };
         }
 
         const [total, credentials] = await Promise.all([
