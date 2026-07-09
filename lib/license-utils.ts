@@ -1,5 +1,6 @@
 import { createHmac } from 'crypto';
 import * as openpgp from 'openpgp';
+import { headers } from 'next/headers';
 
 /**
  * Generates an HMAC-SHA256 signature for the license activation request.
@@ -74,4 +75,70 @@ export async function verifyLicenseServerSignature(signatureArmored: string, pay
         console.error("OpenPGP Parsing Exception:", error.message);
         return false;
     }
+}
+
+/**
+ * Normalizes a domain/hostname string.
+ * Converts to lowercase, strips http:// / https:// protocols, strips port numbers, and trailing slashes.
+ */
+export function normalizeDomain(value: string): string {
+    let normalized = value.trim().toLowerCase();
+
+    // 1. Remove protocol (http:// / https://)
+    normalized = normalized.replace(/^(https?:\/\/)/, '');
+
+    // 2. Remove trailing slashes
+    normalized = normalized.replace(/\/+$/, '');
+
+    // 3. Remove path/query/hash if any exist
+    const slashIndex = normalized.indexOf('/');
+    if (slashIndex !== -1) {
+        normalized = normalized.substring(0, slashIndex);
+    }
+
+    // 4. Remove port numbers
+    const colonIndex = normalized.indexOf(':');
+    if (colonIndex !== -1) {
+        normalized = normalized.substring(0, colonIndex);
+    }
+
+    return normalized;
+}
+
+/**
+ * Resolves the current application domain from the request context.
+ * Returns null if no request context is available (startup/build-time).
+ * Returns empty string if request context is present but hostname is empty/unresolvable.
+ */
+export async function resolveCurrentDomain(): Promise<string | null> {
+    let host = '';
+    let hasContext = false;
+
+    if (process.env.MOCK_HOST !== undefined) {
+        hasContext = true;
+        host = process.env.MOCK_HOST;
+    } else {
+        try {
+            const headersList = await headers();
+            hasContext = true;
+            host = headersList.get('host') || '';
+        } catch (e) {
+            // Outside request context
+        }
+    }
+
+    if (!hasContext) {
+        return null;
+    }
+
+    if (!host) {
+        return '';
+    }
+
+    let domain = 'localhost';
+    if (host !== 'localhost' && !host.startsWith('localhost:')) {
+        domain = host;
+    }
+
+    return normalizeDomain(domain);
 }
