@@ -32,7 +32,7 @@ export default async function PlatformPage() {
     const settings = await getSystemSettings();
 
     return (
-        <div className="relative min-h-screen bg-[#030712] text-slate-50 font-sans">
+        <div className="relative min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-900 dark:text-slate-50 font-sans">
             <MarketingNavbar
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
@@ -43,18 +43,18 @@ export default async function PlatformPage() {
                 {/* Hero */}
                 <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                     <div className="max-w-3xl">
-                        <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-400/70 mb-4">Platform Overview</div>
-                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white mb-6 leading-tight">
+                        <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400/70 mb-4">Platform Overview</div>
+                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
                             How CredSecure Governs Credential Operations
                         </h1>
-                        <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
+                        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
                             Six integrated governance domains that provide lifecycle control, access enforcement, audit traceability, and operational visibility across your credential infrastructure.
                         </p>
                     </div>
                 </section>
 
                 {/* Governance Lifecycle Flow */}
-                <section className="border-y border-white/[0.06] bg-white/[0.01]">
+                <section className="border-y border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                         <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-6 text-center">Operational Governance Lifecycle</div>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-0">
@@ -67,12 +67,12 @@ export default async function PlatformPage() {
                                 { label: "Audit", desc: "Immutable trails" },
                             ].map((step, idx) => (
                                 <div key={idx} className="flex items-center">
-                                    <div className="text-center px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] min-w-[120px]">
-                                        <div className="text-xs font-semibold text-white">{step.label}</div>
+                                    <div className="text-center px-4 py-3 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] min-w-[120px]">
+                                        <div className="text-xs font-semibold text-slate-900 dark:text-white">{step.label}</div>
                                         <div className="text-[10px] text-slate-500 mt-0.5">{step.desc}</div>
                                     </div>
                                     {idx < 5 && (
-                                        <ChevronRight className="w-4 h-4 text-slate-600 mx-1 hidden sm:block shrink-0" />
+                                        <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-600 mx-1 hidden sm:block shrink-0" />
                                     )}
                                 </div>
                             ))}
@@ -87,10 +87,10 @@ export default async function PlatformPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="credential-governance">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <Database className="w-5 h-5 text-blue-400" strokeWidth={1.5} />
-                                <h2 className="text-xl font-bold text-white">Credential Governance</h2>
+                                <Database className="w-5 h-5 text-blue-500 dark:text-blue-400" strokeWidth={1.5} />
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Credential Governance</h2>
                             </div>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
                                 Complete lifecycle control for every credential type in your organization. From provisioning through expiry, every credential is classified, encrypted, tracked, and governed.
                             </p>
                             <div className="space-y-3">
@@ -104,13 +104,13 @@ export default async function PlatformPage() {
                                     "CSV bulk import with row-level validation",
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
-                                        <div className="w-1 h-1 rounded-full bg-blue-500/60 mt-2 shrink-0" />
-                                        <span className="text-[13px] text-slate-400 leading-relaxed">{item}</span>
+                                        <div className="w-1 h-1 rounded-full bg-blue-500 dark:bg-blue-500/60 mt-2 shrink-0" />
+                                        <span className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed">{item}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="border border-white/[0.06] rounded-xl bg-white/[0.02] p-6">
+                        <div className="border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white/80 dark:bg-white/[0.02] p-6">
                             <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-4">Supported Credential Types</div>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
@@ -121,9 +121,9 @@ export default async function PlatformPage() {
                                     { name: "Encrypted File", desc: "ZIP, TAR, protected documents", icon: FileLock },
                                     { name: "Secure Note", desc: "Recovery keys, operational notes", icon: FileText },
                                 ].map((type, idx) => (
-                                    <div key={idx} className="p-3 rounded-lg border border-white/[0.04] bg-white/[0.01]">
+                                    <div key={idx} className="p-3 rounded-lg border border-slate-200 dark:border-white/[0.04] bg-slate-50 dark:bg-white/[0.01]">
                                         <type.icon className="w-4 h-4 text-slate-500 mb-2" strokeWidth={1.5} />
-                                        <div className="text-xs font-semibold text-white">{type.name}</div>
+                                        <div className="text-xs font-semibold text-slate-900 dark:text-white">{type.name}</div>
                                         <div className="text-[10px] text-slate-500 mt-0.5">{type.desc}</div>
                                     </div>
                                 ))}
@@ -131,16 +131,16 @@ export default async function PlatformPage() {
                         </div>
                     </div>
 
-                    <div className="border-t border-white/[0.04]" />
+                    <div className="border-t border-slate-200 dark:border-white/[0.04]" />
 
                     {/* Domain 2: Access Governance */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="access-governance">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <Fingerprint className="w-5 h-5 text-indigo-400" strokeWidth={1.5} />
-                                <h2 className="text-xl font-bold text-white">Access Governance</h2>
+                                <Fingerprint className="w-5 h-5 text-indigo-600 dark:text-indigo-400" strokeWidth={1.5} />
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Access Governance</h2>
                             </div>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
                                 Granular, policy-driven access control that enforces least-privilege principles across every credential interaction. No implicit trust at any layer.
                             </p>
                             <div className="space-y-3">
@@ -155,12 +155,12 @@ export default async function PlatformPage() {
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
                                         <div className="w-1 h-1 rounded-full bg-indigo-500/60 mt-2 shrink-0" />
-                                        <span className="text-[13px] text-slate-400 leading-relaxed">{item}</span>
+                                        <span className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed">{item}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="border border-white/[0.06] rounded-xl bg-white/[0.02] p-6">
+                        <div className="border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white/80 dark:bg-white/[0.02] p-6">
                             <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-4">Permission Hierarchy</div>
                             <div className="space-y-2">
                                 {[
@@ -170,25 +170,25 @@ export default async function PlatformPage() {
                                     { level: "VIEW_MASKED", desc: "Read-only with sensitive fields masked", color: "text-amber-400", border: "border-amber-500/20" },
                                     { level: "NO_ACCESS", desc: "Complete denial — feature invisible", color: "text-rose-400", border: "border-rose-500/20" },
                                 ].map((perm, idx) => (
-                                    <div key={idx} className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border ${perm.border} bg-white/[0.01]`}>
+                                    <div key={idx} className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border ${perm.border} bg-slate-50 dark:bg-white/[0.01]`}>
                                         <span className={`text-[10px] font-mono font-bold ${perm.color} min-w-[90px]`}>{perm.level}</span>
-                                        <span className="text-[11px] text-slate-500">{perm.desc}</span>
+                                        <span className="text-[11px] text-slate-600 dark:text-slate-500">{perm.desc}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    <div className="border-t border-white/[0.04]" />
+                    <div className="border-t border-slate-200 dark:border-white/[0.04]" />
 
                     {/* Domain 3: Audit & Compliance */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="audit-compliance">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <FileSearch className="w-5 h-5 text-violet-400" strokeWidth={1.5} />
-                                <h2 className="text-xl font-bold text-white">Audit & Compliance</h2>
+                                <FileSearch className="w-5 h-5 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Audit & Compliance</h2>
                             </div>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
                                 Immutable, tamper-evident audit trails across every operational action. Built for SOC 2 readiness, regulatory inquiries, and forensic investigations.
                             </p>
                             <div className="space-y-3">
@@ -203,12 +203,12 @@ export default async function PlatformPage() {
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
                                         <div className="w-1 h-1 rounded-full bg-violet-500/60 mt-2 shrink-0" />
-                                        <span className="text-[13px] text-slate-400 leading-relaxed">{item}</span>
+                                        <span className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed">{item}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="border border-white/[0.06] rounded-xl bg-white/[0.02] p-6">
+                        <div className="border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white/80 dark:bg-white/[0.02] p-6">
                             <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-4">Audit Event Categories</div>
                             <div className="space-y-2">
                                 {[
@@ -221,25 +221,25 @@ export default async function PlatformPage() {
                                     "IP block and unblock administrative events",
                                     "Bulk import and one-time secret lifecycle events",
                                 ].map((event, idx) => (
-                                    <div key={idx} className="flex items-start gap-2 px-3 py-2 rounded border border-white/[0.04] bg-white/[0.01]">
+                                    <div key={idx} className="flex items-start gap-2 px-3 py-2 rounded border border-slate-200 dark:border-white/[0.04] bg-slate-50 dark:bg-white/[0.01]">
                                         <FileCode className="w-3 h-3 text-slate-600 mt-0.5 shrink-0" strokeWidth={1.5} />
-                                        <span className="text-[11px] text-slate-500">{event}</span>
+                                        <span className="text-[11px] text-slate-600 dark:text-slate-500">{event}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    <div className="border-t border-white/[0.04]" />
+                    <div className="border-t border-slate-200 dark:border-white/[0.04]" />
 
                     {/* Domain 4: API Security */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="api-security">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <Server className="w-5 h-5 text-purple-400" strokeWidth={1.5} />
-                                <h2 className="text-xl font-bold text-white">API Security</h2>
+                                <Server className="w-5 h-5 text-purple-600 dark:text-purple-400" strokeWidth={1.5} />
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">API Security</h2>
                             </div>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
                                 Controlled external API access with three security tiers, configurable rate governance, and comprehensive activity logging for every request.
                             </p>
                             <div className="space-y-3">
@@ -254,12 +254,12 @@ export default async function PlatformPage() {
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
                                         <div className="w-1 h-1 rounded-full bg-purple-500/60 mt-2 shrink-0" />
-                                        <span className="text-[13px] text-slate-400 leading-relaxed">{item}</span>
+                                        <span className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed">{item}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="border border-white/[0.06] rounded-xl bg-white/[0.02] p-6">
+                        <div className="border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white/80 dark:bg-white/[0.02] p-6">
                             <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-4">Security Tiers</div>
                             <div className="space-y-3">
                                 {[
@@ -267,25 +267,25 @@ export default async function PlatformPage() {
                                     { tier: "SECURE", desc: "OAuth 2.0 + Mutual TLS certificate verification", color: "text-indigo-400", border: "border-l-indigo-500/30" },
                                     { tier: "ENTERPRISE", desc: "OAuth 2.0 + mTLS + HMAC request signature validation", color: "text-purple-400", border: "border-l-purple-500/30" },
                                 ].map((t, idx) => (
-                                    <div key={idx} className={`px-4 py-3 rounded-lg border border-white/[0.04] bg-white/[0.01] border-l-2 ${t.border}`}>
+                                    <div key={idx} className={`px-4 py-3 rounded-lg border border-slate-200 dark:border-white/[0.04] bg-slate-50 dark:bg-white/[0.01] border-l-2 ${t.border}`}>
                                         <div className={`text-[10px] font-mono font-bold ${t.color} mb-1`}>{t.tier}</div>
-                                        <div className="text-[11px] text-slate-500">{t.desc}</div>
+                                        <div className="text-[11px] text-slate-605 dark:text-slate-500">{t.desc}</div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    <div className="border-t border-white/[0.04]" />
+                    <div className="border-t border-slate-200 dark:border-white/[0.04]" />
 
                     {/* Domain 5: Threat Protection */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="threat-protection">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <AlertTriangle className="w-5 h-5 text-rose-400" strokeWidth={1.5} />
-                                <h2 className="text-xl font-bold text-white">Threat Protection</h2>
+                                <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" strokeWidth={1.5} />
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Threat Protection</h2>
                             </div>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
                                 Adaptive, escalating defense against brute-force attacks, credential stuffing, and API abuse with automatic progressive response.
                             </p>
                             <div className="space-y-3">
@@ -299,12 +299,12 @@ export default async function PlatformPage() {
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
                                         <div className="w-1 h-1 rounded-full bg-rose-500/60 mt-2 shrink-0" />
-                                        <span className="text-[13px] text-slate-400 leading-relaxed">{item}</span>
+                                        <span className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed">{item}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="border border-white/[0.06] rounded-xl bg-white/[0.02] p-6">
+                        <div className="border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white/80 dark:bg-white/[0.02] p-6">
                             <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-4">Escalation Model</div>
                             <div className="space-y-0">
                                 {[
@@ -316,14 +316,14 @@ export default async function PlatformPage() {
                                 ].map((esc, idx) => (
                                     <div key={idx} className="flex items-start gap-3">
                                         <div className="flex flex-col items-center">
-                                            <div className={`w-7 h-7 rounded-full border ${esc.border} bg-white/[0.02] flex items-center justify-center text-[9px] font-mono font-bold ${esc.color}`}>
+                                            <div className={`w-7 h-7 rounded-full border ${esc.border} bg-slate-50 dark:bg-white/[0.02] flex items-center justify-center text-[9px] font-mono font-bold ${esc.color}`}>
                                                 {idx + 1}
                                             </div>
-                                            {idx < 4 && <div className="w-px h-4 bg-white/[0.06]" />}
+                                            {idx < 4 && <div className="w-px h-4 bg-slate-200 dark:bg-white/[0.06]" />}
                                         </div>
                                         <div className="pb-4">
                                             <div className={`text-xs font-semibold ${esc.color}`}>{esc.action}</div>
-                                            <div className="text-[10px] text-slate-500">{esc.trigger}</div>
+                                            <div className="text-[10px] text-slate-600 dark:text-slate-500">{esc.trigger}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -331,16 +331,16 @@ export default async function PlatformPage() {
                         </div>
                     </div>
 
-                    <div className="border-t border-white/[0.04]" />
+                    <div className="border-t border-slate-200 dark:border-white/[0.04]" />
 
                     {/* Domain 6: Operational Infrastructure */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="operational-infrastructure">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <Activity className="w-5 h-5 text-emerald-400" strokeWidth={1.5} />
-                                <h2 className="text-xl font-bold text-white">Operational Infrastructure</h2>
+                                <Activity className="w-5 h-5 text-emerald-605 dark:text-emerald-400" strokeWidth={1.5} />
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Operational Infrastructure</h2>
                             </div>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                            <p className="text-sm text-slate-605 dark:text-slate-400 leading-relaxed mb-6">
                                 Platform integrity, schema governance, and deployment observability for production-grade credential governance operations.
                             </p>
                             <div className="space-y-3">
@@ -356,12 +356,12 @@ export default async function PlatformPage() {
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
                                         <div className="w-1 h-1 rounded-full bg-emerald-500/60 mt-2 shrink-0" />
-                                        <span className="text-[13px] text-slate-400 leading-relaxed">{item}</span>
+                                        <span className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed">{item}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="border border-white/[0.06] rounded-xl bg-white/[0.02] p-6">
+                        <div className="border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white/80 dark:bg-white/[0.02] p-6">
                             <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-4">System Health Indicators</div>
                             <div className="space-y-3">
                                 {[
@@ -370,12 +370,12 @@ export default async function PlatformPage() {
                                     { label: "Schema Integrity", status: "Auto-Sync", desc: "Automated detection and resolution of schema drift" },
                                     { label: "SMTP Delivery", status: "Configurable", desc: "Email delivery with test connection verification" },
                                 ].map((health, idx) => (
-                                    <div key={idx} className="flex items-center justify-between px-3 py-2.5 rounded border border-white/[0.04] bg-white/[0.01]">
+                                    <div key={idx} className="flex items-center justify-between px-3 py-2.5 rounded border border-slate-200 dark:border-white/[0.04] bg-slate-50 dark:bg-white/[0.01]">
                                         <div>
-                                            <div className="text-xs font-semibold text-white">{health.label}</div>
+                                            <div className="text-xs font-semibold text-slate-900 dark:text-white">{health.label}</div>
                                             <div className="text-[10px] text-slate-500">{health.desc}</div>
                                         </div>
-                                        <span className="text-[10px] font-mono text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded">{health.status}</span>
+                                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded">{health.status}</span>
                                     </div>
                                 ))}
                             </div>
@@ -384,16 +384,16 @@ export default async function PlatformPage() {
                 </section>
 
                 {/* CTA */}
-                <section className="py-20 border-t border-white/[0.06] bg-white/[0.01]">
+                <section className="py-20 border-t border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]">
                     <div className="max-w-2xl mx-auto px-4 text-center">
-                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 text-white">
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 text-slate-900 dark:text-white">
                             Ready to Govern Your Credential Operations?
                         </h2>
-                        <p className="text-sm text-slate-400 mb-8 leading-relaxed">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
                             Explore how six integrated governance domains can transform your organization&apos;s operational credential security posture.
                         </p>
                         <Link href="/request-demo">
-                            <Button className="h-11 px-8 bg-white hover:bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg transition-colors inline-flex items-center gap-2">
+                            <Button className="h-11 px-8 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-sm font-semibold rounded-lg transition-colors inline-flex items-center gap-2">
                                 Request Demo
                                 <ArrowRight className="w-4 h-4" />
                             </Button>

@@ -18,7 +18,7 @@ export default async function FeaturesPage() {
     const settings = await getSystemSettings();
 
     return (
-        <div className="relative min-h-screen bg-[#030712] text-slate-50 font-sans">
+        <div className="relative min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-900 dark:text-slate-50 font-sans">
             <MarketingNavbar
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
@@ -29,11 +29,11 @@ export default async function FeaturesPage() {
                 {/* Hero */}
                 <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                     <div className="max-w-3xl">
-                        <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-400/70 mb-4">Platform Features</div>
-                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white mb-6 leading-tight">
+                        <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400/70 mb-4">Platform Features</div>
+                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
                             Complete Platform Capabilities
                         </h1>
-                        <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
+                        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
                             Ten integrated capability modules covering credential lifecycle, access governance, authentication security, API management, compliance, and operational infrastructure.
                         </p>
                     </div>
@@ -198,16 +198,16 @@ export default async function FeaturesPage() {
                 </section>
 
                 {/* CTA */}
-                <section className="py-20 border-t border-white/[0.06] bg-white/[0.01]">
+                <section className="py-20 border-t border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]">
                     <div className="max-w-2xl mx-auto px-4 text-center">
-                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 text-white">
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 text-slate-900 dark:text-white">
                             See These Capabilities in Action
                         </h2>
-                        <p className="text-sm text-slate-400 mb-8 leading-relaxed">
+                        <p className="text-sm text-slate-605 dark:text-slate-400 mb-8 leading-relaxed">
                             Schedule a walkthrough tailored to the modules most relevant to your credential governance requirements.
                         </p>
                         <Link href="/request-demo">
-                            <Button className="h-11 px-8 bg-white hover:bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg transition-colors inline-flex items-center gap-2">
+                            <Button className="h-11 px-8 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-sm font-semibold rounded-lg transition-colors inline-flex items-center gap-2">
                                 Request Demo
                                 <ArrowRight className="w-4 h-4" />
                             </Button>
