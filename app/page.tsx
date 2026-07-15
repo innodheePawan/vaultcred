@@ -33,7 +33,7 @@ export default async function LandingPage() {
     const settings = await getSystemSettings();
 
     return (
-        <div className="relative min-h-screen bg-[#030712] text-slate-50 selection:bg-indigo-500/30 overflow-x-hidden font-sans">
+        <div className="relative min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-900 dark:text-slate-50 selection:bg-indigo-500/30 overflow-x-hidden font-sans">
             {/* Navbar */}
             <MarketingNavbar
                 applicationName={settings.applicationName || "CredSecure"}
@@ -45,26 +45,26 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 1 — HERO
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                <section className="pt-16 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                         {/* Left Side: Dominant Copy (7 Cols) */}
                         <div className="space-y-6 lg:col-span-7">
-                            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.12] text-white text-balance">
+                            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.12] text-slate-900 dark:text-white text-balance">
                                 Govern Enterprise Credentials with{" "}
-                                <span className="text-indigo-400">Visibility, Traceability, and Control.</span>
+                                <span className="text-indigo-600 dark:text-indigo-400">Visibility, Traceability, and Control.</span>
                             </h1>
-                            <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-xl">
+                            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
                                 Secure, govern, and trace system accounts, API client scopes, database keys, and operational credentials across your enterprise landscapes.
                             </p>
                             <div className="flex flex-col sm:flex-row items-start gap-3 pt-2">
                                 <Link href="/request-demo">
-                                    <Button className="h-10 px-5 bg-white hover:bg-slate-100 text-slate-900 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                                    <Button className="h-10 px-5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
                                         Request Demo
                                         <ArrowRight className="w-3.5 h-3.5" />
                                     </Button>
                                 </Link>
                                 <Link href="/platform">
-                                    <Button variant="outline" className="h-10 px-5 bg-transparent border-white/10 text-slate-300 text-xs font-medium rounded-lg hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer">
+                                    <Button variant="outline" className="h-10 px-5 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
                                         Explore Platform
                                     </Button>
                                 </Link>
@@ -73,7 +73,7 @@ export default async function LandingPage() {
 
                         {/* Right Side: Receding Architectural Visualization (5 Cols) */}
                         <div className="hidden lg:block lg:col-span-5 opacity-90 hover:opacity-100 transition-opacity duration-200">
-                            <div className="relative border border-white/[0.06] rounded-xl bg-[#0b0f19] p-6 shadow-xl">
+                            <div className="relative border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white dark:bg-[#0b0f19] p-6 shadow-xl">
                                 <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-5 flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/60" />
                                     <span>Credential Governance Lifecycle</span>
@@ -90,18 +90,18 @@ export default async function LandingPage() {
                                         <div key={idx} className="flex items-start gap-4 group">
                                             <div className="flex flex-col items-center">
                                                 <div className={`w-7 h-7 rounded-full border transition-colors flex items-center justify-center text-[9px] font-mono font-bold ${item.active
-                                                    ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]"
-                                                    : "border-white/[0.04] bg-white/[0.01] text-slate-500"
+                                                    ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]"
+                                                    : "border-slate-200 dark:border-white/[0.04] bg-slate-50 dark:bg-white/[0.01] text-slate-500"
                                                     }`}>
                                                     {item.step}
                                                 </div>
-                                                {idx < 5 && <div className="w-px h-5 bg-white/[0.04]" />}
+                                                {idx < 5 && <div className="w-px h-5 bg-slate-200 dark:bg-white/[0.04]" />}
                                             </div>
                                             <div className="pb-4 pt-0.5">
-                                                <div className={`text-xs font-semibold tracking-wide ${item.active ? "text-indigo-400" : "text-slate-400"}`}>
+                                                <div className={`text-xs font-semibold tracking-wide ${item.active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>
                                                     {item.label}
                                                 </div>
-                                                <div className="text-[10px] text-slate-600 font-mono mt-0.5">{item.desc}</div>
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-600 font-mono mt-0.5">{item.desc}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -114,7 +114,7 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 2 — TRUST BAR
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="border-y border-white/[0.05] bg-[#060a13]">
+                <section className="border-y border-slate-200 dark:border-white/[0.05] bg-slate-100/80 dark:bg-[#060a13]">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
                             {[
@@ -136,7 +136,7 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 3 — COMBINED ENVIRONMENT STRIP (Social Proof & Continuity)
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="border-b border-white/[0.05] bg-[#05080f] py-4">
+                <section className="border-b border-slate-200 dark:border-white/[0.05] bg-slate-100/50 dark:bg-[#05080f] py-4">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                         <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 font-bold">
                             BUILT FOR CRITICAL WORKFLOWS:
@@ -149,7 +149,7 @@ export default async function LandingPage() {
                                 "Compliance Reviews",
                                 "Production Support",
                             ].map((item, idx) => (
-                                <span key={idx} className="text-[9px] px-2 py-0.5 rounded border border-white/5 bg-[#0a0e17] text-slate-400 font-mono tracking-wider uppercase font-semibold">
+                                <span key={idx} className="text-[9px] px-2 py-0.5 rounded border border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-[#0a0e17] text-slate-600 dark:text-slate-400 font-mono tracking-wider uppercase font-semibold">
                                     {item}
                                 </span>
                             ))}
@@ -163,10 +163,10 @@ export default async function LandingPage() {
                 <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                     <div className="text-center max-w-2xl mx-auto mb-16">
                         <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Operational Risk</div>
-                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                             Most credential risks begin after storage.
                         </h2>
-                        <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-lg mx-auto">
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
                             Organizations secure static credentials but struggle to govern active usage, operational tracing, external access limits, and lifecycle ownership.
                         </p>
                     </div>
@@ -180,10 +180,10 @@ export default async function LandingPage() {
                             { title: "Integration Credential Sprawl", desc: "Tokens and certificates scattered across middleware platforms without centralized governance.", icon: Network },
                             { title: "Operational Traceability Gaps", desc: "Inability to connect access events back to specific authorized support windows and approvals.", icon: SearchX },
                         ].map((card, idx) => (
-                            <div key={idx} className="p-5 rounded-lg border border-white/[0.05] bg-[#0b0f19]/40 hover:border-white/[0.1] transition-all duration-150">
+                            <div key={idx} className="p-5 rounded-lg border border-slate-200 dark:border-white/[0.05] bg-white/80 dark:bg-[#0b0f19]/40 hover:border-slate-300 dark:hover:border-white/[0.1] transition-all duration-150">
                                 <card.icon className="w-4 h-4 text-slate-500 mb-3.5" strokeWidth={1.5} />
-                                <h3 className="text-xs font-semibold text-white tracking-wide uppercase mb-1.5">{card.title}</h3>
-                                <p className="text-[11px] text-slate-500 leading-relaxed font-mono">{card.desc}</p>
+                                <h3 className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide uppercase mb-1.5">{card.title}</h3>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-500 leading-relaxed font-mono">{card.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -192,14 +192,14 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 5 — GOVERNANCE DOMAINS
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05] bg-[#05080f]">
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/[0.05] bg-slate-100/50 dark:bg-[#05080f]">
                     <div className="max-w-7xl mx-auto">
                         <div className="text-center max-w-2xl mx-auto mb-16">
-                            <div className="text-[9px] font-mono uppercase tracking-widest text-indigo-400 font-semibold mb-2">Governance Framework</div>
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-indigo-600 dark:text-indigo-400 font-semibold mb-2">Governance Framework</div>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                                 Built for Operational Credential Governance
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
                                 Six integrated domains designed to establish complete authority, lifecycle traceability, and runtime policy enforcement.
                             </p>
                         </div>
@@ -213,15 +213,15 @@ export default async function LandingPage() {
                                 { title: "Threat Protection", desc: "Adaptive abuse prevention, IP escalation controls, and runtime enforcement across authentication flows.", icon: AlertTriangle, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "IP Block Lists • Throttling Escalation • Challenge Prompts" },
                                 { title: "Operational Infrastructure", desc: "Licensing integrity, schema governance, deployment monitoring, and system health observability.", icon: Activity, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Cryptographic Signature • Health Checks • Deployment Logs" },
                             ].map((domain, idx) => (
-                                <div key={idx} className={`p-5 rounded-lg border border-white/[0.05] bg-white/[0.01] border-l-2 ${domain.accent} hover:bg-white/[0.02] transition-all duration-150 flex flex-col justify-between`}>
+                                <div key={idx} className={`p-5 rounded-lg border border-slate-200 dark:border-white/[0.05] bg-white/80 dark:bg-white/[0.01] border-l-2 ${domain.accent} hover:bg-slate-100 dark:hover:bg-white/[0.02] transition-all duration-150 flex flex-col justify-between`}>
                                     <div className="flex items-start gap-3">
                                         <domain.icon className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" strokeWidth={1.5} />
                                         <div>
-                                            <h3 className="text-xs font-semibold text-white tracking-wide uppercase mb-1.5">{domain.title}</h3>
-                                            <p className="text-[11px] text-slate-500 leading-relaxed font-mono">{domain.desc}</p>
+                                            <h3 className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide uppercase mb-1.5">{domain.title}</h3>
+                                            <p className="text-[11px] text-slate-600 dark:text-slate-500 leading-relaxed font-mono">{domain.desc}</p>
                                         </div>
                                     </div>
-                                    <div className="text-[9px] text-indigo-400/80 font-mono tracking-wider uppercase mt-4 border-t border-white/[0.03] pt-2.5">
+                                    <div className="text-[9px] text-indigo-600 dark:text-indigo-400/80 font-mono tracking-wider uppercase mt-4 border-t border-slate-200 dark:border-white/[0.03] pt-2.5">
                                         {domain.meta}
                                     </div>
                                 </div>
@@ -229,7 +229,7 @@ export default async function LandingPage() {
                         </div>
 
                         <div className="text-center mt-12">
-                            <Link href="/platform" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                            <Link href="/platform" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 uppercase tracking-wider transition-colors">
                                 Explore Platform <ChevronRight className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -239,55 +239,55 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 5.5 — PRODUCT PREVIEW: "Operational Visibility in One Place"
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05]">
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/[0.05]">
                     <div className="max-w-5xl mx-auto">
                         <div className="text-center max-w-2xl mx-auto mb-16">
                             <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Live Product Preview</div>
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                                 Operational Visibility in One Place
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
                                 A centralized dashboard designed for enterprise support teams, landscape integration governance, and real-time compliance audits.
                             </p>
                         </div>
 
                         {/* Sharp-edged, matte browser UI mockup */}
-                        <div className="border border-white/[0.08] rounded-lg bg-[#0b0f19] shadow-2xl overflow-hidden font-sans text-slate-200">
+                        <div className="border border-slate-200 dark:border-white/[0.08] rounded-lg bg-white dark:bg-[#0b0f19] shadow-2xl overflow-hidden font-sans text-slate-800 dark:text-slate-200">
                             {/* Browser Header Bar */}
-                            <div className="bg-[#060a13] px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+                            <div className="bg-slate-50 dark:bg-[#060a13] px-4 py-3 border-b border-slate-200 dark:border-white/[0.06] flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
-                                    <div className="w-2 h-2 rounded-full bg-white/10" />
-                                    <div className="w-2 h-2 rounded-full bg-white/10" />
-                                    <div className="w-2 h-2 rounded-full bg-white/10" />
+                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" />
+                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" />
+                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" />
                                     <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest ml-4 font-semibold">CredSecure Dashboard v1.4</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider font-semibold">ALL GOVERNED SYSTEMS OPERATIONAL</span>
+                                    <span className="text-[9px] font-mono text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold">ALL GOVERNED SYSTEMS OPERATIONAL</span>
                                 </div>
                             </div>
 
                             {/* Dashboard Body Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.06] bg-[#080c14]/40">
+                            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-white/[0.06] bg-slate-50/50 dark:bg-[#080c14]/40">
 
                                 {/* Col 1: Access Approvals */}
                                 <div className="p-5 space-y-4">
-                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-white/5 pb-2">Active Scoped Approvals</div>
+                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-slate-200 dark:border-white/5 pb-2">Active Scoped Approvals</div>
                                     <div className="space-y-2">
                                         {[
                                             { id: "REQ-901", target: "Enterprise System Connectivity", status: "Approved", time: "2h remaining" },
                                             { id: "REQ-884", target: "Vendor QA Api-Key Scopes", status: "Approved", time: "18m remaining" },
                                             { id: "REQ-879", target: "Production Patch Deployment", status: "Terminated", time: "0m remaining" },
                                         ].map((req, idx) => (
-                                            <div key={idx} className="p-3 rounded border border-white/5 bg-[#0b0f19] space-y-1.5">
+                                            <div key={idx} className="p-3 rounded border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0b0f19] space-y-1.5">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-mono text-slate-400 font-bold">{req.id}</span>
+                                                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold">{req.id}</span>
                                                     <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono uppercase font-bold border ${req.status === "Approved"
-                                                        ? "text-indigo-400 border-indigo-500/20 bg-indigo-500/5"
-                                                        : "text-slate-500 border-white/5 bg-white/[0.01]"
+                                                        ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/5"
+                                                        : "text-slate-500 border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-white/[0.01]"
                                                         }`}>{req.status}</span>
                                                 </div>
-                                                <div className="text-[10px] text-slate-300 font-medium">{req.target}</div>
+                                                <div className="text-[10px] text-slate-700 dark:text-slate-300 font-medium">{req.target}</div>
                                                 <div className="text-[8.5px] text-slate-500 font-mono uppercase tracking-wide">Revocation: {req.time}</div>
                                             </div>
                                         ))}
@@ -296,39 +296,39 @@ export default async function LandingPage() {
 
                                 {/* Col 2: Real-time Audit Timeline */}
                                 <div className="p-5 space-y-4 md:col-span-2">
-                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-white/5 pb-2">Governed Access Audit Stream</div>
+                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-slate-200 dark:border-white/5 pb-2">Governed Access Audit Stream</div>
                                     <div className="space-y-1.5 font-mono text-[10px] text-slate-400 leading-relaxed">
-                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-600 shrink-0">[16:01:18]</span>
-                                            <span className="text-indigo-400">[SYSTEM]</span>
-                                            <span className="text-slate-300">Enforcing deterministic check-sum rotation on Enterprise Environment Certificatess.</span>
+                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[16:01:18]</span>
+                                            <span className="text-indigo-600 dark:text-indigo-400">[SYSTEM]</span>
+                                            <span className="text-slate-700 dark:text-slate-300">Enforcing deterministic check-sum rotation on Enterprise Environment Certificatess.</span>
                                         </div>
-                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-600 shrink-0">[15:58:04]</span>
-                                            <span className="text-slate-400">[USER-84]</span>
-                                            <span className="text-slate-300">Requested time-bound decryption of System Integration Connection credential (REQ-901).</span>
+                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:58:04]</span>
+                                            <span className="text-slate-600 dark:text-slate-400">[USER-84]</span>
+                                            <span className="text-slate-700 dark:text-slate-300">Requested time-bound decryption of System Integration Connection credential (REQ-901).</span>
                                         </div>
-                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-600 shrink-0">[15:54:12]</span>
-                                            <span className="text-emerald-500">[COMPLIANCE]</span>
-                                            <span className="text-slate-300">Validated 2FA TOTP handshake for administrative security settings sync.</span>
+                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:54:12]</span>
+                                            <span className="text-emerald-600 dark:text-emerald-500">[COMPLIANCE]</span>
+                                            <span className="text-slate-700 dark:text-slate-300">Validated 2FA TOTP handshake for administrative security settings sync.</span>
                                         </div>
-                                        <div className="flex items-start gap-2 border-b border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-600 shrink-0">[15:40:00]</span>
-                                            <span className="text-rose-400">[SECURITY]</span>
-                                            <span className="text-slate-300">Enforced automatic session termination on REQ-879 (Support window expired).</span>
+                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
+                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:40:00]</span>
+                                            <span className="text-rose-600 dark:text-rose-400">[SECURITY]</span>
+                                            <span className="text-slate-700 dark:text-slate-300">Enforced automatic session termination on REQ-879 (Support window expired).</span>
                                         </div>
                                         <div className="flex items-start gap-2">
-                                            <span className="text-slate-600 shrink-0">[15:32:45]</span>
-                                            <span className="text-indigo-400">[SYSTEM]</span>
-                                            <span className="text-slate-300">Computed zero-trust route permissions check. Target approved: Enterprise Integration Platform.</span>
+                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:32:45]</span>
+                                            <span className="text-indigo-600 dark:text-indigo-400">[SYSTEM]</span>
+                                            <span className="text-slate-700 dark:text-slate-300">Computed zero-trust route permissions check. Target approved: Enterprise Integration Platform.</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Dashboard Footer Info */}
-                            <div className="bg-[#060a13] px-4 py-2.5 border-t border-white/[0.06] text-center text-[9px] font-mono text-slate-500 tracking-wider uppercase">
+                            <div className="bg-slate-50 dark:bg-[#060a13] px-4 py-2.5 border-t border-slate-200 dark:border-white/[0.06] text-center text-[9px] font-mono text-slate-500 tracking-wider uppercase">
                                 CRITICAL CREDENTIAL ACTIONS ARE SIGNED CRYPTOGRAPHICALLY AND NEVER STORED IN PLAIN TEXT
                             </div>
                         </div>
@@ -338,14 +338,14 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 6 — SECURITY ARCHITECTURE
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05] bg-[#05080f]">
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/[0.05] bg-[#05080f] bg-slate-100/50 dark:bg-[#05080f]">
                     <div className="max-w-7xl mx-auto">
                         <div className="text-center max-w-2xl mx-auto mb-16">
                             <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">High-Trust Architecture</div>
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                                 Designed for High-Trust Operational Environments
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
                                 Cryptographic and architectural constraints built to guarantee credential safety after storage.
                             </p>
                         </div>
@@ -357,16 +357,16 @@ export default async function LandingPage() {
                                 { title: "Zero Trust Validation", desc: "Every request validated against dynamic RBAC scopes, session context, and feature-level access policies in real time.", icon: ShieldCheck },
                                 { title: "Deterministic License Integrity", desc: "Cryptographically verified licensing prevents unauthorized operation and detects tampering without external dependencies.", icon: KeyRound },
                             ].map((card, idx) => (
-                                <div key={idx} className="p-6 rounded-lg border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.1] transition-all duration-150">
-                                    <card.icon className="w-4 h-4 text-indigo-400 mb-3.5" strokeWidth={1.5} />
-                                    <h3 className="text-xs font-semibold text-white tracking-wide uppercase mb-2">{card.title}</h3>
-                                    <p className="text-[11px] text-slate-500 leading-relaxed font-mono">{card.desc}</p>
+                                <div key={idx} className="p-6 rounded-lg border border-slate-200 dark:border-white/[0.05] bg-white/80 dark:bg-white/[0.01] hover:border-slate-300 dark:hover:border-white/[0.1] transition-all duration-150">
+                                    <card.icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mb-3.5" strokeWidth={1.5} />
+                                    <h3 className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide uppercase mb-2">{card.title}</h3>
+                                    <p className="text-[11px] text-slate-600 dark:text-slate-505 leading-relaxed font-mono">{card.desc}</p>
                                 </div>
                             ))}
                         </div>
 
                         <div className="text-center mt-12">
-                            <Link href="/security" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                            <Link href="/security" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-555 dark:hover:text-indigo-300 uppercase tracking-wider transition-colors">
                                 View Security Architecture <ChevronRight className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -376,22 +376,22 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 7 — USE CASES
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05]">
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/[0.05]">
                     <div className="max-w-7xl mx-auto">
                         <div className="text-center max-w-2xl mx-auto mb-16">
                             <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Operational Workflows</div>
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                                 Operational Workflows We Secure
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
                                 Scoped, traceable access security where credential containment is critical to business continuity.
                             </p>
                         </div>
 
                         <div className="max-w-3xl mx-auto space-y-2">
-                            {[
-                                { title: "Enterprise Integration Credential Governance", desc: "Govern middleware tokens, RFC connections, and system-to-system credentials across SAP landscapes.", tier: 1 },
-                                { title: "Production maintenance access with automatic revocation", desc: "Time-bound engineer access for support windows with automatic, hard termination and audit trails.", tier: 1 },
+                            {/* Replace hardcoded border, bg, and text in use cases list */}
+                            {[{ title: "Enterprise Integration Credential Governance", desc: "Govern middleware tokens, RFC connections, and system-to-system credentials across SAP landscapes.", tier: 1 },
+                                { title: "Production maintenance access with automatic revocation", desc: "Time-bound engineer access for support workflows with automatic, hard revocation and audit trails.", tier: 1 },
                                 { title: "Third-party vendor access governance with zero standing privileges", desc: "Controlled external support access with scoped visibility, strict timers, and automatic termination.", tier: 1 },
                                 { title: "Automated service account lifecycle governance", desc: "Centralized ownership attribution, rotation scheduling, and key validity tracking.", tier: 2 },
                                 { title: "API Client Scope Security", desc: "External API exposure governed with client credentials, mTLS validation, and rates controls.", tier: 2 },
@@ -400,13 +400,13 @@ export default async function LandingPage() {
                             ].map((uc, idx) => (
                                 <div key={idx} className={`flex items-center justify-between px-5 py-3 rounded-lg border transition-all duration-150 ${uc.tier === 1
                                     ? "border-indigo-500/15 bg-indigo-500/[0.02] hover:border-indigo-500/30"
-                                    : "border-white/[0.04] bg-white/[0.01] hover:border-white/[0.08]"
+                                    : "border-slate-200 dark:border-white/[0.04] bg-white/85 dark:bg-white/[0.01] hover:border-slate-300 dark:hover:border-white/[0.08]"
                                     }`}>
                                     <div className="flex items-start gap-3 min-w-0">
-                                        <Workflow className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${uc.tier === 1 ? "text-indigo-400" : "text-slate-500"}`} strokeWidth={1.5} />
+                                        <Workflow className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${uc.tier === 1 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"}`} strokeWidth={1.5} />
                                         <div className="min-w-0">
-                                            <h3 className="text-xs font-semibold text-white tracking-wide uppercase">{uc.title}</h3>
-                                            <p className="text-[11px] text-slate-500 leading-relaxed font-mono mt-0.5">{uc.desc}</p>
+                                            <h3 className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide uppercase">{uc.title}</h3>
+                                            <p className="text-[11px] text-slate-600 dark:text-slate-500 leading-relaxed font-mono mt-0.5">{uc.desc}</p>
                                         </div>
                                     </div>
                                     <ChevronRight className="w-4 h-4 text-slate-600 shrink-0 ml-3" />
@@ -415,7 +415,7 @@ export default async function LandingPage() {
                         </div>
 
                         <div className="text-center mt-12">
-                            <Link href="/use-cases" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                            <Link href="/use-cases" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 uppercase tracking-wider transition-colors">
                                 Explore All Use Cases <ChevronRight className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -425,14 +425,14 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 8 — FEATURE HIGHLIGHTS (Expandable)
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.05] bg-[#05080f]">
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/[0.05] bg-slate-100/50 dark:bg-[#05080f]">
                     <div className="max-w-3xl mx-auto">
                         <div className="text-center max-w-2xl mx-auto mb-16">
                             <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Platform Capabilities</div>
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                                 Platform Capabilities
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-400">
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                                 Complete security and compliance modules grouped by technical domain.
                             </p>
                         </div>
@@ -482,7 +482,7 @@ export default async function LandingPage() {
                         </div>
 
                         <div className="text-center mt-12">
-                            <Link href="/features" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors">
+                            <Link href="/features" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 uppercase tracking-wider transition-colors">
                                 See Full Breakdown <ChevronRight className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -492,9 +492,9 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 9 — PLATFORM OUTCOMES (Tabular KPI/Retool metrics)
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="border-y border-white/[0.05] bg-[#060a13]">
+                <section className="border-y border-slate-200 dark:border-white/[0.05] bg-slate-100/80 dark:bg-[#060a13]">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 lg:divide-x divide-white/[0.05] text-left">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 lg:divide-x divide-slate-200 dark:divide-white/[0.05] text-left">
                             {[
                                 { label: "Time-Bound Access", val: "100%", desc: "Mandatory Revocation" },
                                 { label: "Immutable Audit Visibility", val: "Complete", desc: "SIEM & Audits ready" },
@@ -504,7 +504,7 @@ export default async function LandingPage() {
                             ].map((metric, idx) => (
                                 <div key={idx} className="p-4 space-y-1">
                                     <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-bold">{metric.label}</div>
-                                    <div className="text-xl font-bold text-white tracking-tight font-sans">{metric.val}</div>
+                                    <div className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-sans">{metric.val}</div>
                                     <div className="text-[10px] text-slate-600 font-mono">{metric.desc}</div>
                                 </div>
                             ))}
@@ -515,14 +515,14 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 10.5 — DESIGNED FOR OPERATIONAL CONTINUITY
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="py-24 px-4 sm:px-6 lg:px-8 border-b border-white/[0.05] bg-[#05080f]">
+                <section className="py-24 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-white/[0.05] bg-slate-100/50 dark:bg-[#05080f]">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center max-w-2xl mx-auto mb-16">
                             <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Operational Dependability</div>
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                                 Designed for Operational Continuity
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-400">
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                                 Enterprise-grade reliability guarantees that keep support, integration, and security pipelines unbroken.
                             </p>
                         </div>
@@ -535,11 +535,11 @@ export default async function LandingPage() {
                                 { title: "High-Availability Architecture", desc: "Stateless verification routing guarantees active requests failover seamlessly without breaking continuous integration connections." },
                                 { title: "Integration-Safe Credential Delivery", desc: "Connectors operate with self-healing backoff schedules and cryptographic checksum validations for resilient Integration & Middleware Operations." },
                             ].map((item, idx) => (
-                                <div key={idx} className="flex items-start gap-4 p-4 rounded border border-white/[0.04] bg-white/[0.01]">
-                                    <div className="text-indigo-400 font-bold text-xs shrink-0 select-none">[{idx + 1}]</div>
+                                <div key={idx} className="flex items-start gap-4 p-4 rounded border border-slate-200 dark:border-white/[0.04] bg-white/80 dark:bg-white/[0.01]">
+                                    <div className="text-indigo-600 dark:text-indigo-400 font-bold text-xs shrink-0 select-none">[{idx + 1}]</div>
                                     <div className="space-y-1">
-                                        <h3 className="text-xs font-semibold text-white tracking-wide uppercase">{item.title}</h3>
-                                        <p className="text-[11px] text-slate-500 leading-relaxed">{item.desc}</p>
+                                        <h3 className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide uppercase">{item.title}</h3>
+                                        <p className="text-[11px] text-slate-600 dark:text-slate-505 leading-relaxed">{item.desc}</p>
                                     </div>
                                 </div>
                             ))}
@@ -552,14 +552,14 @@ export default async function LandingPage() {
                 ═══════════════════════════════════════════════════════════ */}
                 <section className="py-24 relative overflow-hidden">
                     <div className="max-w-2xl mx-auto px-4 relative z-10 text-center">
-                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 text-white">
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 text-slate-900 dark:text-white">
                             Operational Security Requires More Than Vaulting.
                         </h2>
-                        <p className="text-xs sm:text-sm text-slate-400 mb-8 leading-relaxed max-w-md mx-auto">
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed max-w-md mx-auto">
                             Improve visibility, governance, operational traceability, and dynamic control across enterprise credential landscapes.
                         </p>
                         <Link href="/request-demo">
-                            <Button className="h-10 px-6 bg-white hover:bg-slate-100 text-slate-900 text-xs font-semibold rounded-lg transition-colors cursor-pointer">
+                            <Button className="h-10 px-6 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold rounded-lg transition-colors cursor-pointer">
                                 Request Demo
                             </Button>
                         </Link>

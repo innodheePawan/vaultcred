@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { encrypt, decrypt } from '@/lib/crypto';
-import { generateLicenseSignature, getMachineId, verifyLicenseServerSignature } from '@/lib/license-utils';
+import { generateLicenseSignature, getMachineId, verifyLicenseServerSignature, resolveCurrentDomain } from '@/lib/license-utils';
 import { LICENCE_PUBLIC_KEY } from '@/lib/public-key';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -88,16 +88,11 @@ export async function activateProduct(formData: FormData) {
         const nonce = Math.random().toString(36).substring(2, 15);
         const fingerprint = await getMachineId();
 
-        // Resolve domain from the actual request Host header (works on AWS/Vercel/any server)
+        // Resolve domain from the actual request Host header
         const headersList = await headers();
         const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || headersList.get('x-real-ip') || '127.0.0.1';
-        const host = headersList.get('host') || '';
-        let domain = 'localhost';
-        if (host && host !== 'localhost' && !host.startsWith('localhost:')) {
-            domain = host.split(':')[0]; // Strip port if present
-        } else if (process.env.NEXTAUTH_URL) {
-            try { domain = new URL(process.env.NEXTAUTH_URL).hostname; } catch { }
-        }
+        const currentDomain = await resolveCurrentDomain();
+        const domain = currentDomain || 'localhost';
 
         const body = JSON.stringify({
             activationKey: finalActivationKey,
@@ -282,19 +277,55 @@ export async function activateProduct(formData: FormData) {
                 { key: 'RAW_PAYLOAD', value: payloadToVerify },
                 { key: 'ACTIVATION_KEY', value: finalActivationKey },
                 { key: 'API_KEY', value: finalApiKey },
-                { key: 'API_SECRET', value: finalApiSecret }
+                { key: 'API_SECRET', value: finalApiSecret },
+                { key: 'INSTALL_DOM', value: domain }
             ];
 
             // Run this in an atomic transaction to preserve history
             await prisma.$transaction(async (tx) => {
-                // Soft-delete all existing active license records
+                const activeEntries = await tx.licenseRegistry.findMany({
+                    where: { isActive: true }
+                });
+
+                let domainRecordId: string | null = null;
+                for (const entry of activeEntries) {
+                    try {
+                        if (decrypt(entry.regKey) === 'INSTALL_DOM') {
+                            domainRecordId = entry.id;
+                            break;
+                        }
+                    } catch (e) {
+                        // ignore decryption errors
+                    }
+                }
+
+                // Soft-delete other active license records
                 await tx.licenseRegistry.updateMany({
-                    where: { isActive: true },
+                    where: {
+                        isActive: true,
+                        id: domainRecordId ? { not: domainRecordId } : undefined
+                    },
                     data: { isActive: false }
                 });
 
+                if (domainRecordId) {
+                    // Overwrite the existing value instead of creating a new registry entry
+                    await tx.licenseRegistry.update({
+                        where: { id: domainRecordId },
+                        data: {
+                            regValue: Buffer.from(encrypt(domain)),
+                            isActive: true
+                        }
+                    });
+                }
+
+                // Filter tasks to insert
+                const tasksToInsert = domainRecordId
+                    ? storageTasks.filter(task => task.key !== 'INSTALL_DOM')
+                    : storageTasks;
+
                 // Insert the new records
-                const newRecords = storageTasks.map(item => ({
+                const newRecords = tasksToInsert.map(item => ({
                     regKey: encrypt(item.key),
                     regValue: Buffer.from(encrypt(item.value)),
                     isActive: true

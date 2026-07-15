@@ -82,6 +82,8 @@ export function FloatingCredentialWidget() {
     const [length, setLength] = useState<number>(16);
     const [credential, setCredential] = useState<string>('');
     const [isCopied, setIsCopied] = useState(false);
+    const [isFooterVisible, setIsFooterVisible] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     // Policy Toggles
     const [policy, setPolicy] = useState({
@@ -90,6 +92,64 @@ export function FloatingCredentialWidget() {
         numbers: true,
         special: true,
     });
+
+    // Listen for resize to determine mobile layout
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Observer to detect when footer is intersecting viewport
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        let observer: IntersectionObserver | null = null;
+        let footerElement: Element | null = null;
+
+        const setupObserver = () => {
+            const footer = document.querySelector('footer');
+            if (footer) {
+                footerElement = footer;
+                observer = new IntersectionObserver(
+                    ([entry]) => {
+                        setIsFooterVisible(entry.isIntersecting);
+                    },
+                    {
+                        root: null,
+                        threshold: 0,
+                    }
+                );
+                observer.observe(footer);
+                return true;
+            }
+            return false;
+        };
+
+        const success = setupObserver();
+
+        let intervalId: NodeJS.Timeout | null = null;
+        if (!success) {
+            let attempts = 0;
+            intervalId = setInterval(() => {
+                attempts++;
+                if (setupObserver() || attempts >= 20) {
+                    if (intervalId) clearInterval(intervalId);
+                }
+            }, 100);
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+            if (observer && footerElement) {
+                observer.unobserve(footerElement);
+            }
+        };
+    }, []);
 
     // Mobile scroll lock when widget is open
     useEffect(() => {
@@ -168,12 +228,15 @@ export function FloatingCredentialWidget() {
 
     if (!isOpen) {
         return (
-            <div className="fixed bottom-6 right-6 z-50">
+            <div 
+                className="fixed right-6 z-50 transition-all duration-300 ease-in-out"
+                style={{ bottom: isFooterVisible ? '96px' : '20px' }}
+            >
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="flex items-center gap-2 h-9 px-3.5 rounded-lg bg-[#090d16] hover:bg-[#0f172a] text-slate-300 hover:text-white border border-white/10 hover:border-white/20 shadow-md transition-all font-sans text-xs font-medium cursor-pointer"
+                    className="flex items-center gap-2 h-9 px-3.5 rounded-lg bg-white dark:bg-[#090d16] hover:bg-slate-50 dark:hover:bg-[#0f172a] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-md transition-all font-sans text-xs font-medium cursor-pointer"
                 >
-                    <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                    <KeyRound className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                     <span>Credential Utility</span>
                 </button>
             </div>
@@ -188,16 +251,19 @@ export function FloatingCredentialWidget() {
                 onClick={() => setIsOpen(false)}
             />
 
-            <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-80 border-t sm:border border-white/10 bg-[#090d16] sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col font-sans text-slate-200 transition-all duration-150 ease-out animate-in fade-in-0 slide-in-from-bottom-6 sm:slide-in-from-bottom-2">
+            <div 
+                className="fixed right-0 sm:right-6 z-50 w-full sm:w-80 border-t sm:border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col font-sans text-slate-800 dark:text-slate-200 transition-all duration-300 ease-in-out animate-in fade-in-0"
+                style={{ bottom: isMobile ? '0px' : (isFooterVisible ? '96px' : '20px') }}
+            >
                 {/* Mobile Drag Indicator */}
-                <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
+                <div className="w-10 h-1 bg-slate-200 dark:bg-white/10 rounded-full mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.01]">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
                     <div className="flex items-center gap-2">
-                        <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                        <KeyRound className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                         <div>
-                            <h3 className="text-[11px] font-bold text-white tracking-wider uppercase">Credential Utility</h3>
+                            <h3 className="text-[11px] font-bold text-slate-900 dark:text-white tracking-wider uppercase">Credential Utility</h3>
                             <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wide">Generate Scoped Secret Payload</p>
                         </div>
                     </div>
@@ -214,14 +280,14 @@ export function FloatingCredentialWidget() {
                 <div className="p-4 space-y-4">
                     {/* Generated Output */}
                     <div className="space-y-2">
-                        <div className="relative flex items-center bg-black/40 border border-white/10 rounded-lg p-2.5 font-mono text-[12px] text-indigo-300 select-all overflow-x-auto break-all min-h-[42px] leading-relaxed">
+                        <div className="relative flex items-center bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-lg p-2.5 font-mono text-[12px] text-indigo-600 dark:text-indigo-300 select-all overflow-x-auto break-all min-h-[42px] leading-relaxed">
                             {credential}
                         </div>
 
                         <div className="flex gap-2">
                             <Button
                                 onClick={handleCopy}
-                                className="flex-1 h-8 bg-white hover:bg-slate-100 text-slate-950 text-xs font-semibold rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                className="flex-1 h-8 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-950 text-xs font-semibold rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                             >
                                 {isCopied ? (
                                     <>
@@ -239,7 +305,7 @@ export function FloatingCredentialWidget() {
                                 variant="outline"
                                 size="icon"
                                 onClick={handleGenerate}
-                                className="h-8 w-8 bg-transparent border-white/10 hover:bg-white/[0.04] text-slate-400 hover:text-white shrink-0 cursor-pointer"
+                                className="h-8 w-8 bg-transparent border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white shrink-0 cursor-pointer"
                                 title="Regenerate"
                             >
                                 <RefreshCw className="w-3 h-3" />
@@ -248,18 +314,18 @@ export function FloatingCredentialWidget() {
                     </div>
 
                     {/* Muted Entropy Monospace Text */}
-                    <div className="pt-2 flex items-center justify-between border-t border-white/5 mt-1">
+                    <div className="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-white/5 mt-1">
                         <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Entropy Signature</span>
-                        <span className="text-[10px] text-slate-400 font-mono font-medium">
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-mono font-medium">
                             {entropy}-bit &bull; {strength.label}
                         </span>
                     </div>
 
                     {/* Length Slider */}
-                    <div className="space-y-1.5 pt-2.5 border-t border-white/5">
+                    <div className="space-y-1.5 pt-2.5 border-t border-slate-100 dark:border-white/5">
                         <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-slate-400 font-medium">Bit Depth Length</span>
-                            <span className="font-mono font-bold text-indigo-400">{length} chars</span>
+                            <span className="text-slate-600 dark:text-slate-400 font-medium">Bit Depth Length</span>
+                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{length} chars</span>
                         </div>
                         <div className="flex items-center">
                             <input
@@ -269,13 +335,13 @@ export function FloatingCredentialWidget() {
                                 step={1}
                                 value={length}
                                 onChange={(e) => setLength(parseInt(e.target.value))}
-                                className="flex-1 h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-white focus:outline-none"
+                                className="flex-1 h-1 bg-slate-200 dark:bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-indigo-600 dark:accent-white focus:outline-none"
                             />
                         </div>
                     </div>
 
                     {/* Policies Checklist */}
-                    <div className="space-y-2 pt-2.5 border-t border-white/5">
+                    <div className="space-y-2 pt-2.5 border-t border-slate-100 dark:border-white/5">
                         <div className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">Policy Enforcements</div>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                             {[
@@ -286,13 +352,13 @@ export function FloatingCredentialWidget() {
                             ].map((item) => (
                                 <label
                                     key={item.key}
-                                    className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer select-none"
+                                    className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
                                 >
                                     <input
                                         type="checkbox"
                                         checked={policy[item.key as keyof typeof policy]}
                                         onChange={() => handlePolicyToggle(item.key as keyof typeof policy)}
-                                        className="w-3.5 h-3.5 rounded border-white/20 bg-white/[0.02] text-indigo-600 focus:ring-0 focus:ring-offset-0 accent-indigo-500 cursor-pointer"
+                                        className="w-3.5 h-3.5 rounded border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-white/[0.02] text-indigo-600 focus:ring-0 focus:ring-offset-0 accent-indigo-500 cursor-pointer"
                                     />
                                     <span className="text-[11px]">{item.label}</span>
                                 </label>
@@ -302,8 +368,8 @@ export function FloatingCredentialWidget() {
                 </div>
 
                 {/* Footer */}
-                <div className="px-4 py-2.5 border-t border-white/5 bg-white/[0.01] text-center">
-                    <span className="text-[9px] font-mono text-slate-600 tracking-wider uppercase">
+                <div className="px-4 py-2.5 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01] text-center">
+                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-600 tracking-wider uppercase">
                         Runtime-generated &bull; Never stored
                     </span>
                 </div>
