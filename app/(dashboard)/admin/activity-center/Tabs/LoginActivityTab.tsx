@@ -155,22 +155,22 @@ export default function LoginActivityTab() {
   }, [loading, isFetchingNextPage, hasMore, logs.length]);
 
   function getRiskColor(risk: string) {
-    if (risk === 'HIGH') return 'bg-red-500/10 text-red-500 border-red-500/20';
-    if (risk === 'MEDIUM') return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-    return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+    if (risk === 'HIGH') return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+    if (risk === 'MEDIUM') return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+    return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
   }
 
   function getOutcomeColor(outcome: string) {
-    if (outcome === 'SUCCESS') return 'text-emerald-400';
-    if (outcome === 'BLOCKED') return 'text-red-400 font-bold';
-    return 'text-amber-400';
+    if (outcome === 'SUCCESS') return 'text-emerald-600 dark:text-emerald-400';
+    if (outcome === 'BLOCKED') return 'text-red-600 dark:text-red-400 font-bold';
+    return 'text-amber-600 dark:text-amber-400';
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
         <div>
-           <h3 className="text-xl font-semibold text-white mb-2">Security Events</h3>
+           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Security Events</h3>
            {dateError && (
               <div className="flex items-center text-xs text-red-500 mt-1">
                  <AlertCircle className="w-3 h-3 mr-1" />
@@ -180,11 +180,11 @@ export default function LoginActivityTab() {
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full xl:w-auto">
           <div className="relative w-full sm:w-48">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
              <input 
                type="text" 
                placeholder="Search by email..." 
-               className="w-full bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+               className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
                value={search}
                onChange={(e) => setSearch(e.target.value)}
              />
@@ -192,7 +192,7 @@ export default function LoginActivityTab() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
              <input 
                 type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                className="w-full sm:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 title="Start Date"
@@ -200,7 +200,7 @@ export default function LoginActivityTab() {
              <span className="text-gray-500">-</span>
              <input 
                 type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                className="w-full sm:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 title="End Date"
@@ -217,7 +217,7 @@ export default function LoginActivityTab() {
              </button>
              <button 
                 onClick={handleReset}
-                className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+                className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600"
                 title="Reset Filters"
              >
                 <RotateCcw className="w-4 h-4" />
@@ -226,9 +226,9 @@ export default function LoginActivityTab() {
         </div>
       </div>
 
-      <div ref={containerRef} className="overflow-x-auto rounded-lg border border-gray-800">
-        <table className="w-full text-sm text-left text-gray-400">
-          <thead className="text-xs text-gray-300 uppercase bg-[#1A1A24]">
+      <div ref={containerRef} className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <table className="w-full text-sm text-left text-gray-550 dark:text-gray-400">
+          <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-55/80 dark:bg-gray-700/50">
             <tr>
               <th className="px-6 py-4">Identity</th>
               <th className="px-6 py-4">Outcome</th>
@@ -247,7 +247,7 @@ export default function LoginActivityTab() {
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                   No security events found matching your criteria.
                 </td>
               </tr>
@@ -256,11 +256,11 @@ export default function LoginActivityTab() {
                 <tr 
                   key={log.id} 
                   ref={index === logs.length - 1 ? lastElementRef : null}
-                  className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors"
+                  className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                 >
-                  <td className="px-6 py-4 font-medium text-gray-200">
+                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-200">
                      <span className="flex items-center gap-2">
-                       <Fingerprint className="w-4 h-4 text-gray-500" />
+                       <Fingerprint className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                        {log.email}
                      </span>
                   </td>
@@ -269,8 +269,8 @@ export default function LoginActivityTab() {
                   </td>
                   <td className="px-6 py-4">
                      <div className="flex flex-col">
-                       <span className="text-gray-300">{log.authMethod}</span>
-                       <span className="text-xs text-gray-500 truncate max-w-[150px]" title={log.reasonMessage}>{log.reasonMessage || log.reasonCode}</span>
+                       <span className="text-gray-800 dark:text-gray-300">{log.authMethod}</span>
+                       <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]" title={log.reasonMessage}>{log.reasonMessage || log.reasonCode}</span>
                      </div>
                   </td>
                   <td className="px-6 py-4">
@@ -280,12 +280,12 @@ export default function LoginActivityTab() {
                   </td>
                   <td className="px-6 py-4 font-mono text-xs">
                      <div className="flex flex-col">
-                        <span className="text-blue-400">{log.ipAddress}</span>
-                        {log.geoCountry && <span className="text-gray-500">{log.geoCountry}</span>}
+                        <span className="text-blue-600 dark:text-blue-400">{log.ipAddress}</span>
+                        {log.geoCountry && <span className="text-gray-500 dark:text-gray-400">{log.geoCountry}</span>}
                      </div>
                   </td>
                   <td className="px-6 py-4 text-xs">
-                    <div className="flex items-center text-gray-400">
+                    <div className="flex items-center text-gray-500 dark:text-gray-400">
                        <Calendar className="w-3 h-3 mr-1" />
                        {new Date(log.timestamp).toLocaleString()}
                     </div>
@@ -297,16 +297,16 @@ export default function LoginActivityTab() {
         </table>
         
         {!loading && hasMore && (
-           <div className="py-4 flex justify-center border-t border-gray-800">
+           <div className="py-4 flex justify-center border-t border-gray-200 dark:border-gray-700">
              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-             <span className="ml-2 text-gray-400 text-sm">Loading more events...</span>
+             <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">Loading more events...</span>
            </div>
         )}
       </div>
 
       <div className="flex justify-end pt-4">
-        <span className="text-sm text-gray-500">
-          Total Events Found: <span className="font-semibold text-gray-400">{total}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Total Events Found: <span className="font-semibold text-gray-900 dark:text-gray-200">{total}</span>
         </span>
       </div>
     </div>

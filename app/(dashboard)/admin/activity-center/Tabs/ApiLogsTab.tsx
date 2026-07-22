@@ -158,7 +158,7 @@ export default function ApiLogsTab() {
     <div className="space-y-4">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
         <div>
-           <h3 className="text-xl font-semibold text-white mb-2">API Telemetry</h3>
+           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">API Telemetry</h3>
            {dateError && (
               <div className="flex items-center text-xs text-red-500 mt-1">
                  <AlertCircle className="w-3 h-3 mr-1" />
@@ -168,11 +168,11 @@ export default function ApiLogsTab() {
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full xl:w-auto">
           <div className="relative w-full sm:w-48">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
              <input 
                type="text" 
                placeholder="Search endpoints..." 
-               className="w-full bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+               className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
                value={search}
                onChange={(e) => setSearch(e.target.value)}
              />
@@ -180,7 +180,7 @@ export default function ApiLogsTab() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
              <input 
                 type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                className="w-full sm:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 title="Start Date"
@@ -188,7 +188,7 @@ export default function ApiLogsTab() {
              <span className="text-gray-500">-</span>
              <input 
                 type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                className="w-full sm:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 title="End Date"
@@ -205,7 +205,7 @@ export default function ApiLogsTab() {
              </button>
              <button 
                 onClick={handleReset}
-                className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+                className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600"
                 title="Reset Filters"
              >
                 <RotateCcw className="w-4 h-4" />
@@ -214,9 +214,9 @@ export default function ApiLogsTab() {
         </div>
       </div>
 
-      <div ref={containerRef} className="overflow-x-auto rounded-lg border border-gray-800">
-        <table className="w-full text-sm text-left text-gray-400">
-          <thead className="text-xs text-gray-300 uppercase bg-[#1A1A24]">
+      <div ref={containerRef} className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <table className="w-full text-sm text-left text-gray-555 dark:text-gray-400">
+          <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-55/80 dark:bg-gray-700/50">
             <tr>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Client</th>
@@ -235,7 +235,7 @@ export default function ApiLogsTab() {
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                   No api logs found matching your criteria.
                 </td>
               </tr>
@@ -253,7 +253,7 @@ export default function ApiLogsTab() {
                 <tr 
                   key={log.id}
                   ref={index === logs.length - 1 ? lastElementRef : null}
-                  className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors"
+                  className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                 >
                   <td className="px-6 py-4">
                      {log.responseStatus === 'SUCCESS' ? (
@@ -262,27 +262,29 @@ export default function ApiLogsTab() {
                         <XCircle className="w-5 h-5 text-red-500" />
                      )}
                   </td>
-                  <td className="px-6 py-4 font-medium text-gray-200">{log.clientName || 'Unknown Client'}</td>
+                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-200">{log.clientName || 'Unknown Client'}</td>
                   <td className="px-6 py-4">
-                     <span className="text-gray-300 font-medium">{actionDisplay}</span>
+                     <span className="text-gray-800 dark:text-gray-200 font-medium">{actionDisplay}</span>
                   </td>
                   <td className="px-6 py-4">
-                     <span className="text-gray-300 truncate max-w-[200px] block" title={log.resourceName}>{log.resourceName || 'Global'}</span>
+                     <span className="text-gray-805 dark:text-gray-300 truncate max-w-[200px] block" title={log.resourceName}>{log.resourceName || 'Global'}</span>
                   </td>
                   <td className="px-6 py-4">
-                     <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                       log.httpStatusCode < 400 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                     <span className={`px-2.5 py-1 rounded text-xs font-semibold border ${
+                       log.httpStatusCode < 400 
+                         ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' 
+                         : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20'
                      }`}>
                        {log.httpStatusCode}
                      </span>
                      {log.errorMessage && (
-                       <p className="text-xs text-gray-500 mt-1 max-w-[150px] truncate" title={log.errorMessage}>
+                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-[150px] truncate" title={log.errorMessage}>
                          {log.errorMessage}
                        </p>
                      )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center text-gray-400 text-xs">
+                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-xs">
                        <Calendar className="w-3 h-3 mr-1" />
                        {new Date(log.timestamp).toLocaleString()}
                     </div>
@@ -295,16 +297,16 @@ export default function ApiLogsTab() {
         </table>
 
         {!loading && hasMore && (
-           <div className="py-4 flex justify-center border-t border-gray-800">
+           <div className="py-4 flex justify-center border-t border-gray-200 dark:border-gray-700">
              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-             <span className="ml-2 text-gray-400 text-sm">Loading more logs...</span>
+             <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">Loading more logs...</span>
            </div>
         )}
       </div>
 
       <div className="flex justify-end pt-4">
-        <span className="text-sm text-gray-500">
-          Total API Logs Found: <span className="font-semibold text-gray-400">{total}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Total API Logs Found: <span className="font-semibold text-gray-900 dark:text-gray-200">{total}</span>
         </span>
       </div>
     </div>

@@ -172,8 +172,8 @@ export default function IpSecurityTab() {
     <div className="space-y-4">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
          <div>
-            <h3 className="text-xl font-semibold text-white">IP Security Blocks</h3>
-            <p className="text-sm text-gray-400 mt-1">Review and manage automated network-tier blocks.</p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">IP Security Blocks</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Review and manage automated network-tier blocks.</p>
             {dateError && (
                <div className="flex items-center text-xs text-red-500 mt-2">
                   <AlertCircle className="w-3 h-3 mr-1" />
@@ -183,11 +183,11 @@ export default function IpSecurityTab() {
          </div>
          <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full xl:w-auto">
           <div className="relative w-full sm:w-48">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
              <input 
                type="text" 
                placeholder="Search IPs..." 
-               className="w-full bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+               className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
                value={search}
                onChange={(e) => setSearch(e.target.value)}
              />
@@ -195,7 +195,7 @@ export default function IpSecurityTab() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
              <input 
                 type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                className="w-full sm:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 title="Start Date"
@@ -203,7 +203,7 @@ export default function IpSecurityTab() {
              <span className="text-gray-500">-</span>
              <input 
                 type="datetime-local"
-                className="w-full sm:w-auto bg-[#1A1A24] border border-gray-700 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
+                className="w-full sm:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 title="End Date"
@@ -220,7 +220,7 @@ export default function IpSecurityTab() {
              </button>
              <button 
                 onClick={handleReset}
-                className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+                className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600"
                 title="Reset Filters"
              >
                 <RotateCcw className="w-4 h-4" />
@@ -229,16 +229,16 @@ export default function IpSecurityTab() {
         </div>
       </div>
 
-      <div ref={containerRef} className="overflow-x-auto rounded-lg border border-gray-800">
-        <table className="w-full text-sm text-left text-gray-400">
-          <thead className="text-xs text-gray-300 uppercase bg-[#1A1A24]">
+      <div ref={containerRef} className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <table className="w-full text-sm text-left text-gray-550 dark:text-gray-400">
+          <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-55/80 dark:bg-gray-700/50">
             <tr>
               <th className="px-6 py-4">IP Address</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Failed Attempts</th>
               <th className="px-6 py-4">Total Blocks</th>
               <th className="px-6 py-4">Last Blocked</th>
-              <th className="px-6 py-4text-right">Actions</th>
+              <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -253,7 +253,7 @@ export default function IpSecurityTab() {
                 <td colSpan={6} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center justify-center space-y-3">
                      <ShieldCheck className="w-10 h-10 text-emerald-500 opacity-80" />
-                     <p className="text-gray-400 font-medium">No active or historical blocks found.</p>
+                     <p className="text-gray-500 dark:text-gray-400 font-medium">No active or historical blocks found.</p>
                   </div>
                 </td>
               </tr>
@@ -267,37 +267,37 @@ export default function IpSecurityTab() {
                   <tr 
                     key={rec.id}
                     ref={index === records.length - 1 ? lastElementRef : null}
-                    className="border-b border-gray-800 hover:bg-[#1A1F2E] transition-colors"
+                    className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                   >
-                    <td className="px-6 py-4 font-mono text-gray-200">
+                    <td className="px-6 py-4 font-mono text-gray-900 dark:text-gray-200">
                       {rec.ipAddress}
                     </td>
                     <td className="px-6 py-4">
                        {isCurrentlyBlocked ? (
-                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            {rec.isPermanentBlock ? 'Permanent' : 'Temporarily Blocked'}
-                         </span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                             <AlertTriangle className="w-3.5 h-3.5 text-red-500 dark:text-red-450" />
+                             {rec.isPermanentBlock ? 'Permanent' : 'Temporarily Blocked'}
+                          </span>
                        ) : (
-                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">
-                            Historical
-                         </span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-650">
+                             Historical
+                          </span>
                        )}
                     </td>
-                    <td className="px-6 py-4 font-semibold text-center text-gray-300">
+                    <td className="px-6 py-4 font-semibold text-center text-gray-800 dark:text-gray-200">
                        {rec.failedAttempts}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-6 py-4 text-center text-gray-850 dark:text-gray-300">
                        {rec.totalBlockCount}
                     </td>
-                    <td className="px-6 py-4 text-xs">
-                      {rec.lastBlockAt ? new Date(rec.lastBlockAt).toLocaleString() : '-'}
+                    <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">
+                       {rec.lastBlockAt ? new Date(rec.lastBlockAt).toLocaleString() : '-'}
                     </td>
                     <td className="px-6 py-4 text-right">
                        <button
                          onClick={() => handleUnblock(rec.ipAddress)}
                          disabled={unblocking === rec.ipAddress}
-                         className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-md transition-colors disabled:opacity-50"
+                         className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-200 dark:border-blue-500/20 rounded-md transition-colors disabled:opacity-50"
                        >
                          {unblocking === rec.ipAddress ? (
                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -315,16 +315,16 @@ export default function IpSecurityTab() {
         </table>
         
         {!loading && hasMore && (
-           <div className="py-4 flex justify-center border-t border-gray-800">
+           <div className="py-4 flex justify-center border-t border-gray-200 dark:border-gray-700">
              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-             <span className="ml-2 text-gray-400 text-sm">Loading more records...</span>
+             <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">Loading more records...</span>
            </div>
         )}
       </div>
 
       <div className="flex justify-end pt-4">
-        <span className="text-sm text-gray-500">
-          Total Blocks Found: <span className="font-semibold text-gray-400">{total}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Total Blocks Found: <span className="font-semibold text-gray-900 dark:text-gray-200">{total}</span>
         </span>
       </div>
     </div>

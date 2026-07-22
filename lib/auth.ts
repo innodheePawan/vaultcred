@@ -8,6 +8,7 @@ import { User } from "@prisma/client"
 import { OTP } from 'otplib';
 import { decrypt } from '@/lib/crypto';
 import { logLoginActivity } from "@/lib/actions/login-activity";
+import { headers } from "next/headers";
 
 // OTP instance for verification
 const otp = new OTP();
@@ -220,9 +221,19 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             return session;
         },
         async redirect({ url, baseUrl }) {
-            // Use the dynamic redirect logic
-            const { getBaseUrl } = await import("@/lib/utils/url");
-            const dynamicBaseUrl = await getBaseUrl();
+            let dynamicBaseUrl = baseUrl;
+            try {
+                const headersList = await headers();
+                const host = headersList.get('host');
+                const proto = headersList.get('x-forwarded-proto') || 'https';
+                if (host) {
+                    const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : proto;
+                    dynamicBaseUrl = `${protocol}://${host}`;
+                }
+            } catch (e) {
+                // Fallback to default baseUrl
+            }
+
             if (url.startsWith("/")) return `${dynamicBaseUrl}${url}`;
             try {
                 const urlObj = new URL(url);

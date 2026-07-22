@@ -270,17 +270,54 @@ model CredPassword {
   @@map("cred_password")
 }
 
+enum OAuthGrantType {
+  CLIENT_CREDENTIALS
+}
+
+enum OAuthGrantTransmission {
+  BODY
+  URL
+}
+
+enum OAuthClientAuthentication {
+  HEADER
+  BODY
+}
+
+enum OAuthContentType {
+  APPLICATION_X_WWW_FORM_URLENCODED
+  APPLICATION_JSON
+}
+
+enum ParameterLocation {
+  BODY
+  HEADER
+  URL
+}
+
 model CredApiOAuth {
-  credentialId      String   @id @map("credential_id")
-  credential        CredentialMaster @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  credentialId          String                    @id @map("credential_id")
+  credential            CredentialMaster          @relation(fields: [credentialId], references: [id], onDelete: Cascade)
 
   // OAuth / API fields
-  clientId          String?  @map("client_id")
-  clientSecretEnc   String?  @map("client_secret_encrypted") @db.Text
-  apiKeyEncrypted   String?  @map("api_key_encrypted") @db.Text
-  tokenEndpoint     String?  @map("token_url")
-  authEndpoint      String?  @map("auth_url")
-  scopes            String?  @db.Text 
+  clientId              String?                   @map("client_id")
+  clientSecretEnc       String?                   @map("client_secret_encrypted") @db.Text
+  apiKeyEncrypted       String?                   @map("api_key_encrypted") @db.Text
+  tokenEndpoint         String?                   @map("token_url")
+  authEndpoint          String?                   @map("auth_url") // Maintained for backward compatibility
+  scope                 String?                   @map("scope") @db.Text
+
+  // Enhanced Specification Attributes
+  grantType             OAuthGrantType            @default(CLIENT_CREDENTIALS) @map("grant_type")
+  grantTypeTransmission OAuthGrantTransmission    @default(BODY) @map("grant_type_transmission")
+  clientAuthentication  OAuthClientAuthentication @default(HEADER) @map("client_authentication")
+  contentType           OAuthContentType          @default(APPLICATION_X_WWW_FORM_URLENCODED) @map("content_type")
+
+  resource              String?                   @map("resource")
+  audience              String?                   @map("audience")
+  
+  // Custom Parameters stored as encrypted JSON array payload: [{ "name": "tenant", "value": "xyz", "location": "BODY" | "HEADER" | "URL" }]
+  customParameters      String?                   @map("custom_parameters") @db.Text
 
   @@map("cred_api_oauth")
 }

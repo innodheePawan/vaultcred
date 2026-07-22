@@ -27,24 +27,33 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
             payload.host = credential.detailsPassword.host;
             payload.port = credential.detailsPassword.port;
         } else if (credential.type === "API_OAUTH" && credential.detailsApi) {
-            payload.clientId = credential.detailsApi.clientId;
-            if (credential.detailsApi.clientSecretEnc) { payload.clientSecret = decrypt(credential.detailsApi.clientSecretEnc); }
-            if (credential.detailsApi.apiKeyEncrypted) { payload.apiKey = decrypt(credential.detailsApi.apiKeyEncrypted); }
-            payload.tokenEndpoint = credential.detailsApi.tokenEndpoint;
-            payload.authEndpoint = credential.detailsApi.authEndpoint;
-            
-            let scopesParsed = [];
-            if (credential.detailsApi.scopes) {
+            const d = credential.detailsApi;
+
+            payload.credentialType = "API_OAUTH";
+            payload.grantType = d.grantType || "CLIENT_CREDENTIALS";
+            payload.tokenUrl = d.tokenEndpoint || "";
+            if (d.authEndpoint) {
+                payload.authUrl = d.authEndpoint; // Included solely if populated on a legacy record
+            }
+            payload.clientId = d.clientId || "";
+            payload.clientSecret = d.clientSecretEnc ? decrypt(d.clientSecretEnc) : "";
+            payload.scope = d.scope || (d as any).scopes || "";
+            payload.grantTypeTransmission = d.grantTypeTransmission || "BODY";
+            payload.clientAuthentication = d.clientAuthentication || "HEADER";
+            payload.contentType = d.contentType || "APPLICATION_X_WWW_FORM_URLENCODED";
+            payload.resource = d.resource || "";
+            payload.audience = d.audience || "";
+
+            let customParamsParsed: any[] = [];
+            if (d.customParameters) {
                 try {
-                    scopesParsed = JSON.parse(credential.detailsApi.scopes);
-                    if (!Array.isArray(scopesParsed)) {
-                        scopesParsed = credential.detailsApi.scopes.split(',').map(s => s.trim());
-                    }
-                } catch {
-                    scopesParsed = credential.detailsApi.scopes.split(',').map(s => s.trim());
+                    const decryptedStr = decrypt(d.customParameters);
+                    customParamsParsed = JSON.parse(decryptedStr);
+                } catch (e) {
+                    console.error("Failed to parse customParameters in reveal API", e);
                 }
             }
-            payload.scopes = scopesParsed;
+            payload.customParameters = customParamsParsed;
         } else if (credential.type === "TOKEN" && credential.detailsToken) {
             payload.token = decrypt(credential.detailsToken.tokenEncrypted);
             payload.tokenType = credential.detailsToken.tokenType;

@@ -40,7 +40,14 @@ const ApiKeySchema = BaseSchema.extend({
     apiKey: z.string().optional(),
     tokenEndpoint: z.string().url().optional().or(z.literal('')),
     authEndpoint: z.string().url().optional().or(z.literal('')),
+    scope: z.string().optional(),
     scopes: z.string().optional(),
+    grantTypeTransmission: z.enum(['BODY', 'URL']).optional().default('BODY'),
+    clientAuthentication: z.enum(['HEADER', 'BODY']).optional().default('HEADER'),
+    contentType: z.enum(['APPLICATION_X_WWW_FORM_URLENCODED', 'APPLICATION_JSON']).optional().default('APPLICATION_X_WWW_FORM_URLENCODED'),
+    resource: z.string().optional(),
+    audience: z.string().optional(),
+    customParameters: z.string().optional(),
 });
 
 const KeyCertSchema = BaseSchema.extend({
@@ -184,6 +191,18 @@ export async function createCredential(prevState: any, formData: FormData) {
                     }
                 });
             } else if (data.type === 'API_OAUTH') {
+                let encryptedCustomParams: string | null = null;
+                if (data.customParameters) {
+                    try {
+                        const parsed = typeof data.customParameters === 'string' ? JSON.parse(data.customParameters) : data.customParameters;
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            encryptedCustomParams = encrypt(JSON.stringify(parsed));
+                        }
+                    } catch (e) {
+                        console.error('Failed to encrypt customParameters:', e);
+                    }
+                }
+
                 await tx.credApiOAuth.create({
                     data: {
                         credentialId: master.id,
@@ -192,7 +211,14 @@ export async function createCredential(prevState: any, formData: FormData) {
                         apiKeyEncrypted: data.apiKey ? encrypt(data.apiKey) : null,
                         tokenEndpoint: data.tokenEndpoint || null,
                         authEndpoint: data.authEndpoint || null,
-                        scopes: data.scopes || null,
+                        scope: data.scope || data.scopes || null,
+                        grantType: 'CLIENT_CREDENTIALS',
+                        grantTypeTransmission: (data.grantTypeTransmission as any) || 'BODY',
+                        clientAuthentication: (data.clientAuthentication as any) || 'HEADER',
+                        contentType: (data.contentType as any) || 'APPLICATION_X_WWW_FORM_URLENCODED',
+                        resource: data.resource || null,
+                        audience: data.audience || null,
+                        customParameters: encryptedCustomParams,
                     }
                 });
             } else if (data.type === 'KEY_CERT') {
@@ -471,13 +497,31 @@ export async function getCredentialById(id: string) {
         };
     } else if (credential.type === 'API_OAUTH' && credential.detailsApi) {
         const d = credential.detailsApi;
+        let decryptedParams: any[] = [];
+        if (d.customParameters) {
+            try {
+                const jsonStr = decrypt(d.customParameters);
+                decryptedParams = JSON.parse(jsonStr);
+            } catch (e) {
+                console.error('Failed to decrypt customParameters:', e);
+            }
+        }
+
         details = {
-            clientId: d.clientId,
+            clientId: d.clientId || '',
             clientSecret: d.clientSecretEnc ? decrypt(d.clientSecretEnc) : undefined,
             apiKey: d.apiKeyEncrypted ? decrypt(d.apiKeyEncrypted) : undefined,
-            tokenEndpoint: d.tokenEndpoint,
-            authEndpoint: d.authEndpoint,
-            scopes: d.scopes
+            tokenEndpoint: d.tokenEndpoint || '',
+            authEndpoint: d.authEndpoint || undefined,
+            scope: d.scope || (d as any).scopes || '',
+            scopes: d.scope || (d as any).scopes || '',
+            grantType: d.grantType || 'CLIENT_CREDENTIALS',
+            grantTypeTransmission: d.grantTypeTransmission || 'BODY',
+            clientAuthentication: d.clientAuthentication || 'HEADER',
+            contentType: d.contentType || 'APPLICATION_X_WWW_FORM_URLENCODED',
+            resource: d.resource || '',
+            audience: d.audience || '',
+            customParameters: decryptedParams,
         };
     } else if (credential.type === 'KEY_CERT' && credential.detailsKeyCert) {
         const d = credential.detailsKeyCert;
@@ -661,11 +705,28 @@ export async function updateCredential(id: string, prevState: any, formData: For
                 const updateData: any = {
                     clientId: data.clientId,
                     tokenEndpoint: data.tokenEndpoint,
-                    authEndpoint: data.authEndpoint,
-                    scopes: data.scopes,
+                    authEndpoint: data.authEndpoint || undefined,
+                    scope: data.scope || data.scopes || null,
+                    grantTypeTransmission: data.grantTypeTransmission || 'BODY',
+                    clientAuthentication: data.clientAuthentication || 'HEADER',
+                    contentType: data.contentType || 'APPLICATION_X_WWW_FORM_URLENCODED',
+                    resource: data.resource || null,
+                    audience: data.audience || null,
                 };
                 if (data.clientSecret) updateData.clientSecretEnc = encrypt(data.clientSecret);
                 if (data.apiKey) updateData.apiKeyEncrypted = encrypt(data.apiKey);
+                if (data.customParameters !== undefined) {
+                    try {
+                        const parsed = typeof data.customParameters === 'string' ? JSON.parse(data.customParameters) : data.customParameters;
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            updateData.customParameters = encrypt(JSON.stringify(parsed));
+                        } else {
+                            updateData.customParameters = null;
+                        }
+                    } catch (e) {
+                        console.error('Failed to encrypt customParameters on update:', e);
+                    }
+                }
                 await tx.credApiOAuth.update({ where: { credentialId: id }, data: updateData });
             }
             // Add other types similarly...

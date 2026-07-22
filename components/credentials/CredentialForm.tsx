@@ -2,7 +2,7 @@
 
 import React, { useActionState, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle, Upload, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Upload, Eye, EyeOff, Loader2, Plus, Trash2, ShieldCheck, Globe, Sliders, Lock, Key, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const initialState = {
@@ -29,6 +29,10 @@ export default function CredentialForm({
 }: CredentialFormProps) {
     const [type, setType] = useState(initialData?.type || 'PASSWORD');
     const [isPersonal, setIsPersonal] = useState(initialData?.isPersonal || false);
+
+    const [customParams, setCustomParams] = useState<{ name: string; value: string; location: 'BODY' | 'HEADER' | 'URL' }[]>(
+        initialData?.details?.customParameters || []
+    );
 
     const [formState, formAction, isPending] = useActionState(action, initialState as any);
     const state = formState || initialState;
@@ -359,66 +363,337 @@ export default function CredentialForm({
                 </div>
             )}
 
-            {/* API / OAUTH */}
+            {/* API / OAUTH SECTION - MODERN ENTERPRISE UI */}
             {type === 'API_OAUTH' && (
-                <div className="space-y-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">OAuth / API Details</label>
-                        <p className="text-xs text-gray-500 mb-4">Provide either API Key OR Client ID/Secret</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="clientId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
-                            <input type="text" name="clientId" id="clientId" defaultValue={initialData?.details?.clientId}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
+                <div className="space-y-4">
+                    {/* Hidden input to pass customParameters payload string */}
+                    <input type="hidden" name="customParameters" value={JSON.stringify(customParams)} />
+
+                    {/* Card 1: Core Credentials & Token Endpoint */}
+                    <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-5 shadow-xs">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
+                                <Key className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                    OAuth 2.0 Client Credentials
+                                </h3>
+                                <p className="text-xs text-gray-400">Configure Client ID, Secret, Token Endpoint, and Scope</p>
+                            </div>
                         </div>
-                        <div>
-                            <label htmlFor="clientSecret" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
-                            <div className="relative mt-1">
+
+                        {/* Fields Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            <div>
+                                <label htmlFor="clientId" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Client ID <span className="text-red-500">*</span>
+                                </label>
                                 <input
-                                    type={showClientSecret ? "text" : "password"}
-                                    name="clientSecret"
-                                    id="clientSecret"
-                                    defaultValue={initialData?.details?.clientSecret}
-                                    placeholder={isEdit ? 'Unchanged' : ''}
-                                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 pr-10 dark:bg-gray-700 dark:text-white"
+                                    type="text"
+                                    name="clientId"
+                                    id="clientId"
+                                    defaultValue={initialData?.details?.clientId}
+                                    className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                    placeholder="e.g. 8f9a2b1c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"
+                                    required
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowClientSecret(!showClientSecret)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
-                                >
-                                    {showClientSecret ? (
-                                        <EyeOff className="h-4 w-4" aria-hidden="true" />
-                                    ) : (
-                                        <Eye className="h-4 w-4" aria-hidden="true" />
-                                    )}
-                                </button>
+                            </div>
+
+                            <div>
+                                <label htmlFor="clientSecret" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Client Secret <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative flex items-center">
+                                    <input
+                                        type={showClientSecret ? "text" : "password"}
+                                        name="clientSecret"
+                                        id="clientSecret"
+                                        defaultValue={initialData?.details?.clientSecret}
+                                        placeholder={isEdit ? '•••••••••••••••• (Unchanged)' : 'e.g. sec_x9K#mP2$vL8NqR1wZ'}
+                                        className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 focus:ring-2 focus:ring-indigo-500 transition-colors pr-10"
+                                        required={!isEdit}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowClientSecret(!showClientSecret)}
+                                        className="absolute right-3 text-gray-400 hover:text-gray-200"
+                                    >
+                                        {showClientSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label htmlFor="tokenEndpoint" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Token Endpoint <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="url"
+                                    name="tokenEndpoint"
+                                    id="tokenEndpoint"
+                                    defaultValue={initialData?.details?.tokenEndpoint}
+                                    className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                    placeholder="https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="scope" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Scope
+                                </label>
+                                <input
+                                    type="text"
+                                    name="scope"
+                                    id="scope"
+                                    defaultValue={initialData?.details?.scope || initialData?.details?.scopes}
+                                    className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                    placeholder="e.g. read write profile"
+                                />
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">API Key</label>
-                        <textarea name="apiKey" id="apiKey" rows={2} defaultValue={initialData?.details?.apiKey} placeholder={isEdit ? 'Unchanged' : ''}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white font-mono" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="tokenEndpoint" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Token Endpoint (URL)</label>
-                            <input type="url" name="tokenEndpoint" id="tokenEndpoint" defaultValue={initialData?.details?.tokenEndpoint}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
+
+                    {/* Accordion 1: Advanced OAuth Configuration */}
+                    <details className="group border border-slate-800 rounded-xl overflow-hidden bg-slate-950/20">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                            <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-200">
+                                <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                                Advanced OAuth Configuration
+                            </div>
+                        </summary>
+                        <div className="px-5 pb-5 pt-3 border-t border-slate-800 bg-slate-950/10 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Grant Type */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Grant Type</label>
+                                    <input
+                                        type="text"
+                                        value="Client Credentials"
+                                        readOnly
+                                        disabled
+                                        className="block w-full bg-slate-950/20 border border-slate-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-500 font-mono select-none cursor-not-allowed"
+                                    />
+                                </div>
+
+                                {/* Grant Transmission */}
+                                <div>
+                                    <label htmlFor="grantTypeTransmission" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Grant Transmission</label>
+                                    <div className="relative">
+                                        <select
+                                            name="grantTypeTransmission"
+                                            id="grantTypeTransmission"
+                                            defaultValue={initialData?.details?.grantTypeTransmission || 'BODY'}
+                                            className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-200 appearance-none font-mono focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                            <option value="BODY">Request Body (Recommended)</option>
+                                            <option value="URL">URL Query Parameter</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                            <ChevronRight className="h-3 w-3 rotate-90" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Client Authentication */}
+                                <div>
+                                    <label htmlFor="clientAuthentication" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Client Authentication</label>
+                                    <div className="relative">
+                                        <select
+                                            name="clientAuthentication"
+                                            id="clientAuthentication"
+                                            defaultValue={initialData?.details?.clientAuthentication || 'HEADER'}
+                                            className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-200 appearance-none font-mono focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                            <option value="HEADER">HTTP Basic Auth Header (Recommended)</option>
+                                            <option value="BODY">Request Body Payload</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                            <ChevronRight className="h-3 w-3 rotate-90" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* HTTP Content-Type */}
+                                <div>
+                                    <label htmlFor="contentType" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">HTTP Content-Type</label>
+                                    <div className="relative">
+                                        <select
+                                            name="contentType"
+                                            id="contentType"
+                                            defaultValue={initialData?.details?.contentType || 'APPLICATION_X_WWW_FORM_URLENCODED'}
+                                            className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-200 appearance-none font-mono focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                            <option value="APPLICATION_X_WWW_FORM_URLENCODED">application/x-www-form-urlencoded</option>
+                                            <option value="APPLICATION_JSON">application/json</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                            <ChevronRight className="h-3 w-3 rotate-90" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Resource & Audience Fields */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="resource" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Resource Identifier (Optional)</label>
+                                    <input
+                                        type="text"
+                                        name="resource"
+                                        id="resource"
+                                        defaultValue={initialData?.details?.resource}
+                                        className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                        placeholder="e.g. https://api.partner.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="audience" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Audience Claim (Optional)</label>
+                                    <input
+                                        type="text"
+                                        name="audience"
+                                        id="audience"
+                                        defaultValue={initialData?.details?.audience}
+                                        className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                        placeholder="e.g. https://auth.partner.com"
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label htmlFor="authEndpoint" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Auth Endpoint (URL)</label>
-                            <input type="url" name="authEndpoint" id="authEndpoint" defaultValue={initialData?.details?.authEndpoint}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
+                    </details>
+
+                    {/* Accordion 2: Custom Parameters */}
+                    <details className="group border border-slate-800 rounded-xl overflow-hidden bg-slate-950/20">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                            <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-200">
+                                <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                                Custom Parameters ({customParams.length})
+                            </div>
+                        </summary>
+                        <div className="px-5 pb-5 pt-3 border-t border-slate-800 bg-slate-950/10">
+                            {customParams.length === 0 ? (
+                                <div className="text-center py-6 border border-dashed border-slate-800 rounded-lg">
+                                    <Lock className="h-8 w-8 mx-auto text-gray-600 mb-2" />
+                                    <p className="text-xs text-gray-400 font-medium">No custom parameters configured</p>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">Click "Add Parameter" below for custom client headers or body inputs</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs text-left text-gray-300">
+                                        <thead className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 border-b border-slate-800">
+                                            <tr>
+                                                <th className="py-2.5 px-3">Name</th>
+                                                <th className="py-2.5 px-3">Value</th>
+                                                <th className="py-2.5 px-3">Location</th>
+                                                <th className="py-2.5 px-3 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-850">
+                                            {customParams.map((param, index) => (
+                                                <tr key={index} className="hover:bg-slate-900/20 font-mono">
+                                                    <td className="py-2 px-2 text-gray-200">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Parameter Name"
+                                                            value={param.name}
+                                                            onChange={(e) => {
+                                                                const updated = [...customParams];
+                                                                updated[index].name = e.target.value;
+                                                                setCustomParams(updated);
+                                                            }}
+                                                            className="w-full bg-slate-950/40 border border-slate-800 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:ring-1 focus:ring-indigo-500"
+                                                            required
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 px-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Parameter Value"
+                                                            value={param.value}
+                                                            onChange={(e) => {
+                                                                const updated = [...customParams];
+                                                                updated[index].value = e.target.value;
+                                                                setCustomParams(updated);
+                                                            }}
+                                                            className="w-full bg-slate-950/40 border border-slate-800 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:ring-1 focus:ring-indigo-500"
+                                                            required
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 px-2">
+                                                        <div className="relative">
+                                                            <select
+                                                                value={param.location}
+                                                                onChange={(e) => {
+                                                                    const updated = [...customParams];
+                                                                    updated[index].location = e.target.value as any;
+                                                                    setCustomParams(updated);
+                                                                }}
+                                                                className="w-full bg-slate-950/40 border border-slate-800 rounded-md px-2 py-1.5 text-xs text-gray-200 appearance-none focus:ring-1 focus:ring-indigo-500"
+                                                            >
+                                                                <option value="BODY">Request Body</option>
+                                                                <option value="HEADER">HTTP Header</option>
+                                                                <option value="URL">URL Query Parameter</option>
+                                                            </select>
+                                                            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-500">
+                                                                <ChevronRight className="h-3 w-3 rotate-90" />
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-2 px-2 text-right">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCustomParams(customParams.filter((_, i) => i !== index))}
+                                                            className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-950/20 rounded transition-colors"
+                                                            title="Delete parameter"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* Add parameter link */}
+                            <div className="mt-4 pt-3 border-t border-slate-800/80">
+                                <button
+                                    type="button"
+                                    onClick={() => setCustomParams([...customParams, { name: '', value: '', location: 'BODY' }])}
+                                    className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                                >
+                                    + Add Parameter
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label htmlFor="scopes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Scopes (comma separated)</label>
-                        <input type="text" name="scopes" id="scopes" defaultValue={initialData?.details?.scopes}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm p-2 dark:bg-gray-700 dark:text-white" />
-                    </div>
+                    </details>
+
+                    {/* Accordion 3: Legacy Configuration (Optional fallback fields) */}
+                    <details className="group border border-slate-800 rounded-xl overflow-hidden bg-slate-950/20">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                            <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-200">
+                                <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                                Legacy Configuration
+                            </div>
+                        </summary>
+                        <div className="px-5 pb-5 pt-3 border-t border-slate-800 bg-slate-950/10 space-y-4">
+                            <div>
+                                <label htmlFor="apiKey" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Standalone API Key / Fallback</label>
+                                <textarea
+                                    name="apiKey"
+                                    id="apiKey"
+                                    rows={2}
+                                    defaultValue={initialData?.details?.apiKey}
+                                    placeholder={isEdit ? '•••••••••••••••• (Unchanged)' : 'Optional standalone API key or static bearer token payload'}
+                                    className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                />
+                            </div>
+                        </div>
+                    </details>
                 </div>
             )}
 
@@ -680,7 +955,7 @@ export default function CredentialForm({
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Creation Failed</h3>
                                 <div className="text-sm text-red-600 dark:text-red-400 text-center mb-6 max-h-32 overflow-y-auto">
-                                   {typeof state.error === 'string' ? state.error : (
+                                    {typeof state.error === 'string' ? state.error : (
                                         <ul className="list-disc pl-5 text-left">
                                             {state.details && Object.entries(state.details).map(([key, msgs]) => (
                                                 <li key={key}>
