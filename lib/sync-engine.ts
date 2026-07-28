@@ -258,77 +258,74 @@ export async function triggerCredentialSync(
   // Generate session ID for grouping
   const sessionId = crypto.randomUUID();
 
-  // Defer execution using setTimeout to ensure database transaction commits
-  setTimeout(async () => {
-    try {
-      // 1. Fetch latest credential details
-      const credential = await prisma.credentialMaster.findUnique({
-        where: { id: credentialId },
-        include: {
-          detailsNote: true,
-        },
-      });
+  try {
+    // 1. Fetch latest credential details
+    const credential = await prisma.credentialMaster.findUnique({
+      where: { id: credentialId },
+      include: {
+        detailsNote: true,
+      },
+    });
 
-      if (!credential || credential.isPersonal) {
-        return;
-      }
-
-      // Check if credential type supports sync (Phase 1: SECURE_NOTE only)
-      if (credential.type !== 'SECURE_NOTE' || !credential.detailsNote) {
-        return;
-      }
-
-      // 2. Fetch all enabled targets
-      const enabledTargets = await prisma.synchronizationTarget.findMany({
-        where: { status: 'ENABLED' },
-      });
-
-      // Filter eligible targets dynamically at trigger-time based on categories, environments, types
-      const eligibleTargets = enabledTargets.filter((target) => {
-        const categories = (target.categories as string[]) || [];
-        const environments = (target.environments as string[]) || [];
-        const types = (target.types as string[]) || [];
-
-        const categoryMatches = credential.category && categories.includes(credential.category);
-        const environmentMatches = credential.environment && environments.includes(credential.environment);
-        const typeMatches = types.includes('SECURE_NOTE');
-
-        return categoryMatches && environmentMatches && typeMatches;
-      });
-
-      if (eligibleTargets.length === 0) {
-        return;
-      }
-
-      // 3. Resolve actor details
-      const actor = await prisma.user.findUnique({
-        where: { id: initiatedByUserId },
-        select: { email: true, name: true },
-      });
-      const initiatedByName = actor?.email || actor?.name || 'SYSTEM';
-
-      const decryptedNote = decrypt(credential.detailsNote.noteEncrypted);
-
-      // 4. Execute target syncs independently
-      await Promise.all(
-        eligibleTargets.map((target) =>
-          executeSingleTargetSync(
-            sessionId,
-            target,
-            credential,
-            decryptedNote,
-            initiatedByUserId,
-            initiatedByName,
-            options
-          ).catch((err) => {
-            console.error(`Unhandled error syncing target ${target.name}:`, err);
-          })
-        )
-      );
-    } catch (err) {
-      console.error('Failed to execute triggerCredentialSync:', err);
+    if (!credential || credential.isPersonal) {
+      return;
     }
-  }, 0);
+
+    // Check if credential type supports sync (Phase 1: SECURE_NOTE only)
+    if (credential.type !== 'SECURE_NOTE' || !credential.detailsNote) {
+      return;
+    }
+
+    // 2. Fetch all enabled targets
+    const enabledTargets = await prisma.synchronizationTarget.findMany({
+      where: { status: 'ENABLED' },
+    });
+
+    // Filter eligible targets dynamically at trigger-time based on categories, environments, types
+    const eligibleTargets = enabledTargets.filter((target) => {
+      const categories = (target.categories as string[]) || [];
+      const environments = (target.environments as string[]) || [];
+      const types = (target.types as string[]) || [];
+
+      const categoryMatches = credential.category && categories.includes(credential.category);
+      const environmentMatches = credential.environment && environments.includes(credential.environment);
+      const typeMatches = types.includes('SECURE_NOTE');
+
+      return categoryMatches && environmentMatches && typeMatches;
+    });
+
+    if (eligibleTargets.length === 0) {
+      return;
+    }
+
+    // 3. Resolve actor details
+    const actor = await prisma.user.findUnique({
+      where: { id: initiatedByUserId },
+      select: { email: true, name: true },
+    });
+    const initiatedByName = actor?.email || actor?.name || 'SYSTEM';
+
+    const decryptedNote = decrypt(credential.detailsNote.noteEncrypted);
+
+    // 4. Execute target syncs independently
+    await Promise.all(
+      eligibleTargets.map((target) =>
+        executeSingleTargetSync(
+          sessionId,
+          target,
+          credential,
+          decryptedNote,
+          initiatedByUserId,
+          initiatedByName,
+          options
+        ).catch((err) => {
+          console.error(`Unhandled error syncing target ${target.name}:`, err);
+        })
+      )
+    );
+  } catch (err) {
+    console.error('Failed to execute triggerCredentialSync:', err);
+  }
 }
 
 /**

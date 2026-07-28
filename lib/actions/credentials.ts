@@ -285,7 +285,7 @@ export async function createCredential(prevState: any, formData: FormData) {
 
         if (master.type === 'SECURE_NOTE') {
             const { triggerCredentialSync } = await import('@/lib/sync-engine');
-            triggerCredentialSync(master.id, session.user.id!).catch((err) => {
+            await triggerCredentialSync(master.id, session.user.id!).catch((err) => {
                 console.error('Failed to trigger synchronization on creation:', err);
             });
         }
@@ -781,7 +781,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
         // Trigger Synchronization Framework (Phase 2)
         if (credential.type === 'SECURE_NOTE') {
             const { triggerCredentialSync } = await import('@/lib/sync-engine');
-            triggerCredentialSync(id, session.user.id!).catch((err) => {
+            await triggerCredentialSync(id, session.user.id!).catch((err) => {
                 console.error('Failed to trigger synchronization on update:', err);
             });
         }
