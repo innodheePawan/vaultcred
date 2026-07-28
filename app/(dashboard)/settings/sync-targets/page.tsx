@@ -74,7 +74,7 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
     targets = targetsRes.success && targetsRes.data ? targetsRes.data : [];
   }
 
-  let historyData = { data: [], total: 0, page: 1, totalPages: 0 };
+  let historyData: { data: any[]; total: number; page: number; totalPages: number } = { data: [], total: 0, page: 1, totalPages: 0 };
   const page = params.page ? parseInt(params.page, 10) : 1;
   const limit = params.limit ? parseInt(params.limit, 10) : 20;
 

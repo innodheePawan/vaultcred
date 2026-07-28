@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { IntegrationSuiteClient, ClientConfig, HttpMethod } from '@/lib/integration-suite-client';
 import { headers } from 'next/headers';
-import { getSafeUserContext, canAccess } from '@/lib/iam/permissions';
+import { getSafeUserContext, canAccess, getScopeFilter } from '@/lib/iam/permissions';
 import { revalidatePath } from 'next/cache';
 
 // Zod schema for SAP BTP connection validation
