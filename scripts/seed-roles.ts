@@ -22,6 +22,9 @@ const FEATURES = [
     { featureKey: 'FEATURE:PROFILE',              module: 'PROFILE',          submodule: null,           description: 'User profile management' },
     { featureKey: 'FEATURE:SEARCH',               module: 'SEARCH',           submodule: null,           description: 'Global search' },
     { featureKey: 'FEATURE:NOTIFICATIONS',        module: 'NOTIFICATIONS',    submodule: null,           description: 'Notifications' },
+    { featureKey: 'FEATURE:SYNC_TARGETS',         module: 'SYNCHRONIZATION',  submodule: 'TARGETS',      description: 'Synchronization: manage external targets' },
+    { featureKey: 'FEATURE:SYNC_HISTORY',         module: 'SYNCHRONIZATION',  submodule: 'HISTORY',      description: 'Synchronization: monitor sync history' },
+    { featureKey: 'FEATURE:SYNC_HISTORY_RETRY',   module: 'SYNCHRONIZATION',  submodule: 'RETRY',        description: 'Synchronization: manual retry failed runs' },
 ] as const;
 
 type FeatureKey = typeof FEATURES[number]['featureKey'];
@@ -56,6 +59,9 @@ const ROLES_MATRIX: {
             'FEATURE:PROFILE':             'ALL',
             'FEATURE:SEARCH':              'ALL',
             'FEATURE:NOTIFICATIONS':       'ALL',
+            'FEATURE:SYNC_TARGETS':        'ALL',
+            'FEATURE:SYNC_HISTORY':        'ALL',
+            'FEATURE:SYNC_HISTORY_RETRY':  'ALL',
         },
     },
     {
@@ -77,6 +83,9 @@ const ROLES_MATRIX: {
             'FEATURE:PROFILE':             'ALL',
             'FEATURE:SEARCH':              'ALL',
             'FEATURE:NOTIFICATIONS':       'ALL',
+            'FEATURE:SYNC_TARGETS':        'ALL_SCOPED',
+            'FEATURE:SYNC_HISTORY':        'ALL_SCOPED',
+            'FEATURE:SYNC_HISTORY_RETRY':  'ALL_SCOPED',
         },
     },
     {
@@ -98,6 +107,9 @@ const ROLES_MATRIX: {
             'FEATURE:PROFILE':             'ALL',
             'FEATURE:SEARCH':              'ALL',
             'FEATURE:NOTIFICATIONS':       'ALL',
+            'FEATURE:SYNC_TARGETS':        'ALL_SCOPED',
+            'FEATURE:SYNC_HISTORY':        'ALL_SCOPED',
+            'FEATURE:SYNC_HISTORY_RETRY':  'ALL_SCOPED',
         },
     },
     {
@@ -119,6 +131,9 @@ const ROLES_MATRIX: {
             'FEATURE:PROFILE':             'ALL',
             'FEATURE:SEARCH':              'ALL',
             'FEATURE:NOTIFICATIONS':       'ALL',
+            'FEATURE:SYNC_TARGETS':        'VIEW_MASKED',
+            'FEATURE:SYNC_HISTORY':        'NO_ACCESS',
+            'FEATURE:SYNC_HISTORY_RETRY':  'NO_ACCESS',
         },
     },
     {
@@ -140,6 +155,9 @@ const ROLES_MATRIX: {
             'FEATURE:PROFILE':             'ALL',
             'FEATURE:SEARCH':              'ALL',
             'FEATURE:NOTIFICATIONS':       'ALL',
+            'FEATURE:SYNC_TARGETS':        'VIEW',
+            'FEATURE:SYNC_HISTORY':        'VIEW',
+            'FEATURE:SYNC_HISTORY_RETRY':  'NO_ACCESS',
         },
     },
 ];

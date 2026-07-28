@@ -54,8 +54,11 @@ const MENU_ITEMS: MenuItem[] = [
     },
     {
         title: 'Settings',
-        href: '/settings',
         icon: <Settings className="w-5 h-5" />,
+        children: [
+            { title: 'Configuration', href: '/settings/configuration' },
+            { title: 'Synchronization', href: '/settings/sync-targets' },
+        ],
     },
 ];
 
@@ -72,7 +75,7 @@ export function Sidebar({
     showAdminMenu?: boolean;
     featurePermissions?: Record<string, string>;
 }) {
-    const [expandedItems, setExpandedItems] = useState<string[]>(['Credentials', 'Admin']);
+    const [expandedItems, setExpandedItems] = useState<string[]>(['Credentials', 'Admin', 'Settings']);
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const currentType = searchParams.get('type');
@@ -108,7 +111,17 @@ export function Sidebar({
                     'ACTIVITY_API_LOG',
                     'ACTIVITY_IP_BLOCK',
                     'ACTIVITY_LOGIN',
+                    'ACTIVITY_IP_BLOCK'
                 ].some(hasFeatureAccess);
+                return true;
+            });
+            return { ...item, children };
+        }
+        if (item.title === 'Settings' && item.children) {
+            const children = item.children.filter(child => {
+                if (child.title === 'Synchronization') {
+                    return hasFeatureAccess('SYNC_TARGETS') || hasFeatureAccess('SYNC_HISTORY');
+                }
                 return true;
             });
             return { ...item, children };
@@ -124,6 +137,12 @@ export function Sidebar({
     };
 
     const isActive = (item: MenuItem) => {
+        if (item.title === 'Configuration') {
+            return pathname.startsWith('/settings') && !pathname.startsWith('/settings/sync-targets');
+        }
+        if (item.title === 'Synchronization') {
+            return pathname.startsWith('/settings/sync-targets');
+        }
         if (item.href === pathname) {
             // If it's the exact path match (e.g. /dashboard)
             // But for credentials, we need to check params too

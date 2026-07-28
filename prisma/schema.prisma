@@ -59,6 +59,8 @@ model User {
   
   // API Clients
   createdApiClients       ApiClient[]        @relation("CreatedByClient")
+  testedSyncTargets       SynchronizationTarget[] @relation("SyncTargetTestedBy")
+  syncHistories           SyncHistory[]      @relation("SyncHistoryInitiatedBy")
 
   @@map("users")
 }
@@ -666,3 +668,101 @@ model UserNotificationRead {
   @@id([userId])
   @@map("user_notification_read")
 }
+
+enum SyncTargetStatus {
+  ENABLED
+  DISABLED
+}
+
+enum ConnectionHealth {
+  NEVER_TESTED
+  HEALTHY
+  FAILED
+}
+
+model SynchronizationTarget {
+  id                 String             @id @default(uuid()) @map("sync_target_id")
+  name               String             @unique @map("target_name")
+  description        String?            @map("description") @db.Text
+  type               String             @map("target_type") // Currently "SAP_BTP_INTEGRATION_SUITE"
+  status             SyncTargetStatus   @default(ENABLED) @map("status")
+  
+  hostUrl            String             @map("host_url")
+  tokenUrl           String             @map("token_url")
+  clientId           String             @map("client_id")
+  clientSecret       String             @map("client_secret") @db.Text // Encrypted (AES-256-GCM)
+  certificate        String?            @map("certificate") @db.LongText // Encrypted (AES-256-GCM)
+  
+  tenantLabel        String             @map("tenant_label")
+  
+  categories         Json               @map("categories")
+  types              Json               @map("types")
+  environments       Json?              @map("environments")
+  
+  // Connection Metrics
+  connectionHealth   ConnectionHealth   @default(NEVER_TESTED) @map("connection_health")
+  lastTestTimestamp  DateTime?          @map("last_test_timestamp")
+  lastTestResponseTime Int?             @map("last_test_response_time")
+  lastTestHttpStatus Int?               @map("last_test_http_status")
+  lastTestError      String?            @map("last_test_error") @db.Text
+  
+  testedById         String?            @map("tested_by_id")
+  testedBy           User?              @relation("SyncTargetTestedBy", fields: [testedById], references: [id])
+
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  syncHistories      SyncHistory[]
+
+  @@map("synchronization_targets")
+}
+
+model SyncHistory {
+  id                    String                @id @default(uuid()) @map("sync_history_id")
+  sessionId             String                @map("session_id")
+  
+  targetId              String                @map("target_id")
+  target                SynchronizationTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  
+  targetName            String                @map("target_name")
+  targetType            String                @map("target_type")
+  platform              String                @map("platform")
+  provider              String                @map("provider")
+  hostUrl               String                @map("host_url")
+  
+  credentialId          String?               @map("credential_id")
+  credentialName        String                @map("credential_name")
+  credentialType        String                @map("credential_type")
+  version               Int                   @map("version")
+  category              String?               @map("category")
+  environment           String?               @map("environment")
+  
+  operation             String                @map("operation") // CREATE, UPDATE
+  executionType         String                @map("execution_type") // AUTO, MANUAL, BULK, API
+  
+  startedAt             DateTime              @map("started_at")
+  completedAt           DateTime              @map("completed_at")
+  durationMs            Int                   @map("duration_ms")
+  
+  initiatedById         String?               @map("initiated_by_id")
+  initiatedBy           User?                 @relation("SyncHistoryInitiatedBy", fields: [initiatedById], references: [id], onDelete: SetNull)
+  initiatedByName       String                @map("initiated_by_name")
+  
+  status                String                @map("status") // PENDING, IN_PROGRESS, SUCCESS, FAILED, SKIPPED
+  parentHistoryId       String?               @map("parent_history_id")
+  
+  endpoint              String                @map("endpoint")
+  httpMethod            String                @map("http_method")
+  
+  requestHeaders        String?               @map("request_headers") @db.Text
+  httpStatus            Int?                  @map("http_status")
+  responseHeaders       String?               @map("response_headers") @db.Text
+  providerCorrelationId String?               @map("provider_correlation_id")
+  errorMessage          String?               @map("error_message") @db.Text
+
+  @@index([targetId])
+  @@index([initiatedById])
+  @@index([sessionId])
+  @@map("sync_history")
+}
+

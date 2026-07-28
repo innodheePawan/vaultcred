@@ -283,6 +283,13 @@ export async function createCredential(prevState: any, formData: FormData) {
             isPersonal: master.isPersonal
         });
 
+        if (master.type === 'SECURE_NOTE') {
+            const { triggerCredentialSync } = await import('@/lib/sync-engine');
+            triggerCredentialSync(master.id, session.user.id!).catch((err) => {
+                console.error('Failed to trigger synchronization on creation:', err);
+            });
+        }
+
         revalidatePath('/credentials');
         return { success: true, message: 'Credential created successfully!' };
 
@@ -670,6 +677,10 @@ export async function updateCredential(id: string, prevState: any, formData: For
         oldUnsanitized.authEndpoint = d.authEndpoint;
         oldUnsanitized.scopes = d.scopes;
     }
+    if (credential.type === 'SECURE_NOTE' && credential.detailsNote) {
+        const d = credential.detailsNote;
+        oldUnsanitized.note = d.noteEncrypted ? decrypt(d.noteEncrypted) : null;
+    }
     // ... Implement others as needed or basic fallback
 
     const data: any = rawData; // Trust inputs for now
@@ -728,6 +739,12 @@ export async function updateCredential(id: string, prevState: any, formData: For
                     }
                 }
                 await tx.credApiOAuth.update({ where: { credentialId: id }, data: updateData });
+            } else if (credential.type === 'SECURE_NOTE') {
+                const updateData: any = {};
+                if (data.note) {
+                    updateData.noteEncrypted = encrypt(data.note);
+                }
+                await tx.credSecureNote.update({ where: { credentialId: id }, data: updateData });
             }
             // Add other types similarly...
         });
@@ -740,6 +757,9 @@ export async function updateCredential(id: string, prevState: any, formData: For
         if (credential.type === 'API_OAUTH') {
             if (!data.clientSecret) newUnsanitized.clientSecret = oldUnsanitized.clientSecret;
             if (!data.apiKey) newUnsanitized.apiKey = oldUnsanitized.apiKey;
+        }
+        if (credential.type === 'SECURE_NOTE') {
+            if (!data.note) newUnsanitized.note = oldUnsanitized.note;
         }
 
         // COMPUTE DIFF
@@ -755,6 +775,14 @@ export async function updateCredential(id: string, prevState: any, formData: For
                 newValue: JSON.stringify(diff), // Differential Log
                 userId: session.user.id,
                 isPersonal: credential.isPersonal
+            });
+        }
+
+        // Trigger Synchronization Framework (Phase 2)
+        if (credential.type === 'SECURE_NOTE') {
+            const { triggerCredentialSync } = await import('@/lib/sync-engine');
+            triggerCredentialSync(id, session.user.id!).catch((err) => {
+                console.error('Failed to trigger synchronization on update:', err);
             });
         }
 

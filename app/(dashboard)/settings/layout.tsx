@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
-import SettingsNav from '@/components/admin/settings/SettingsNav';
+import ClientSettingsLayout from './ClientSettingsLayout';
 import { getSafeUserContext, canAccess } from '@/lib/iam/permissions';
 
 export default async function SettingsLayout({
@@ -12,9 +12,11 @@ export default async function SettingsLayout({
     const session = await auth();
     if (!session?.user) redirect('/login');
 
-    // Guard: only roles with VIEW+ on FEATURE:SETTINGS can access
+    // Guard: only roles with VIEW+ on SETTINGS or SYNC features can access
     const ctx = await getSafeUserContext(session.user.id);
-    const canViewSettings = canAccess(ctx, 'FEATURE:SETTINGS', 'VIEW');
+    const canViewSettings = canAccess(ctx, 'FEATURE:SETTINGS', 'VIEW') ||
+                           canAccess(ctx, 'FEATURE:SYNC_TARGETS', 'VIEW') ||
+                           canAccess(ctx, 'FEATURE:SYNC_HISTORY', 'VIEW');
 
     if (!canViewSettings) {
         return (
@@ -34,21 +36,8 @@ export default async function SettingsLayout({
     }
 
     return (
-        <div className="flex flex-col min-h-[calc(100vh-10rem)] py-8 px-4 sm:px-6 lg:px-8">
-            <div className="w-full max-w-5xl mx-auto space-y-8">
-                <div className="text-left">
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">System Settings</h1>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        Manage global configuration, email services, and security policies.
-                    </p>
-                </div>
-
-                <SettingsNav role={session.user.role} />
-
-                <div className="mt-6">
-                    {children}
-                </div>
-            </div>
-        </div>
+        <ClientSettingsLayout role={session.user.role}>
+            {children}
+        </ClientSettingsLayout>
     );
 }

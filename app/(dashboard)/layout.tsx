@@ -54,9 +54,10 @@ export default async function DashboardLayout({
             const ctx = await getSafeUserContext(session.user.id);
             featurePermissions = ctx.featurePermissions as Record<string, string>;
 
-            // Settings: any role with VIEW or higher on SETTINGS
-            showSettings = featurePermissions['SETTINGS'] !== 'NO_ACCESS'
-                && !!featurePermissions['SETTINGS'];
+            // Settings: visible if general settings or sync settings are accessible
+            showSettings = (featurePermissions['SETTINGS'] !== 'NO_ACCESS' && !!featurePermissions['SETTINGS']) ||
+                (featurePermissions['SYNC_TARGETS'] !== 'NO_ACCESS' && !!featurePermissions['SYNC_TARGETS']) ||
+                (featurePermissions['SYNC_HISTORY'] !== 'NO_ACCESS' && !!featurePermissions['SYNC_HISTORY']);
 
             // Admin menu: visible if user has ANY admin or activity feature accessible
             const adminFeatures = [

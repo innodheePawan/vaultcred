@@ -252,7 +252,43 @@ export default function SystemLogsTab() {
                   </td>
                   <td className="px-6 py-4 max-w-[300px]">
                     {(() => {
-                      const val = log.credential?.name || log.newValue || 'System';
+                      let val = 'System';
+                      if (log.credential?.name) {
+                        val = log.credential.name;
+                      } else {
+                        const rawVal = log.newValue || log.oldValue;
+                        if (rawVal) {
+                          if (typeof rawVal === 'object') {
+                            val = rawVal.name || rawVal.label || JSON.stringify(rawVal);
+                          } else {
+                            const str = String(rawVal);
+                            if (str.trim().startsWith('{')) {
+                              try {
+                                const parsed = JSON.parse(str);
+                                if (parsed && typeof parsed === 'object') {
+                                  val = parsed.name || parsed.label || str;
+                                }
+                              } catch (e) {
+                                val = str;
+                              }
+                            } else if (str.startsWith('Created target: ')) {
+                              const after = str.substring('Created target: '.length);
+                              const forTenantIndex = after.indexOf(' for tenant ');
+                              val = forTenantIndex !== -1 ? after.substring(0, forTenantIndex) : after;
+                            } else if (str.startsWith('Toggled target: ')) {
+                              const after = str.substring('Toggled target: '.length);
+                              const toIndex = after.lastIndexOf(' to ');
+                              val = toIndex !== -1 ? after.substring(0, toIndex) : after;
+                            } else if (str.startsWith('Deleted target: ')) {
+                              const after = str.substring('Deleted target: '.length);
+                              const tenantIndex = after.indexOf(' (Tenant:');
+                              val = tenantIndex !== -1 ? after.substring(0, tenantIndex) : after;
+                            } else {
+                              val = str;
+                            }
+                          }
+                        }
+                      }
                       const truncated = val.length > 50 ? val.slice(0, 50) + '…' : val;
                       return <span title={val} className="block truncate text-gray-800 dark:text-gray-300">{truncated}</span>;
                     })()}
