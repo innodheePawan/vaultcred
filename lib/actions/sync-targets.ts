@@ -5,9 +5,11 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { IntegrationSuiteClient, ClientConfig, HttpMethod } from '@/lib/integration-suite-client';
-import { headers } from 'next/headers';
 import { getSafeUserContext, canAccess, getScopeFilter } from '@/lib/iam/permissions';
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
+import { triggerCredentialSync } from '@/lib/sync-engine';
+import { headers } from 'next/headers';
 
 // Zod schema for SAP BTP connection validation
 const ConnectionConfigSchema = z.object({
@@ -913,11 +915,15 @@ export async function retrySynchronizationAction(historyId: string) {
       return { error: 'Associated credential no longer exists in CredSecure' };
     }
 
-    const { triggerCredentialSync } = await import('@/lib/sync-engine');
-
-    await triggerCredentialSync(originalRecord.credentialId, session.user.id, {
-      executionType: 'MANUAL',
-      parentHistoryId: originalRecord.id,
+    after(async () => {
+      try {
+        await triggerCredentialSync(originalRecord.credentialId!, session.user.id, {
+          executionType: 'MANUAL',
+          parentHistoryId: originalRecord.id,
+        });
+      } catch (err) {
+        console.error('Failed to trigger manual retry inside after():', err);
+      }
     });
 
     return { success: true, message: 'Retry triggered successfully' };

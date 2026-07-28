@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { sanitizeCredentialData, computeDiff } from '@/lib/audit-utils';
+import { after } from 'next/server';
+import { triggerCredentialSync } from '@/lib/sync-engine';
 
 // ----------------------------------------------------------------------
 // Zod Schemas
@@ -284,9 +286,12 @@ export async function createCredential(prevState: any, formData: FormData) {
         });
 
         if (master.type === 'SECURE_NOTE') {
-            const { triggerCredentialSync } = await import('@/lib/sync-engine');
-            await triggerCredentialSync(master.id, session.user.id!).catch((err) => {
-                console.error('Failed to trigger synchronization on creation:', err);
+            after(async () => {
+                try {
+                    await triggerCredentialSync(master.id, session.user.id!);
+                } catch (err) {
+                    console.error('Failed to trigger synchronization on creation inside after():', err);
+                }
             });
         }
 
@@ -780,9 +785,12 @@ export async function updateCredential(id: string, prevState: any, formData: For
 
         // Trigger Synchronization Framework (Phase 2)
         if (credential.type === 'SECURE_NOTE') {
-            const { triggerCredentialSync } = await import('@/lib/sync-engine');
-            await triggerCredentialSync(id, session.user.id!).catch((err) => {
-                console.error('Failed to trigger synchronization on update:', err);
+            after(async () => {
+                try {
+                    await triggerCredentialSync(id, session.user.id!);
+                } catch (err) {
+                    console.error('Failed to trigger synchronization on update inside after():', err);
+                }
             });
         }
 
