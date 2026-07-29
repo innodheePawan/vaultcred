@@ -22,6 +22,7 @@ import {
   X,
   Copy,
   Check,
+  Filter,
 } from 'lucide-react';
 
 interface SyncHistoryTabProps {
@@ -48,6 +49,13 @@ export default function SyncHistoryTab({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [activeAction, setActiveAction] = useState<'APPLY' | 'REFRESH' | 'RESET' | null>(null);
+
+  React.useEffect(() => {
+    if (!isPending) {
+      setActiveAction(null);
+    }
+  }, [isPending]);
 
   // Filters State
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -93,7 +101,10 @@ export default function SyncHistoryTab({
     if (endDate) params.set('endDate', endDate);
     else params.delete('endDate');
 
-    router.push(`${pathname}?${params.toString()}`);
+    setActiveAction('APPLY');
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   };
 
   // Reset all filters
@@ -107,7 +118,18 @@ export default function SyncHistoryTab({
 
     const params = new URLSearchParams();
     params.set('tab', 'history');
-    router.push(`${pathname}?${params.toString()}`);
+    setActiveAction('RESET');
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  };
+
+  // Explicit refresh history trigger
+  const handleRefresh = () => {
+    setActiveAction('REFRESH');
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   // Run Manual Retry
@@ -128,8 +150,16 @@ export default function SyncHistoryTab({
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (status: string, startedAt?: Date | string) => {
+    let displayStatus = status;
+    if (status === 'IN_PROGRESS' && startedAt) {
+      const elapsed = Date.now() - new Date(startedAt).getTime();
+      if (elapsed > 5 * 60 * 1000) { // 5 minutes threshold
+        displayStatus = 'TIMED_OUT';
+      }
+    }
+
+    switch (displayStatus) {
       case 'SUCCESS':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800/30">
@@ -140,6 +170,12 @@ export default function SyncHistoryTab({
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30">
             <XCircle className="w-3.5 h-3.5" /> Failed
+          </span>
+        );
+      case 'TIMED_OUT':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30 animate-pulse">
+            <AlertCircle className="w-3.5 h-3.5" /> Timed Out
           </span>
         );
       case 'IN_PROGRESS':
@@ -242,16 +278,37 @@ export default function SyncHistoryTab({
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button onClick={handleApplyFilters} size="sm" className="w-full sm:w-auto">
-                <RefreshCcw className="w-4 h-4 mr-2" />
+              <Button onClick={handleApplyFilters} size="sm" className="w-full sm:w-auto" disabled={isPending}>
+                {isPending && activeAction === 'APPLY' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Filter className="w-4 h-4 mr-2" />
+                )}
                 Apply
               </Button>
               <button
+                onClick={handleRefresh}
+                disabled={isPending}
+                className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors disabled:opacity-50"
+                title="Refresh History"
+              >
+                {isPending && activeAction === 'REFRESH' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCcw className="w-4 h-4" />
+                )}
+              </button>
+              <button
                 onClick={handleResetFilters}
-                className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+                disabled={isPending}
+                className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors disabled:opacity-50"
                 title="Reset Filters"
               >
-                <RotateCcw className="w-4 h-4" />
+                {isPending && activeAction === 'RESET' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -328,7 +385,7 @@ export default function SyncHistoryTab({
 
                       {/* Result */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(record.status)}
+                        {getStatusBadge(record.status, record.startedAt)}
                       </td>
 
                       {/* Initiator */}
@@ -426,12 +483,14 @@ export default function SyncHistoryTab({
                         {new Date(selectedRecord.startedAt).toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex gap-2 items-start">
-                      <span className="text-gray-500 w-28 shrink-0 text-left">Completed At:</span>
-                      <span className="text-gray-800 dark:text-gray-200 text-left truncate max-w-[160px] block" title={new Date(selectedRecord.completedAt).toLocaleString()}>
-                        {new Date(selectedRecord.completedAt).toLocaleString()}
-                      </span>
-                    </div>
+                    {selectedRecord.status !== 'IN_PROGRESS' && selectedRecord.status !== 'PENDING' && (
+                      <div className="flex gap-2 items-start">
+                        <span className="text-gray-500 w-28 shrink-0 text-left">Completed At:</span>
+                        <span className="text-gray-800 dark:text-gray-200 text-left truncate max-w-[160px] block" title={new Date(selectedRecord.completedAt).toLocaleString()}>
+                          {new Date(selectedRecord.completedAt).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     {selectedRecord.parentHistoryId && (
                       <div className="flex gap-2 items-start">
                         <span className="text-gray-500 w-28 shrink-0 text-left">Retried From:</span>
@@ -527,7 +586,7 @@ export default function SyncHistoryTab({
                     </div>
                     <div className="flex gap-2 items-start">
                       <span className="text-gray-500 w-28 shrink-0 text-left">Result Status:</span>
-                      <span className="text-left">{getStatusBadge(selectedRecord.status)}</span>
+                      <span className="text-left">{getStatusBadge(selectedRecord.status, selectedRecord.startedAt)}</span>
                     </div>
                   </div>
                 </div>
