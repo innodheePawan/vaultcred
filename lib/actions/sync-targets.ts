@@ -234,12 +234,19 @@ export async function testConnectionAction(configPayload: any) {
     });
   }
 
-  // Step 2: GET UserCredentials to extract CSRF token
+  // Step 2: GET API path to extract CSRF token
   if (health === 'HEALTHY' && accessToken) {
     const apiStart = Date.now();
     const apiUrl = `${testConfig.hostUrl}/api/v1/`;
+    const testTypes = testConfig.types || [];
+    const csrfPath = testTypes.includes('SECURE_NOTE')
+      ? '/api/v1/SecureParameters'
+      : testTypes.includes('PASSWORD')
+        ? '/api/v1/UserCredentials'
+        : '/api/v1/SecureParameters';
+
     try {
-      const apiRes = await client.fetchCsrfToken(accessToken);
+      const apiRes = await client.fetchCsrfToken(accessToken, csrfPath);
       lastTestHttpStatus = apiRes.httpStatus;
       responseTime = apiRes.duration;
       steps.push({

@@ -72,7 +72,22 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
     });
 
     const oauthRes = await client.authenticate();
-    const csrfRes = await client.fetchCsrfToken(oauthRes.accessToken);
+
+    // Determine CSRF token fetch path dynamically based on targetConfig types configuration
+    const rawTypes = targetConfig.types;
+    const types = Array.isArray(rawTypes)
+      ? rawTypes
+      : typeof rawTypes === 'string'
+        ? JSON.parse(rawTypes)
+        : [];
+
+    const csrfPath = types.includes('SECURE_NOTE')
+      ? '/api/v1/SecureParameters'
+      : types.includes('PASSWORD')
+        ? '/api/v1/UserCredentials'
+        : '/api/v1/SecureParameters'; // fallback default
+
+    const csrfRes = await client.fetchCsrfToken(oauthRes.accessToken, csrfPath);
 
     return {
       accessToken: oauthRes.accessToken,
