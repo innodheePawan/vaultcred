@@ -84,12 +84,11 @@ export class IntegrationSuiteClient {
   }
 
   /**
-   * Queries the configured path with X-CSRF-Token: Fetch to fetch token.
+   * Queries the API root endpoint with X-CSRF-Token: Fetch to fetch token.
    * Performs up to 2 retries on 5xx server errors.
    */
-  async fetchCsrfToken(accessToken: string, customPath?: string): Promise<{ csrfToken: string; cookies: string[]; duration: number; httpStatus: number }> {
-    const path = customPath || API.USER_CREDENTIALS;
-    const url = `${this.config.hostUrl}${path}`;
+  async fetchCsrfToken(accessToken: string): Promise<{ csrfToken: string; cookies: string[]; duration: number; httpStatus: number }> {
+    const url = `${this.config.hostUrl}/api/v1/`;
     const startTime = Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
@@ -120,9 +119,6 @@ export class IntegrationSuiteClient {
           }
         } catch (err: any) {
           lastError = err;
-          if (controller.signal.aborted || err.name === 'AbortError') {
-            throw err;
-          }
           if (attempt < maxRetries) {
             await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
           } else {

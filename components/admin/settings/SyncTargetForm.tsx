@@ -180,9 +180,6 @@ export default function SyncTargetForm({ initialTarget, canEdit = true }: SyncTa
       clientId,
       clientSecret,
       certificate: certificate || null,
-      types: selectedTypes,
-      categories: selectedCategories,
-      environments: selectedEnvironments,
     };
 
     try {
