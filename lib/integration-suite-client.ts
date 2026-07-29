@@ -85,7 +85,7 @@ export class IntegrationSuiteClient {
         duration,
       };
     } catch (err: any) {
-      if (err.code) throw err;
+      if (err.code && typeof err.code === 'string') throw err;
       throw {
         code: 'OAuthConnectionError',
         message: err.message || String(err),
