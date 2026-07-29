@@ -915,16 +915,14 @@ export async function retrySynchronizationAction(historyId: string) {
       return { error: 'Associated credential no longer exists in CredSecure' };
     }
 
-    after(async () => {
-      try {
-        await triggerCredentialSync(originalRecord.credentialId!, session.user.id, {
-          executionType: 'MANUAL',
-          parentHistoryId: originalRecord.id,
-        });
-      } catch (err) {
-        console.error('Failed to trigger manual retry inside after():', err);
-      }
-    });
+    try {
+      await triggerCredentialSync(originalRecord.credentialId!, session.user.id, {
+        executionType: 'MANUAL',
+        parentHistoryId: originalRecord.id,
+      });
+    } catch (err) {
+      console.error('Failed to trigger manual retry:', err);
+    }
 
     return { success: true, message: 'Retry triggered successfully' };
   } catch (error: any) {

@@ -286,13 +286,11 @@ export async function createCredential(prevState: any, formData: FormData) {
         });
 
         if (master.type === 'SECURE_NOTE' || master.type === 'PASSWORD') {
-            after(async () => {
-                try {
-                    await triggerCredentialSync(master.id, session.user.id!);
-                } catch (err) {
-                    console.error('Failed to trigger synchronization on creation inside after():', err);
-                }
-            });
+            try {
+                await triggerCredentialSync(master.id, session.user.id!);
+            } catch (err) {
+                console.error('Failed to trigger synchronization on creation:', err);
+            }
         }
 
         revalidatePath('/credentials');
@@ -785,13 +783,11 @@ export async function updateCredential(id: string, prevState: any, formData: For
 
         // Trigger Synchronization Framework (Phase 2)
         if (credential.type === 'SECURE_NOTE' || credential.type === 'PASSWORD') {
-            after(async () => {
-                try {
-                    await triggerCredentialSync(id, session.user.id!);
-                } catch (err) {
-                    console.error('Failed to trigger synchronization on update inside after():', err);
-                }
-            });
+            try {
+                await triggerCredentialSync(id, session.user.id!);
+            } catch (err) {
+                console.error('Failed to trigger synchronization on update:', err);
+            }
         }
 
         revalidatePath('/credentials');
