@@ -22,6 +22,8 @@ export class IntegrationSuiteClient {
     this.config = {
       timeout: 30000,
       ...config,
+      hostUrl: config.hostUrl.replace(/\/+$/, ''),
+      tokenUrl: config.tokenUrl.replace(/\/+$/, ''),
     };
   }
 
@@ -35,6 +37,7 @@ export class IntegrationSuiteClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
 
     try {
+      console.log(`[IntegrationSuiteClient] Authenticating to tokenUrl: ${this.config.tokenUrl}`);
       const params = new URLSearchParams();
       params.append('grant_type', 'client_credentials');
 
@@ -66,17 +69,28 @@ export class IntegrationSuiteClient {
             errorDesc = text || errorDesc;
           } catch {}
         }
-        throw { httpStatus: response.status, code: errorCode, message: errorDesc };
+        console.error(`[IntegrationSuiteClient] OAuth authentication failed. Status: ${response.status}. Reason: ${errorDesc}`);
+        throw { httpStatus: response.status, code: errorCode, message: errorDesc, endpoint: this.config.tokenUrl };
       }
 
       const data = await response.json();
       if (!data.access_token) {
-        throw { httpStatus: 200, code: 'InvalidResponse', message: 'No access token returned in response' };
+        console.error(`[IntegrationSuiteClient] OAuth authentication returned invalid response structure.`);
+        throw { httpStatus: 200, code: 'InvalidResponse', message: 'No access token returned in response', endpoint: this.config.tokenUrl };
       }
 
+      console.log(`[IntegrationSuiteClient] OAuth authentication successful. Duration: ${duration}ms`);
       return {
         accessToken: data.access_token,
         duration,
+      };
+    } catch (err: any) {
+      if (err.code) throw err;
+      throw {
+        code: 'OAuthConnectionError',
+        message: err.message || String(err),
+        endpoint: this.config.tokenUrl,
+        cause: err,
       };
     } finally {
       clearTimeout(timeoutId);
@@ -94,12 +108,14 @@ export class IntegrationSuiteClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
 
     try {
+      console.log(`[IntegrationSuiteClient] Fetching CSRF token from: ${url}`);
       let response: Response | null = null;
       let lastError: any = null;
       const maxRetries = 2;
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
+          console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1}/${maxRetries + 1} to GET ${url}`);
           response = await fetch(url, {
             method: 'GET',
             headers: {
@@ -110,15 +126,18 @@ export class IntegrationSuiteClient {
             signal: controller.signal,
           });
 
+          console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1} responded with status: ${response.status}`);
           if (response.status < 500) {
             break;
           }
 
           if (attempt < maxRetries) {
+            console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1} returned 5xx status. Retrying in ${1000 * (attempt + 1)}ms...`);
             await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
           }
         } catch (err: any) {
           lastError = err;
+          console.error(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1} caught error: ${err.message || err}`);
           if (attempt < maxRetries) {
             await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
           } else {
@@ -136,22 +155,33 @@ export class IntegrationSuiteClient {
 
       if (httpStatus >= 400) {
         let errorMsg = `HTTP Error ${httpStatus}`;
+        let body = '';
         try {
-          const body = await response.text();
+          body = await response.text();
           errorMsg = body || errorMsg;
         } catch {}
-        throw { httpStatus, message: errorMsg };
+        console.error(`[IntegrationSuiteClient] CSRF Fetch failed with status ${httpStatus}. URL: ${url}. Response: ${body}`);
+        throw { httpStatus, message: errorMsg, endpoint: url, responseBody: body };
       }
 
       const csrfToken = response.headers.get('x-csrf-token') || '';
       const setCookieHeader = response.headers.get('set-cookie');
       const cookies = setCookieHeader ? [setCookieHeader] : [];
 
+      console.log(`[IntegrationSuiteClient] CSRF Fetch successful. Status: ${httpStatus}, CSRF Token Present: ${!!csrfToken}, Cookies Count: ${cookies.length}. Duration: ${duration}ms`);
       return {
         csrfToken,
         cookies,
         duration,
         httpStatus,
+      };
+    } catch (err: any) {
+      if (err.httpStatus) throw err;
+      throw {
+        code: 'CsrfConnectionError',
+        message: err.message || String(err),
+        endpoint: url,
+        cause: err,
       };
     } finally {
       clearTimeout(timeoutId);
@@ -181,7 +211,6 @@ export class IntegrationSuiteClient {
       const hostname = url.hostname;
       const parts = hostname.split('.');
       if (parts.length > 0) {
-        // e.g. abcd1234.cfapps.eu10.hana.ondemand.com -> abcd1234
         return parts[0];
       }
       return hostname;
@@ -204,6 +233,7 @@ export class IntegrationSuiteClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
 
     try {
+      console.log(`[IntegrationSuiteClient] Executing OData Request: ${method} ${url}`);
       const response = await fetch(url, {
         method,
         headers,
@@ -212,14 +242,33 @@ export class IntegrationSuiteClient {
       });
 
       const text = await response.text();
+      console.log(`[IntegrationSuiteClient] OData Request ${method} ${url} responded with status: ${response.status}. Response length: ${text.length} chars.`);
+
+      if (!response.ok) {
+        throw {
+          httpStatus: response.status,
+          message: text || `HTTP error ${response.status}`,
+          endpoint: url,
+          responseBody: text,
+        };
+      }
+
       return {
         status: response.status,
         text,
         headers: response.headers,
+      };
+    } catch (err: any) {
+      if (err.httpStatus) throw err;
+      console.error(`[IntegrationSuiteClient] OData Request ${method} ${url} failed. Error: ${err.message || err}`);
+      throw {
+        code: 'ODataConnectionError',
+        message: err.message || String(err),
+        endpoint: url,
+        cause: err,
       };
     } finally {
       clearTimeout(timeoutId);
     }
   }
 }
-

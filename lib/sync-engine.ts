@@ -488,7 +488,23 @@ async function executeSingleTargetSync(
     }
   } catch (err: any) {
     status = 'FAILED';
-    errorMessage = err.message || String(err);
+    let detailedError = err.message || String(err);
+    if (err.code) {
+      detailedError += ` (Code: ${err.code})`;
+    }
+    if (err.endpoint) {
+      detailedError += ` (Endpoint: ${err.endpoint})`;
+    }
+    if (err.responseBody) {
+      const displayBody = err.responseBody.length > 150
+        ? err.responseBody.substring(0, 150) + '...'
+        : err.responseBody;
+      detailedError += ` (Response: ${displayBody})`;
+    }
+    if (err.cause) {
+      detailedError += ` (Cause: ${err.cause.message || String(err.cause)})`;
+    }
+    errorMessage = detailedError;
     if (err.httpStatus) {
       httpStatus = err.httpStatus;
     }
