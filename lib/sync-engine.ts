@@ -109,13 +109,14 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       'Accept': 'application/json',
     };
 
-    const res = await client.execute('GET', checkUrl, checkHeaders);
-    if (res.status === 200) {
-      return true;
-    } else if (res.status === 404) {
-      return false;
-    } else {
-      throw new Error(`Existence check failed with HTTP Status ${res.status}: ${res.text}`);
+    try {
+      const res = await client.execute('GET', checkUrl, checkHeaders);
+      return res.status === 200;
+    } catch (err: any) {
+      if (err.httpStatus === 404) {
+        return false;
+      }
+      throw err;
     }
   }
 
