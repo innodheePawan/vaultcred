@@ -8,6 +8,12 @@ import crypto from 'crypto';
 // PROVIDER CONTRACT
 // ─────────────────────────────────────────────
 
+export interface DecryptedCredentialValues {
+  note?: string;
+  username?: string;
+  password?: string;
+}
+
 export interface SynchronizationProvider {
   /**
    * Performs authentication against the target.
@@ -23,29 +29,27 @@ export interface SynchronizationProvider {
   /**
    * Determines if the credential currently exists on the destination platform.
    */
-  exists(targetConfig: any, credentialName: string, authData: any): Promise<boolean>;
+  exists(targetConfig: any, credential: any, authData: any): Promise<boolean>;
 
   /**
    * Executes a Create operation on the destination platform.
    */
   create(
     targetConfig: any,
-    credentialName: string,
-    description: string,
-    secret: string,
+    credential: any,
+    decryptedValues: DecryptedCredentialValues,
     authData: any
-  ): Promise<{ status: number; text: string; headers: Headers }>;
+  ): Promise<{ status: number; text: string; headers: Headers; endpoint?: string; httpMethod?: string }>;
 
   /**
    * Executes an Update operation on the destination platform.
    */
   update(
     targetConfig: any,
-    credentialName: string,
-    description: string,
-    secret: string,
+    credential: any,
+    decryptedValues: DecryptedCredentialValues,
     authData: any
-  ): Promise<{ status: number; text: string; headers: Headers }>;
+  ): Promise<{ status: number; text: string; headers: Headers; endpoint?: string; httpMethod?: string }>;
 
   /**
    * Executes a Delete operation on the destination platform.
@@ -86,7 +90,7 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
     }
   }
 
-  async exists(targetConfig: any, credentialName: string, authData: any): Promise<boolean> {
+  async exists(targetConfig: any, credential: any, authData: any): Promise<boolean> {
     const client = new IntegrationSuiteClient({
       hostUrl: targetConfig.hostUrl,
       tokenUrl: targetConfig.tokenUrl,
@@ -95,7 +99,11 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       certificate: targetConfig.certificate ? decrypt(targetConfig.certificate) : null,
     });
 
-    const checkUrl = `/api/v1/SecureParameters('${encodeURIComponent(credentialName)}')`;
+    const isPlain = credential.type === 'PASSWORD';
+    const checkUrl = isPlain
+      ? `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')`
+      : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`;
+
     const checkHeaders = {
       'Authorization': `Bearer ${authData.accessToken}`,
       'Accept': 'application/json',
@@ -113,11 +121,10 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
 
   async create(
     targetConfig: any,
-    credentialName: string,
-    description: string,
-    secret: string,
+    credential: any,
+    decryptedValues: DecryptedCredentialValues,
     authData: any
-  ): Promise<{ status: number; text: string; headers: Headers }> {
+  ): Promise<{ status: number; text: string; headers: Headers; endpoint?: string; httpMethod?: string }> {
     const client = new IntegrationSuiteClient({
       hostUrl: targetConfig.hostUrl,
       tokenUrl: targetConfig.tokenUrl,
@@ -126,11 +133,28 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       certificate: targetConfig.certificate ? decrypt(targetConfig.certificate) : null,
     });
 
-    const payload = {
-      Name: credentialName,
-      Description: description || '',
-      SecureParam: secret,
-    };
+    const isPlain = credential.type === 'PASSWORD';
+    let payload: any;
+    let path = '';
+
+    if (isPlain) {
+      payload = {
+        Name: credential.name,
+        Kind: 'default',
+        Description: credential.description || '',
+        User: decryptedValues.username || '',
+        Password: decryptedValues.password || '',
+        CompanyId: null,
+      };
+      path = '/api/v1/UserCredentials';
+    } else {
+      payload = {
+        Name: credential.name,
+        Description: credential.description || '',
+        SecureParam: decryptedValues.note || '',
+      };
+      path = '/api/v1/SecureParameters';
+    }
 
     const syncHeaders = {
       'Authorization': `Bearer ${authData.accessToken}`,
@@ -140,21 +164,26 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       'Accept': 'application/json',
     };
 
-    return await client.execute(
+    const res = await client.execute(
       'POST',
-      `/api/v1/SecureParameters`,
+      path,
       syncHeaders,
       JSON.stringify(payload)
     );
+
+    return {
+      ...res,
+      endpoint: path,
+      httpMethod: 'POST',
+    };
   }
 
   async update(
     targetConfig: any,
-    credentialName: string,
-    description: string,
-    secret: string,
+    credential: any,
+    decryptedValues: DecryptedCredentialValues,
     authData: any
-  ): Promise<{ status: number; text: string; headers: Headers }> {
+  ): Promise<{ status: number; text: string; headers: Headers; endpoint?: string; httpMethod?: string }> {
     const client = new IntegrationSuiteClient({
       hostUrl: targetConfig.hostUrl,
       tokenUrl: targetConfig.tokenUrl,
@@ -163,10 +192,27 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       certificate: targetConfig.certificate ? decrypt(targetConfig.certificate) : null,
     });
 
-    const payload = {
-      Description: description || '',
-      SecureParam: secret,
-    };
+    const isPlain = credential.type === 'PASSWORD';
+    let payload: any;
+    let path = '';
+
+    if (isPlain) {
+      payload = {
+        Name: credential.name,
+        Kind: 'default',
+        Description: credential.description || '',
+        User: decryptedValues.username || '',
+        Password: decryptedValues.password || '',
+        CompanyId: null,
+      };
+      path = `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')`;
+    } else {
+      payload = {
+        Description: credential.description || '',
+        SecureParam: decryptedValues.note || '',
+      };
+      path = `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`;
+    }
 
     const syncHeaders = {
       'Authorization': `Bearer ${authData.accessToken}`,
@@ -176,13 +222,18 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       'Accept': 'application/json',
     };
 
-    const syncPath = `/api/v1/SecureParameters('${encodeURIComponent(credentialName)}')`;
-    return await client.execute(
+    const res = await client.execute(
       'PUT',
-      syncPath,
+      path,
       syncHeaders,
       JSON.stringify(payload)
     );
+
+    return {
+      ...res,
+      endpoint: path,
+      httpMethod: 'PUT',
+    };
   }
 
   async delete(targetConfig: any, credentialName: string, authData: any): Promise<any> {
@@ -250,6 +301,10 @@ interface SyncOptions {
  * Triggers background synchronization of a credential to all eligible targets.
  * Runs asynchronously and isolates target executions.
  */
+/**
+ * Triggers background synchronization of a credential to all eligible targets.
+ * Runs asynchronously and isolates target executions.
+ */
 export async function triggerCredentialSync(
   credentialId: string,
   initiatedByUserId: string,
@@ -264,6 +319,7 @@ export async function triggerCredentialSync(
       where: { id: credentialId },
       include: {
         detailsNote: true,
+        detailsPassword: true,
       },
     });
 
@@ -271,8 +327,11 @@ export async function triggerCredentialSync(
       return;
     }
 
-    // Check if credential type supports sync (Phase 1: SECURE_NOTE only)
-    if (credential.type !== 'SECURE_NOTE' || !credential.detailsNote) {
+    // Check if credential type supports sync (Phase 1: SECURE_NOTE and PASSWORD)
+    if (
+      (credential.type !== 'SECURE_NOTE' || !credential.detailsNote) &&
+      (credential.type !== 'PASSWORD' || !credential.detailsPassword)
+    ) {
       return;
     }
 
@@ -289,7 +348,7 @@ export async function triggerCredentialSync(
 
       const categoryMatches = credential.category && categories.includes(credential.category);
       const environmentMatches = credential.environment && environments.includes(credential.environment);
-      const typeMatches = types.includes('SECURE_NOTE');
+      const typeMatches = types.includes(credential.type);
 
       return categoryMatches && environmentMatches && typeMatches;
     });
@@ -305,7 +364,17 @@ export async function triggerCredentialSync(
     });
     const initiatedByName = actor?.email || actor?.name || 'SYSTEM';
 
-    const decryptedNote = decrypt(credential.detailsNote.noteEncrypted);
+    let decryptedValues: DecryptedCredentialValues = {};
+    if (credential.type === 'SECURE_NOTE' && credential.detailsNote) {
+      const decryptedNote = decrypt(credential.detailsNote.noteEncrypted);
+      decryptedValues = { note: decryptedNote };
+    } else if (credential.type === 'PASSWORD' && credential.detailsPassword) {
+      const decryptedPassword = decrypt(credential.detailsPassword.passwordEncrypted);
+      decryptedValues = {
+        username: credential.detailsPassword.username,
+        password: decryptedPassword,
+      };
+    }
 
     // 4. Execute target syncs independently
     await Promise.all(
@@ -314,7 +383,7 @@ export async function triggerCredentialSync(
           sessionId,
           target,
           credential,
-          decryptedNote,
+          decryptedValues,
           initiatedByUserId,
           initiatedByName,
           options
@@ -335,7 +404,7 @@ async function executeSingleTargetSync(
   sessionId: string,
   target: any,
   credential: any,
-  decryptedNote: string,
+  decryptedValues: DecryptedCredentialValues,
   initiatedByUserId: string,
   initiatedByName: string,
   options: SyncOptions
@@ -388,7 +457,7 @@ async function executeSingleTargetSync(
     const authData = await provider.authenticate(target);
 
     // B. Check Existence
-    const exists = await provider.exists(target, credential.name, authData);
+    const exists = await provider.exists(target, credential, authData);
     operation = exists ? 'UPDATE' : 'CREATE';
 
     // C. Execute Sync Operation
@@ -401,16 +470,13 @@ async function executeSingleTargetSync(
     };
     requestHeadersString = sanitizeRequestHeaders(syncHeadersMock);
 
-    endpoint = operation === 'CREATE'
-      ? `/api/v1/SecureParameters`
-      : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`;
-    httpMethod = operation === 'CREATE' ? 'POST' : 'PUT';
-
     const syncRes = exists
-      ? await provider.update(target, credential.name, credential.description || '', decryptedNote, authData)
-      : await provider.create(target, credential.name, credential.description || '', decryptedNote, authData);
+      ? await provider.update(target, credential, decryptedValues, authData)
+      : await provider.create(target, credential, decryptedValues, authData);
 
     httpStatus = syncRes.status;
+    endpoint = syncRes.endpoint || '';
+    httpMethod = syncRes.httpMethod || (exists ? 'PUT' : 'POST');
     responseHeadersString = serializeResponseHeaders(syncRes.headers);
     providerCorrelationId = getCorrelationId(syncRes.headers);
 
@@ -438,7 +504,9 @@ async function executeSingleTargetSync(
         operation,
         completedAt,
         durationMs,
-        endpoint: endpoint || (operation === 'CREATE' ? '/api/v1/SecureParameters' : '/api/v1/SecureParameters(...)'),
+        endpoint: endpoint || (operation === 'CREATE'
+          ? (credential.type === 'PASSWORD' ? '/api/v1/UserCredentials' : '/api/v1/SecureParameters')
+          : (credential.type === 'PASSWORD' ? `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')` : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`)),
         httpMethod: httpMethod || (operation === 'CREATE' ? 'POST' : 'PUT'),
         requestHeaders: status === 'FAILED' ? requestHeadersString : null,
         responseHeaders: status === 'FAILED' ? responseHeadersString : null,

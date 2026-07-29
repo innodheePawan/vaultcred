@@ -285,7 +285,7 @@ export async function createCredential(prevState: any, formData: FormData) {
             isPersonal: master.isPersonal
         });
 
-        if (master.type === 'SECURE_NOTE') {
+        if (master.type === 'SECURE_NOTE' || master.type === 'PASSWORD') {
             after(async () => {
                 try {
                     await triggerCredentialSync(master.id, session.user.id!);
@@ -784,7 +784,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
         }
 
         // Trigger Synchronization Framework (Phase 2)
-        if (credential.type === 'SECURE_NOTE') {
+        if (credential.type === 'SECURE_NOTE' || credential.type === 'PASSWORD') {
             after(async () => {
                 try {
                     await triggerCredentialSync(id, session.user.id!);
