@@ -1,12 +1,22 @@
 import { getDatabaseInfo } from '@/lib/actions/database';
 import { auth } from '@/lib/auth';
 import { Database, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { getSafeUserContext, canAccess } from '@/lib/iam/permissions';
+import { redirect } from 'next/navigation';
 
 export const maxDuration = 60;
 
 export default async function DatabaseSettingsPage() {
-    const info = await getDatabaseInfo();
     const session = await auth();
+    if (!session?.user) redirect('/login');
+
+    const ctx = await getSafeUserContext(session.user.id);
+    const canView = canAccess(ctx, 'FEATURE:SETTINGS', 'VIEW');
+    if (!canView) {
+        redirect('/dashboard');
+    }
+
+    const info = await getDatabaseInfo();
 
     if ('error' in info) {
         return (

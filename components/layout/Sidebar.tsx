@@ -119,6 +119,9 @@ export function Sidebar({
         }
         if (item.title === 'Settings' && item.children) {
             const children = item.children.filter(child => {
+                if (child.title === 'Configuration') {
+                    return hasFeatureAccess('SETTINGS');
+                }
                 if (child.title === 'Synchronization') {
                     return hasFeatureAccess('SYNC_TARGETS') || hasFeatureAccess('SYNC_HISTORY');
                 }

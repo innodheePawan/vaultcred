@@ -35,8 +35,23 @@ interface PageProps {
 export default async function SyncTargetsPage({ searchParams }: PageProps) {
   const session = await auth();
   const ctx = await getSafeUserContext(session?.user?.id || '');
-  const canEdit = canAccess(ctx, 'FEATURE:SETTINGS', 'EDIT');
+  const canCreate = canAccess(ctx, 'FEATURE:SYNC_TARGETS', 'CREATE');
+  const hasEditPermission = canAccess(ctx, 'FEATURE:SYNC_TARGETS', 'EDIT');
+  const canDelete = canAccess(ctx, 'FEATURE:SYNC_TARGETS', 'DELETE');
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+  const isAuditorOrViewer = session?.user?.role === 'AUDITOR' || session?.user?.role === 'VIEWER';
+
+  const isScoped = ctx.featurePermissions['SYNC_TARGETS'] === 'ALL_SCOPED';
+  const isTargetWithinScope = (target: any) => {
+    if (!isScoped) return true;
+    const allowedCats = ctx.allowedCategories || [];
+    const allowedEnvs = ctx.allowedEnvironments || [];
+    const targetCats = Array.isArray(target.categories) ? (target.categories as string[]) : [];
+    const targetEnvs = Array.isArray(target.environments) ? (target.environments as string[]) : [];
+    const catOverlap = allowedCats.includes('*') || targetCats.some((c) => allowedCats.includes(c));
+    const envOverlap = allowedEnvs.includes('*') || targetEnvs.some((e) => allowedEnvs.includes(e));
+    return catOverlap && envOverlap;
+  };
 
   const params = await searchParams;
   const tab = params.tab || 'targets';
@@ -82,7 +97,7 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
           </p>
         </div>
 
-        {tab === 'targets' && canEdit && (
+        {tab === 'targets' && canCreate && (
           <Link href="/settings/sync-targets/new">
             <Button size="sm">
               <Plus className="w-4 h-4 mr-2" />
@@ -135,7 +150,7 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
             <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
               Create your first synchronization target to connect SAP Integration Suite.
             </p>
-            {canEdit && (
+            {canCreate && (
               <div className="mt-4">
                 <Link href="/settings/sync-targets/new">
                   <Button size="sm">
@@ -156,7 +171,7 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
                     <th className="px-6 py-3">Host URL</th>
                     <th className="px-6 py-3">Connection Health</th>
                     <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
+                    {!isAuditorOrViewer && <th className="px-6 py-3 text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
@@ -201,28 +216,42 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
                           <StatusToggle
                             id={target.id}
                             initialStatus={target.status === 'ENABLED'}
-                            canEdit={canEdit}
+                            canEdit={hasEditPermission && isTargetWithinScope(target)}
                           />
                         </td>
 
                         {/* Actions */}
-                        <td className="px-6 py-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link href={`/settings/sync-targets/${target.id}/edit`}>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                title="Edit connection details"
-                              >
-                                <Edit2 className="w-4 h-4 text-gray-500 hover:text-gray-700" />
-                              </Button>
-                            </Link>
+                        {!isAuditorOrViewer && (
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              {hasEditPermission && isTargetWithinScope(target) ? (
+                                <Link href={`/settings/sync-targets/${target.id}/edit`}>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    title="Edit connection details"
+                                  >
+                                    <Edit2 className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                                  </Button>
+                                </Link>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled
+                                  title="Edit connection details (Restricted)"
+                                  className="opacity-40 cursor-not-allowed"
+                                >
+                                  <Edit2 className="w-4 h-4 text-gray-400" />
+                                </Button>
+                              )}
 
-                            {canEdit && (
-                              <DeleteTargetButton id={target.id} name={target.name} />
-                            )}
-                          </div>
-                        </td>
+                              {canDelete && isTargetWithinScope(target) && (
+                                <DeleteTargetButton id={target.id} name={target.name} />
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
