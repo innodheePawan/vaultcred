@@ -197,7 +197,21 @@ export class IntegrationSuiteClient {
 
       const csrfToken = response.headers.get('x-csrf-token') || '';
       const setCookieHeader = response.headers.get('set-cookie');
-      const cookies = setCookieHeader ? [setCookieHeader] : [];
+      let cookies: string[] = [];
+      if (setCookieHeader) {
+        const cookieParts = setCookieHeader.split(',');
+        for (const part of cookieParts) {
+          const trimmedPart = part.trim();
+          if (trimmedPart.startsWith('__Host-csrf-client-id')) {
+            cookies.push(trimmedPart);
+            break;
+          }
+        }
+        // Fallback: if no __Host-csrf-client-id is found, keep the first cookie
+        if (cookies.length === 0 && cookieParts.length > 0) {
+          cookies.push(cookieParts[0].trim());
+        }
+      }
 
       console.log(`[IntegrationSuiteClient] CSRF Fetch successful. Status: ${httpStatus}, CSRF Token Present: ${!!csrfToken}, Cookies Count: ${cookies.length}. Duration: ${duration}ms`);
       return {
