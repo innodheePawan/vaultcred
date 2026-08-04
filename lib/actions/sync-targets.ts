@@ -919,6 +919,7 @@ export async function retrySynchronizationAction(historyId: string) {
       await triggerCredentialSync(originalRecord.credentialId!, session.user.id, {
         executionType: 'MANUAL',
         parentHistoryId: originalRecord.id,
+        targetId: originalRecord.targetId,
       });
     } catch (err) {
       console.error('Failed to trigger manual retry:', err);

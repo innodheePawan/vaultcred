@@ -695,7 +695,6 @@ export async function updateCredential(id: string, prevState: any, formData: For
             await tx.credentialMaster.update({
                 where: { id },
                 data: {
-                    name: data.name,
                     description: data.description,
                     category: credential.isPersonal ? null : (data.category || credential.category),
                     environment: credential.isPersonal ? null : (data.environment || credential.environment),
@@ -754,7 +753,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
 
         // CONSTRUCT NEW DATA for Diff
         // Merge old data with new inputs
-        const newUnsanitized = { ...oldUnsanitized, ...data };
+        const newUnsanitized = { ...oldUnsanitized, ...data, name: credential.name };
         // Validating secrets: if input empty, use old secret.
         if (credential.type === 'PASSWORD' && !data.password) newUnsanitized.password = oldUnsanitized.password;
         if (credential.type === 'API_OAUTH') {
@@ -774,7 +773,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
             await logAudit({
                 action: 'UPDATE_CREDENTIAL',
                 credentialId: id,
-                details: `Updated credential '${data.name}'`,
+                details: `Updated credential '${credential.name}'`,
                 newValue: JSON.stringify(diff), // Differential Log
                 userId: session.user.id,
                 isPersonal: credential.isPersonal

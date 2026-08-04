@@ -592,7 +592,7 @@ export default function SyncHistoryTab({
                 </div>
               </div>
 
-              {/* Headers display (Sanitized) - Failures only */}
+              {/* Headers and Bodies display (Sanitized) - Failures only */}
               {selectedRecord.status === 'FAILED' && (
                 <>
                   <div className="space-y-3">
@@ -600,7 +600,7 @@ export default function SyncHistoryTab({
                       Request Headers (Sanitized)
                     </h4>
                     {selectedRecord.requestHeaders ? (
-                      <pre className="p-3 bg-gray-50 dark:bg-gray-955 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap select-all">
+                      <pre className="p-3 bg-gray-50 dark:bg-gray-950 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap select-all border border-gray-200 dark:border-gray-800/80">
                         {JSON.stringify(JSON.parse(selectedRecord.requestHeaders), null, 2)}
                       </pre>
                     ) : (
@@ -610,14 +610,60 @@ export default function SyncHistoryTab({
 
                   <div className="space-y-3">
                     <h4 className="font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-1.5">
+                      Request Body (Sanitized)
+                    </h4>
+                    {selectedRecord.requestBody ? (
+                      <pre className="p-3 bg-gray-50 dark:bg-gray-950 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap select-all border border-gray-200 dark:border-gray-800/80">
+                        {selectedRecord.requestBody.trim().startsWith('{') || selectedRecord.requestBody.trim().startsWith('[') ? (
+                          (() => {
+                            try {
+                              return JSON.stringify(JSON.parse(selectedRecord.requestBody), null, 2);
+                            } catch {
+                              return selectedRecord.requestBody;
+                            }
+                          })()
+                        ) : (
+                          selectedRecord.requestBody
+                        )}
+                      </pre>
+                    ) : (
+                      <p className="text-xs text-gray-550 italic">No request body recorded.</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-1.5">
                       Response Headers
                     </h4>
                     {selectedRecord.responseHeaders ? (
-                      <pre className="p-3 bg-gray-50 dark:bg-gray-955 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap select-all">
+                      <pre className="p-3 bg-gray-50 dark:bg-gray-950 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap select-all border border-gray-200 dark:border-gray-800/80">
                         {JSON.stringify(JSON.parse(selectedRecord.responseHeaders), null, 2)}
                       </pre>
                     ) : (
                       <p className="text-xs text-gray-500 italic">No response headers recorded.</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-1.5">
+                      Response Body
+                    </h4>
+                    {selectedRecord.responseBody ? (
+                      <pre className="p-3 bg-gray-50 dark:bg-gray-950 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap select-all border border-gray-200 dark:border-gray-800/80">
+                        {selectedRecord.responseBody.trim().startsWith('{') || selectedRecord.responseBody.trim().startsWith('[') ? (
+                          (() => {
+                            try {
+                              return JSON.stringify(JSON.parse(selectedRecord.responseBody), null, 2);
+                            } catch {
+                              return selectedRecord.responseBody;
+                            }
+                          })()
+                        ) : (
+                          selectedRecord.responseBody
+                        )}
+                      </pre>
+                    ) : (
+                      <p className="text-xs text-gray-500 italic">No response body recorded.</p>
                     )}
                   </div>
                 </>
@@ -639,7 +685,7 @@ export default function SyncHistoryTab({
             {/* Footer */}
             <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
               <span className="text-xs text-gray-500">
-                Do not store or display request/response bodies.
+                Sensitive details in request/response bodies are masked.
               </span>
               <div className="flex gap-2">
                 {canRetry && selectedRecord.status === 'FAILED' && (

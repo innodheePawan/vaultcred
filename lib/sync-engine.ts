@@ -289,6 +289,46 @@ function serializeResponseHeaders(headers: Headers): string {
   return JSON.stringify(obj);
 }
 
+function sanitizeRequestBody(body: string | null | undefined): string | null {
+  if (!body) return null;
+  try {
+    const parsed = JSON.parse(body);
+    const keysToMask = ['secureparam', 'password', 'clientsecret', 'certificate'];
+    
+    const maskObject = (obj: any): any => {
+      if (obj && typeof obj === 'object') {
+        if (Array.isArray(obj)) {
+          return obj.map(maskObject);
+        }
+        const masked = { ...obj };
+        for (const key of Object.keys(masked)) {
+          if (keysToMask.includes(key.toLowerCase())) {
+            masked[key] = '******';
+          } else if (typeof masked[key] === 'object') {
+            masked[key] = maskObject(masked[key]);
+          }
+        }
+        return masked;
+      }
+      return obj;
+    };
+    
+    return JSON.stringify(maskObject(parsed));
+  } catch {
+    let masked = body;
+    const regexes = [
+      /(password=)[^&]*/gi,
+      /(secureparam=)[^&]*/gi,
+      /(client_secret=)[^&]*/gi,
+      /(clientsecret=)[^&]*/gi
+    ];
+    for (const regex of regexes) {
+      masked = masked.replace(regex, '$1******');
+    }
+    return masked;
+  }
+}
+
 // ─────────────────────────────────────────────
 // SYNCHRONIZATION ENGINE
 // ─────────────────────────────────────────────
@@ -296,6 +336,7 @@ function serializeResponseHeaders(headers: Headers): string {
 interface SyncOptions {
   executionType: 'AUTO' | 'MANUAL' | 'BULK' | 'API';
   parentHistoryId?: string;
+  targetId?: string;
 }
 
 /**
@@ -342,7 +383,7 @@ export async function triggerCredentialSync(
     });
 
     // Filter eligible targets dynamically at trigger-time based on categories, environments, types
-    const eligibleTargets = enabledTargets.filter((target) => {
+    let eligibleTargets = enabledTargets.filter((target) => {
       const categories = (target.categories as string[]) || [];
       const environments = (target.environments as string[]) || [];
       const types = (target.types as string[]) || [];
@@ -353,6 +394,10 @@ export async function triggerCredentialSync(
 
       return categoryMatches && environmentMatches && typeMatches;
     });
+
+    if (options.targetId) {
+      eligibleTargets = eligibleTargets.filter((target) => target.id === options.targetId);
+    }
 
     if (eligibleTargets.length === 0) {
       return;
@@ -449,7 +494,9 @@ async function executeSingleTargetSync(
   let endpoint = '';
   let httpMethod = '';
   let requestHeadersString = '';
+  let requestBodyString: string | null = null;
   let responseHeadersString = '';
+  let responseBodyString: string | null = null;
   let providerCorrelationId: string | null = null;
   let errorMessage: string | null = null;
 
@@ -458,6 +505,12 @@ async function executeSingleTargetSync(
     const authData = await provider.authenticate(target);
 
     // B. Check Existence
+    const checkHeaders = {
+      'Authorization': `Bearer ${authData.accessToken}`,
+      'Accept': 'application/json',
+    };
+    requestHeadersString = sanitizeRequestHeaders(checkHeaders);
+
     const exists = await provider.exists(target, credential, authData);
     operation = exists ? 'UPDATE' : 'CREATE';
 
@@ -470,6 +523,45 @@ async function executeSingleTargetSync(
       'Accept': 'application/json',
     };
     requestHeadersString = sanitizeRequestHeaders(syncHeadersMock);
+
+    // Reconstruct request payload for history logging
+    const isPlain = credential.type === 'PASSWORD';
+    let payload: any;
+    if (exists) {
+      if (isPlain) {
+        payload = {
+          Name: credential.name,
+          Kind: 'default',
+          Description: credential.description || '',
+          User: decryptedValues.username || '',
+          Password: decryptedValues.password || '',
+          CompanyId: null,
+        };
+      } else {
+        payload = {
+          Description: credential.description || '',
+          SecureParam: decryptedValues.note || '',
+        };
+      }
+    } else {
+      if (isPlain) {
+        payload = {
+          Name: credential.name,
+          Kind: 'default',
+          Description: credential.description || '',
+          User: decryptedValues.username || '',
+          Password: decryptedValues.password || '',
+          CompanyId: null,
+        };
+      } else {
+        payload = {
+          Name: credential.name,
+          Description: credential.description || '',
+          SecureParam: decryptedValues.note || '',
+        };
+      }
+    }
+    requestBodyString = sanitizeRequestBody(JSON.stringify(payload));
 
     const syncRes = exists
       ? await provider.update(target, credential, decryptedValues, authData)
@@ -509,6 +601,13 @@ async function executeSingleTargetSync(
     if (err.httpStatus) {
       httpStatus = err.httpStatus;
     }
+    if (err.headers) {
+      responseHeadersString = serializeResponseHeaders(err.headers);
+      providerCorrelationId = getCorrelationId(err.headers);
+    }
+    if (err.responseBody) {
+      responseBodyString = sanitizeRequestBody(err.responseBody);
+    }
   } finally {
     const completedAt = new Date();
     const durationMs = completedAt.getTime() - startedAt.getTime();
@@ -526,7 +625,9 @@ async function executeSingleTargetSync(
           : (credential.type === 'PASSWORD' ? `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')` : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`)),
         httpMethod: httpMethod || (operation === 'CREATE' ? 'POST' : 'PUT'),
         requestHeaders: status === 'FAILED' ? requestHeadersString : null,
+        requestBody: status === 'FAILED' ? requestBodyString : null,
         responseHeaders: status === 'FAILED' ? responseHeadersString : null,
+        responseBody: status === 'FAILED' ? responseBodyString : null,
         httpStatus,
         providerCorrelationId,
         errorMessage,

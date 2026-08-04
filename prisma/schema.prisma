@@ -755,8 +755,10 @@ model SyncHistory {
   httpMethod            String                @map("http_method")
   
   requestHeaders        String?               @map("request_headers") @db.Text
+  requestBody           String?               @map("request_body") @db.Text
   httpStatus            Int?                  @map("http_status")
   responseHeaders       String?               @map("response_headers") @db.Text
+  responseBody          String?               @map("response_body") @db.Text
   providerCorrelationId String?               @map("provider_correlation_id")
   errorMessage          String?               @map("error_message") @db.Text
 

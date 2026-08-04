@@ -186,7 +186,12 @@ export default function CredentialForm({
                         id="name"
                         required
                         defaultValue={initialData?.name}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white"
+                        readOnly={isEdit}
+                        className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 ${
+                            isEdit
+                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                : 'dark:bg-gray-700 dark:text-white'
+                        }`}
                         placeholder="e.g. Production AWS Root"
                     />
                 </div>

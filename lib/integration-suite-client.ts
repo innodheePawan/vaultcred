@@ -250,6 +250,7 @@ export class IntegrationSuiteClient {
           message: text || `HTTP error ${response.status}`,
           endpoint: url,
           responseBody: text,
+          headers: response.headers,
         };
       }
 

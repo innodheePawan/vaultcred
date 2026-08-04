@@ -1,7 +1,7 @@
 import { getCredentials } from '@/lib/actions/credentials';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, Folder, Key, Lock, Terminal, FileText, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Folder, Key, Lock, Terminal, FileText, ArrowUp, ArrowDown, Edit, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { Suspense } from 'react';
 import CredentialFilters from '@/components/credentials/CredentialFilters';
@@ -180,6 +180,7 @@ export default async function CredentialsPage(props: {
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {credentials.map((cred: any) => {
                                 const hasReadPerm = accessContext.role === 'ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'UNMASK');
+                                const canEditCred = session.user?.role === 'ADMIN' || session.user?.role === 'SUPER_ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'EDIT');
 
                                 return (
                                     <tr key={cred.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -235,13 +236,20 @@ export default async function CredentialsPage(props: {
                                             {cred.lastModifiedOn ? formatDate(cred.lastModifiedOn) : '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {hasReadPerm ? (
-                                                <Link href={`/credentials/${cred.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                                    View
-                                                </Link>
-                                            ) : (
-                                                <span className="text-gray-400 italic">Audit only</span>
-                                            )}
+                                            <div className="flex justify-end items-center space-x-3">
+                                                {hasReadPerm ? (
+                                                    <Link href={`/credentials/${cred.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="View">
+                                                        <Eye className="w-5 h-5" />
+                                                    </Link>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">Audit only</span>
+                                                )}
+                                                {canEditCred && (
+                                                    <Link href={`/credentials/${cred.id}/edit`} className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300" title="Edit">
+                                                        <Edit className="w-5 h-5" />
+                                                    </Link>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 );
