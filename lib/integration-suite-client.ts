@@ -37,7 +37,6 @@ export class IntegrationSuiteClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
 
     try {
-      console.log(`[IntegrationSuiteClient] Authenticating to tokenUrl: ${this.config.tokenUrl}`);
       const params = new URLSearchParams();
       params.append('grant_type', 'client_credentials');
 
@@ -79,7 +78,6 @@ export class IntegrationSuiteClient {
         throw { httpStatus: 200, code: 'InvalidResponse', message: 'No access token returned in response', endpoint: this.config.tokenUrl };
       }
 
-      console.log(`[IntegrationSuiteClient] OAuth authentication successful. Duration: ${duration}ms`);
       return {
         accessToken: data.access_token,
         duration,
@@ -108,14 +106,12 @@ export class IntegrationSuiteClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
 
     try {
-      console.log(`[IntegrationSuiteClient] Fetching CSRF token from: ${url}`);
       let response: Response | null = null;
       let lastError: any = null;
       const maxRetries = 2;
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1}/${maxRetries + 1} to GET ${url}`);
           response = await fetch(url, {
             method: 'GET',
             headers: {
@@ -126,13 +122,11 @@ export class IntegrationSuiteClient {
             signal: controller.signal,
           });
 
-          console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1} responded with status: ${response.status}`);
           if (response.status < 500) {
             break;
           }
 
           if (attempt < maxRetries) {
-            console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1} returned 5xx status. Retrying in ${1000 * (attempt + 1)}ms...`);
             await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
           }
         } catch (err: any) {
@@ -182,7 +176,6 @@ export class IntegrationSuiteClient {
         }
       }
 
-      console.log(`[IntegrationSuiteClient] CSRF Fetch successful. Status: ${httpStatus}, CSRF Token Present: ${!!csrfToken}, Cookies Count: ${cookies.length}. Duration: ${duration}ms`);
       return {
         csrfToken,
         cookies,
@@ -247,7 +240,6 @@ export class IntegrationSuiteClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
 
     try {
-      console.log(`[IntegrationSuiteClient] Executing OData Request: ${method} ${url}`);
       const response = await fetch(url, {
         method,
         headers,
@@ -256,7 +248,6 @@ export class IntegrationSuiteClient {
       });
 
       const text = await response.text();
-      console.log(`[IntegrationSuiteClient] OData Request ${method} ${url} responded with status: ${response.status}. Response length: ${text.length} chars.`);
 
       if (!response.ok) {
         throw {
