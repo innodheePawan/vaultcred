@@ -37,18 +37,11 @@ export class IntegrationSuiteClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout ?? 30000);
 
     try {
-      console.log(`[IntegrationSuiteClient] OAuth Request to URL: ${this.config.tokenUrl}`);
+      console.log(`[IntegrationSuiteClient] Authenticating to tokenUrl: ${this.config.tokenUrl}`);
       const params = new URLSearchParams();
       params.append('grant_type', 'client_credentials');
 
       const authHeader = 'Basic ' + Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString('base64');
-      
-      console.log(`[IntegrationSuiteClient] OAuth Request Headers:`, JSON.stringify({
-        'Authorization': authHeader,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      }, null, 2));
-      console.log(`[IntegrationSuiteClient] OAuth Request Body:`, params.toString());
 
       const response = await fetch(this.config.tokenUrl, {
         method: 'POST',
@@ -62,16 +55,6 @@ export class IntegrationSuiteClient {
       });
 
       const duration = Date.now() - startTime;
-      
-      const responseClone = response.clone();
-      const responseHeaders: any = {};
-      response.headers.forEach((v, k) => { responseHeaders[k] = v; });
-      console.log(`[IntegrationSuiteClient] OAuth Response Status: ${response.status}`);
-      console.log(`[IntegrationSuiteClient] OAuth Response Headers:`, JSON.stringify(responseHeaders, null, 2));
-      try {
-        const responseText = await responseClone.text();
-        console.log(`[IntegrationSuiteClient] OAuth Response Body:`, responseText);
-      } catch {}
 
       if (!response.ok) {
         let errorCode = 'AuthenticationFailed';
@@ -133,12 +116,6 @@ export class IntegrationSuiteClient {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1}/${maxRetries + 1} to GET ${url}`);
-          console.log(`[IntegrationSuiteClient] CSRF Request Headers:`, JSON.stringify({
-            'Authorization': `Bearer ${accessToken}`,
-            'X-CSRF-Token': 'Fetch',
-            'Accept': 'application/json',
-          }, null, 2));
-
           response = await fetch(url, {
             method: 'GET',
             headers: {
@@ -150,14 +127,6 @@ export class IntegrationSuiteClient {
           });
 
           console.log(`[IntegrationSuiteClient] CSRF attempt ${attempt + 1} responded with status: ${response.status}`);
-          const responseHeaders: any = {};
-          response.headers.forEach((v, k) => { responseHeaders[k] = v; });
-          console.log(`[IntegrationSuiteClient] CSRF Response Headers:`, JSON.stringify(responseHeaders, null, 2));
-          try {
-            const responseClone = response.clone();
-            const responseText = await responseClone.text();
-            console.log(`[IntegrationSuiteClient] CSRF Response Body:`, responseText);
-          } catch {}
           if (response.status < 500) {
             break;
           }
@@ -279,11 +248,6 @@ export class IntegrationSuiteClient {
 
     try {
       console.log(`[IntegrationSuiteClient] Executing OData Request: ${method} ${url}`);
-      console.log(`[IntegrationSuiteClient] OData Request Headers:`, JSON.stringify(headers, null, 2));
-      if (body) {
-        console.log(`[IntegrationSuiteClient] OData Request Body:`, body);
-      }
-
       const response = await fetch(url, {
         method,
         headers,
@@ -291,14 +255,8 @@ export class IntegrationSuiteClient {
         signal: controller.signal,
       });
 
-      const responseHeaders: any = {};
-      response.headers.forEach((v, k) => { responseHeaders[k] = v; });
-      console.log(`[IntegrationSuiteClient] OData Response Status: ${response.status}`);
-      console.log(`[IntegrationSuiteClient] OData Response Headers:`, JSON.stringify(responseHeaders, null, 2));
-
-      const responseClone = response.clone();
       const text = await response.text();
-      console.log(`[IntegrationSuiteClient] OData Response Body:`, text);
+      console.log(`[IntegrationSuiteClient] OData Request ${method} ${url} responded with status: ${response.status}. Response length: ${text.length} chars.`);
 
       if (!response.ok) {
         throw {
