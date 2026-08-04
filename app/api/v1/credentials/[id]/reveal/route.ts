@@ -30,7 +30,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
             const d = credential.detailsApi;
 
             payload.credentialType = "API_OAUTH";
-            payload.grantType = d.grantType || "CLIENT_CREDENTIALS";
+            payload.grantType = d.grantType || "client_credentials";
             payload.tokenUrl = d.tokenEndpoint || "";
             if (d.authEndpoint) {
                 payload.authUrl = d.authEndpoint; // Included solely if populated on a legacy record
@@ -38,9 +38,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
             payload.clientId = d.clientId || "";
             payload.clientSecret = d.clientSecretEnc ? decrypt(d.clientSecretEnc) : "";
             payload.scope = d.scope || (d as any).scopes || "";
-            payload.grantTypeTransmission = d.grantTypeTransmission || "BODY";
-            payload.clientAuthentication = d.clientAuthentication || "HEADER";
-            payload.contentType = d.contentType || "APPLICATION_X_WWW_FORM_URLENCODED";
+            payload.grantTypeTransmission = d.grantTypeTransmission || "body";
+            payload.clientAuthentication = d.clientAuthentication || "header";
+            payload.contentType = d.contentType || "application_x_www_form_urlencoded";
             payload.resource = d.resource || "";
             payload.audience = d.audience || "";
 

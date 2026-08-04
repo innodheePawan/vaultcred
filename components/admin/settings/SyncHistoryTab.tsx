@@ -68,6 +68,7 @@ export default function SyncHistoryTab({
   // Details Modal State
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -138,14 +139,19 @@ export default function SyncHistoryTab({
       return;
     }
 
+    setRetryingId(id);
     startTransition(async () => {
-      const res = await retrySynchronizationAction(id);
-      if (res && res.success) {
-        alert(res.message || 'Retry triggered successfully!');
-        // Refresh page
-        router.refresh();
-      } else {
-        alert((res && res.error) || 'Failed to trigger retry.');
+      try {
+        const res = await retrySynchronizationAction(id);
+        if (res && res.success) {
+          alert(res.message || 'Retry triggered successfully!');
+          // Refresh page
+          router.refresh();
+        } else {
+          alert((res && res.error) || 'Failed to trigger retry.');
+        }
+      } finally {
+        setRetryingId(null);
       }
     });
   };
@@ -415,7 +421,7 @@ export default function SyncHistoryTab({
                               disabled={isPending}
                               title="Retry synchronization"
                             >
-                              {isPending ? (
+                              {retryingId === record.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
                               ) : (
                                 <Play className="w-4 h-4 text-blue-600 hover:text-blue-700 dark:text-blue-400" />

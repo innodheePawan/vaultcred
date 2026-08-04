@@ -12,6 +12,16 @@ export interface DecryptedCredentialValues {
   note?: string;
   username?: string;
   password?: string;
+  // OAuth fields
+  clientId?: string;
+  clientSecret?: string;
+  tokenEndpoint?: string;
+  scope?: string;
+  clientAuthentication?: string;
+  contentType?: string;
+  resource?: string;
+  audience?: string;
+  customParameters?: any[];
 }
 
 export interface SynchronizationProvider {
@@ -61,6 +71,14 @@ export interface SynchronizationProvider {
 // SAP INTEGRATION SUITE PROVIDER IMPLEMENTATION
 // ─────────────────────────────────────────────
 
+function mapScopeContentType(contentType?: string): string {
+  const ct = (contentType || '').toLowerCase();
+  if (ct === 'application_json') {
+    return 'json';
+  }
+  return 'urlencoded';
+}
+
 export class SapIntegrationSuiteProvider implements SynchronizationProvider {
   async authenticate(targetConfig: any): Promise<any> {
     const client = new IntegrationSuiteClient({
@@ -100,9 +118,15 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
     });
 
     const isPlain = credential.type === 'PASSWORD';
-    const checkUrl = isPlain
-      ? `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')`
-      : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`;
+    const isOAuth = credential.type === 'API_OAUTH';
+    let checkUrl = '';
+    if (isPlain) {
+      checkUrl = `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')`;
+    } else if (isOAuth) {
+      checkUrl = `/api/v1/OAuth2ClientCredentials('${encodeURIComponent(credential.name)}')`;
+    } else {
+      checkUrl = `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`;
+    }
 
     const checkHeaders = {
       'Authorization': `Bearer ${authData.accessToken}`,
@@ -134,11 +158,10 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       certificate: targetConfig.certificate ? decrypt(targetConfig.certificate) : null,
     });
 
-    const isPlain = credential.type === 'PASSWORD';
     let payload: any;
     let path = '';
 
-    if (isPlain) {
+    if (credential.type === 'PASSWORD') {
       payload = {
         Name: credential.name,
         Kind: 'default',
@@ -148,6 +171,27 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
         CompanyId: null,
       };
       path = '/api/v1/UserCredentials';
+    } else if (credential.type === 'API_OAUTH') {
+      const sapCustomParams = (decryptedValues.customParameters || []).map((param: any) => ({
+        Key: param.name || param.Key || param.key || '',
+        Value: param.value || param.Value || '',
+        SendAsPartOf: (param.location || param.SendAsPartOf || 'body').toLowerCase(),
+      }));
+
+      payload = {
+        Name: credential.name,
+        Description: credential.description || '',
+        TokenServiceUrl: decryptedValues.tokenEndpoint || '',
+        ClientId: decryptedValues.clientId || '',
+        ClientSecret: decryptedValues.clientSecret || '',
+        ClientAuthentication: decryptedValues.clientAuthentication || 'header',
+        Scope: decryptedValues.scope || '',
+        ScopeContentType: mapScopeContentType(decryptedValues.contentType),
+        Resource: decryptedValues.resource || '',
+        Audience: decryptedValues.audience || '',
+        CustomParameters: sapCustomParams,
+      };
+      path = '/api/v1/OAuth2ClientCredentials';
     } else {
       payload = {
         Name: credential.name,
@@ -193,11 +237,10 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
       certificate: targetConfig.certificate ? decrypt(targetConfig.certificate) : null,
     });
 
-    const isPlain = credential.type === 'PASSWORD';
     let payload: any;
     let path = '';
 
-    if (isPlain) {
+    if (credential.type === 'PASSWORD') {
       payload = {
         Name: credential.name,
         Kind: 'default',
@@ -207,6 +250,20 @@ export class SapIntegrationSuiteProvider implements SynchronizationProvider {
         CompanyId: null,
       };
       path = `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')`;
+    } else if (credential.type === 'API_OAUTH') {
+      payload = {
+        Name: credential.name,
+        Description: credential.description || '',
+        TokenServiceUrl: decryptedValues.tokenEndpoint || '',
+        ClientId: decryptedValues.clientId || '',
+        ClientSecret: decryptedValues.clientSecret || '',
+        ClientAuthentication: decryptedValues.clientAuthentication || 'header',
+        Scope: decryptedValues.scope || '',
+        ScopeContentType: mapScopeContentType(decryptedValues.contentType),
+        Resource: decryptedValues.resource || '',
+        Audience: decryptedValues.audience || '',
+      };
+      path = `/api/v1/OAuth2ClientCredentials('${encodeURIComponent(credential.name)}')`;
     } else {
       payload = {
         Description: credential.description || '',
@@ -362,6 +419,7 @@ export async function triggerCredentialSync(
       include: {
         detailsNote: true,
         detailsPassword: true,
+        detailsApi: true,
       },
     });
 
@@ -369,10 +427,11 @@ export async function triggerCredentialSync(
       return;
     }
 
-    // Check if credential type supports sync (Phase 1: SECURE_NOTE and PASSWORD)
+    // Check if credential type supports sync (Phase 1: SECURE_NOTE, PASSWORD, API_OAUTH)
     if (
       (credential.type !== 'SECURE_NOTE' || !credential.detailsNote) &&
-      (credential.type !== 'PASSWORD' || !credential.detailsPassword)
+      (credential.type !== 'PASSWORD' || !credential.detailsPassword) &&
+      (credential.type !== 'API_OAUTH' || !credential.detailsApi)
     ) {
       return;
     }
@@ -419,6 +478,28 @@ export async function triggerCredentialSync(
       decryptedValues = {
         username: credential.detailsPassword.username,
         password: decryptedPassword,
+      };
+    } else if (credential.type === 'API_OAUTH' && credential.detailsApi) {
+      const d = credential.detailsApi;
+      let decryptedParams: any[] = [];
+      if (d.customParameters) {
+        try {
+          const jsonStr = decrypt(d.customParameters);
+          decryptedParams = JSON.parse(jsonStr);
+        } catch (e) {
+          console.error('Failed to decrypt customParameters in sync engine:', e);
+        }
+      }
+      decryptedValues = {
+        clientId: d.clientId || '',
+        clientSecret: d.clientSecretEnc ? decrypt(d.clientSecretEnc) : '',
+        tokenEndpoint: d.tokenEndpoint || '',
+        scope: d.scope || '',
+        clientAuthentication: d.clientAuthentication || 'header',
+        contentType: d.contentType || 'application_x_www_form_urlencoded',
+        resource: d.resource || '',
+        audience: d.audience || '',
+        customParameters: decryptedParams,
       };
     }
 
@@ -526,6 +607,7 @@ async function executeSingleTargetSync(
 
     // Reconstruct request payload for history logging
     const isPlain = credential.type === 'PASSWORD';
+    const isOAuth = credential.type === 'API_OAUTH';
     let payload: any;
     if (exists) {
       if (isPlain) {
@@ -536,6 +618,19 @@ async function executeSingleTargetSync(
           User: decryptedValues.username || '',
           Password: decryptedValues.password || '',
           CompanyId: null,
+        };
+      } else if (isOAuth) {
+        payload = {
+          Name: credential.name,
+          Description: credential.description || '',
+          TokenServiceUrl: decryptedValues.tokenEndpoint || '',
+          ClientId: decryptedValues.clientId || '',
+          ClientSecret: decryptedValues.clientSecret || '',
+          ClientAuthentication: decryptedValues.clientAuthentication || 'header',
+          Scope: decryptedValues.scope || '',
+          ScopeContentType: mapScopeContentType(decryptedValues.contentType),
+          Resource: decryptedValues.resource || '',
+          Audience: decryptedValues.audience || '',
         };
       } else {
         payload = {
@@ -552,6 +647,25 @@ async function executeSingleTargetSync(
           User: decryptedValues.username || '',
           Password: decryptedValues.password || '',
           CompanyId: null,
+        };
+      } else if (isOAuth) {
+        const sapCustomParams = (decryptedValues.customParameters || []).map((param: any) => ({
+          Key: param.name || param.Key || param.key || '',
+          Value: param.value || param.Value || '',
+          SendAsPartOf: (param.location || param.SendAsPartOf || 'body').toLowerCase(),
+        }));
+        payload = {
+          Name: credential.name,
+          Description: credential.description || '',
+          TokenServiceUrl: decryptedValues.tokenEndpoint || '',
+          ClientId: decryptedValues.clientId || '',
+          ClientSecret: decryptedValues.clientSecret || '',
+          ClientAuthentication: decryptedValues.clientAuthentication || 'header',
+          Scope: decryptedValues.scope || '',
+          ScopeContentType: mapScopeContentType(decryptedValues.contentType),
+          Resource: decryptedValues.resource || '',
+          Audience: decryptedValues.audience || '',
+          CustomParameters: sapCustomParams,
         };
       } else {
         payload = {
@@ -621,8 +735,8 @@ async function executeSingleTargetSync(
         completedAt,
         durationMs,
         endpoint: endpoint || (operation === 'CREATE'
-          ? (credential.type === 'PASSWORD' ? '/api/v1/UserCredentials' : '/api/v1/SecureParameters')
-          : (credential.type === 'PASSWORD' ? `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')` : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`)),
+          ? (credential.type === 'PASSWORD' ? '/api/v1/UserCredentials' : (credential.type === 'API_OAUTH' ? '/api/v1/OAuth2ClientCredentials' : '/api/v1/SecureParameters'))
+          : (credential.type === 'PASSWORD' ? `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')` : (credential.type === 'API_OAUTH' ? `/api/v1/OAuth2ClientCredentials('${encodeURIComponent(credential.name)}')` : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`))),
         httpMethod: httpMethod || (operation === 'CREATE' ? 'POST' : 'PUT'),
         requestHeaders: status === 'FAILED' ? requestHeadersString : null,
         requestBody: status === 'FAILED' ? requestBodyString : null,

@@ -184,7 +184,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                     <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Grant Type</label>
                                     <input
                                         type="text"
-                                        value={data.grantType === 'CLIENT_CREDENTIALS' || !data.grantType ? 'Client Credentials' : data.grantType}
+                                        value={data.grantType?.toLowerCase() === 'client_credentials' || !data.grantType ? 'Client Credentials' : data.grantType}
                                         readOnly
                                         disabled
                                         className="block w-full bg-slate-950/20 border border-slate-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-500 font-mono select-none cursor-not-allowed"
@@ -196,7 +196,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                     <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Grant Transmission</label>
                                     <div className="relative">
                                         <select disabled className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-400 appearance-none font-mono">
-                                            <option>{data.grantTypeTransmission === 'URL' ? 'URL Query Parameter' : 'Request Body (Recommended)'}</option>
+                                            <option>{data.grantTypeTransmission?.toLowerCase() === 'url' ? 'URL Query Parameter' : 'Request Body (Recommended)'}</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />
@@ -209,7 +209,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                     <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Client Authentication</label>
                                     <div className="relative">
                                         <select disabled className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-400 appearance-none font-mono">
-                                            <option>{data.clientAuthentication === 'BODY' ? 'Request Body Payload' : 'HTTP Basic Auth Header (Recommended)'}</option>
+                                            <option>{data.clientAuthentication?.toLowerCase() === 'body' ? 'Request Body Payload' : 'HTTP Basic Auth Header (Recommended)'}</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />
@@ -222,7 +222,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                     <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">HTTP Content-Type</label>
                                     <div className="relative">
                                         <select disabled className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-400 appearance-none font-mono">
-                                            <option>{data.contentType === 'APPLICATION_JSON' ? 'application/json' : 'application/x-www-form-urlencoded'}</option>
+                                            <option>{data.contentType?.toLowerCase() === 'application_json' ? 'application/json' : 'application/x-www-form-urlencoded'}</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />

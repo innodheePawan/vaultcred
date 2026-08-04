@@ -273,22 +273,22 @@ model CredPassword {
 }
 
 enum OAuthGrantType {
-  CLIENT_CREDENTIALS
+  client_credentials
 }
 
 enum OAuthGrantTransmission {
-  BODY
-  URL
+  body
+  url
 }
 
 enum OAuthClientAuthentication {
-  HEADER
-  BODY
+  header
+  body
 }
 
 enum OAuthContentType {
-  APPLICATION_X_WWW_FORM_URLENCODED
-  APPLICATION_JSON
+  application_x_www_form_urlencoded
+  application_json
 }
 
 enum ParameterLocation {
@@ -309,11 +309,10 @@ model CredApiOAuth {
   authEndpoint          String?                   @map("auth_url") // Maintained for backward compatibility
   scope                 String?                   @map("scope") @db.Text
 
-  // Enhanced Specification Attributes
-  grantType             OAuthGrantType            @default(CLIENT_CREDENTIALS) @map("grant_type")
-  grantTypeTransmission OAuthGrantTransmission    @default(BODY) @map("grant_type_transmission")
-  clientAuthentication  OAuthClientAuthentication @default(HEADER) @map("client_authentication")
-  contentType           OAuthContentType          @default(APPLICATION_X_WWW_FORM_URLENCODED) @map("content_type")
+  grantType             OAuthGrantType            @default(client_credentials) @map("grant_type")
+  grantTypeTransmission OAuthGrantTransmission    @default(body) @map("grant_type_transmission")
+  clientAuthentication  OAuthClientAuthentication @default(header) @map("client_authentication")
+  contentType           OAuthContentType          @default(application_x_www_form_urlencoded) @map("content_type")
 
   resource              String?                   @map("resource")
   audience              String?                   @map("audience")

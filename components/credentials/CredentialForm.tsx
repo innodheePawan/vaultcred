@@ -491,11 +491,11 @@ export default function CredentialForm({
                                         <select
                                             name="grantTypeTransmission"
                                             id="grantTypeTransmission"
-                                            defaultValue={initialData?.details?.grantTypeTransmission || 'BODY'}
+                                            defaultValue={initialData?.details?.grantTypeTransmission || 'body'}
                                             className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-200 appearance-none font-mono focus:ring-2 focus:ring-indigo-500"
                                         >
-                                            <option value="BODY">Request Body (Recommended)</option>
-                                            <option value="URL">URL Query Parameter</option>
+                                            <option value="body">Request Body (Recommended)</option>
+                                            <option value="url">URL Query Parameter</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />
@@ -510,11 +510,11 @@ export default function CredentialForm({
                                         <select
                                             name="clientAuthentication"
                                             id="clientAuthentication"
-                                            defaultValue={initialData?.details?.clientAuthentication || 'HEADER'}
+                                            defaultValue={initialData?.details?.clientAuthentication || 'header'}
                                             className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-200 appearance-none font-mono focus:ring-2 focus:ring-indigo-500"
                                         >
-                                            <option value="HEADER">HTTP Basic Auth Header (Recommended)</option>
-                                            <option value="BODY">Request Body Payload</option>
+                                            <option value="header">HTTP Basic Auth Header (Recommended)</option>
+                                            <option value="body">Request Body Payload</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />
@@ -529,11 +529,11 @@ export default function CredentialForm({
                                         <select
                                             name="contentType"
                                             id="contentType"
-                                            defaultValue={initialData?.details?.contentType || 'APPLICATION_X_WWW_FORM_URLENCODED'}
+                                            defaultValue={initialData?.details?.contentType || 'application_x_www_form_urlencoded'}
                                             className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-200 appearance-none font-mono focus:ring-2 focus:ring-indigo-500"
                                         >
-                                            <option value="APPLICATION_X_WWW_FORM_URLENCODED">application/x-www-form-urlencoded</option>
-                                            <option value="APPLICATION_JSON">application/json</option>
+                                            <option value="application_x_www_form_urlencoded">application/x-www-form-urlencoded</option>
+                                            <option value="application_json">application/json</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />

@@ -44,9 +44,9 @@ const ApiKeySchema = BaseSchema.extend({
     authEndpoint: z.string().url().optional().or(z.literal('')),
     scope: z.string().optional(),
     scopes: z.string().optional(),
-    grantTypeTransmission: z.enum(['BODY', 'URL']).optional().default('BODY'),
-    clientAuthentication: z.enum(['HEADER', 'BODY']).optional().default('HEADER'),
-    contentType: z.enum(['APPLICATION_X_WWW_FORM_URLENCODED', 'APPLICATION_JSON']).optional().default('APPLICATION_X_WWW_FORM_URLENCODED'),
+    grantTypeTransmission: z.enum(['body', 'url']).optional().default('body'),
+    clientAuthentication: z.enum(['header', 'body']).optional().default('header'),
+    contentType: z.enum(['application_x_www_form_urlencoded', 'application_json']).optional().default('application_x_www_form_urlencoded'),
     resource: z.string().optional(),
     audience: z.string().optional(),
     customParameters: z.string().optional(),
@@ -214,10 +214,10 @@ export async function createCredential(prevState: any, formData: FormData) {
                         tokenEndpoint: data.tokenEndpoint || null,
                         authEndpoint: data.authEndpoint || null,
                         scope: data.scope || data.scopes || null,
-                        grantType: 'CLIENT_CREDENTIALS',
-                        grantTypeTransmission: (data.grantTypeTransmission as any) || 'BODY',
-                        clientAuthentication: (data.clientAuthentication as any) || 'HEADER',
-                        contentType: (data.contentType as any) || 'APPLICATION_X_WWW_FORM_URLENCODED',
+                        grantType: 'client_credentials',
+                        grantTypeTransmission: (data.grantTypeTransmission as any) || 'body',
+                        clientAuthentication: (data.clientAuthentication as any) || 'header',
+                        contentType: (data.contentType as any) || 'application_x_www_form_urlencoded',
                         resource: data.resource || null,
                         audience: data.audience || null,
                         customParameters: encryptedCustomParams,
@@ -285,7 +285,7 @@ export async function createCredential(prevState: any, formData: FormData) {
             isPersonal: master.isPersonal
         });
 
-        if (master.type === 'SECURE_NOTE' || master.type === 'PASSWORD') {
+        if (master.type === 'SECURE_NOTE' || master.type === 'PASSWORD' || master.type === 'API_OAUTH') {
             try {
                 await triggerCredentialSync(master.id, session.user.id!);
             } catch (err) {
@@ -525,10 +525,10 @@ export async function getCredentialById(id: string) {
             authEndpoint: d.authEndpoint || undefined,
             scope: d.scope || (d as any).scopes || '',
             scopes: d.scope || (d as any).scopes || '',
-            grantType: d.grantType || 'CLIENT_CREDENTIALS',
-            grantTypeTransmission: d.grantTypeTransmission || 'BODY',
-            clientAuthentication: d.clientAuthentication || 'HEADER',
-            contentType: d.contentType || 'APPLICATION_X_WWW_FORM_URLENCODED',
+            grantType: d.grantType || 'client_credentials',
+            grantTypeTransmission: d.grantTypeTransmission || 'body',
+            clientAuthentication: d.clientAuthentication || 'header',
+            contentType: d.contentType || 'application_x_www_form_urlencoded',
             resource: d.resource || '',
             audience: d.audience || '',
             customParameters: decryptedParams,
@@ -720,9 +720,9 @@ export async function updateCredential(id: string, prevState: any, formData: For
                     tokenEndpoint: data.tokenEndpoint,
                     authEndpoint: data.authEndpoint || undefined,
                     scope: data.scope || data.scopes || null,
-                    grantTypeTransmission: data.grantTypeTransmission || 'BODY',
-                    clientAuthentication: data.clientAuthentication || 'HEADER',
-                    contentType: data.contentType || 'APPLICATION_X_WWW_FORM_URLENCODED',
+                    grantTypeTransmission: data.grantTypeTransmission || 'body',
+                    clientAuthentication: data.clientAuthentication || 'header',
+                    contentType: data.contentType || 'application_x_www_form_urlencoded',
                     resource: data.resource || null,
                     audience: data.audience || null,
                 };
@@ -781,7 +781,7 @@ export async function updateCredential(id: string, prevState: any, formData: For
         }
 
         // Trigger Synchronization Framework (Phase 2)
-        if (credential.type === 'SECURE_NOTE' || credential.type === 'PASSWORD') {
+        if (credential.type === 'SECURE_NOTE' || credential.type === 'PASSWORD' || credential.type === 'API_OAUTH') {
             try {
                 await triggerCredentialSync(id, session.user.id!);
             } catch (err) {
