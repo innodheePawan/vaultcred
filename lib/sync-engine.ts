@@ -351,7 +351,7 @@ function sanitizeRequestBody(body: string | null | undefined): string | null {
   try {
     const parsed = JSON.parse(body);
     const keysToMask = ['secureparam', 'password', 'clientsecret', 'certificate'];
-    
+
     const maskObject = (obj: any): any => {
       if (obj && typeof obj === 'object') {
         if (Array.isArray(obj)) {
@@ -369,7 +369,7 @@ function sanitizeRequestBody(body: string | null | undefined): string | null {
       }
       return obj;
     };
-    
+
     return JSON.stringify(maskObject(parsed));
   } catch {
     let masked = body;

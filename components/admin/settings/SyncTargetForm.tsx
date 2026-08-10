@@ -630,7 +630,7 @@ export default function SyncTargetForm({ initialTarget, canEdit = true }: SyncTa
 
                       <div>
                         <span className="font-semibold text-gray-500 block">Status</span>
-                        <span className={`font-mono font-bold ${step.status === 'SUCCESS' ? 'text-green-600 dark:text-green-400' : 'text-red-650 dark:text-red-400'}`}>
+                        <span className={`font-mono font-bold ${step.status === 'SUCCESS' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {step.httpStatus} {step.httpStatus === 200 ? 'OK' : step.httpStatus === 403 ? 'Forbidden' : step.httpStatus === 401 ? 'Unauthorized' : ''}
                         </span>
                       </div>

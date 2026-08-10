@@ -88,9 +88,9 @@ export default function DeleteTargetButton({ id, name }: DeleteTargetButtonProps
                 <button
                   type="submit"
                   disabled={confirmInput !== 'DELETE'}
-                  className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${confirmInput === 'DELETE'
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-red-650 opacity-50 cursor-not-allowed'
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${confirmInput === 'DELETE'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                     }`}
                 >
                   Delete

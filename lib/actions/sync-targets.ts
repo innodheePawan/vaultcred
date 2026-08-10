@@ -651,13 +651,22 @@ export async function getSyncTargets() {
 
     // Mask sensitive fields in results
     const maskedTargets = filteredTargets.map((t) => {
-      const rawSecret = decrypt(t.clientSecret);
-      const rawCert = t.certificate ? decrypt(t.certificate) : null;
-      return {
-        ...t,
-        clientSecret: maskSecret(rawSecret),
-        certificate: rawCert ? maskSecret(rawCert) : null,
-      };
+      try {
+        const rawSecret = decrypt(t.clientSecret);
+        const rawCert = t.certificate ? decrypt(t.certificate) : null;
+        return {
+          ...t,
+          clientSecret: maskSecret(rawSecret),
+          certificate: rawCert ? maskSecret(rawCert) : null,
+        };
+      } catch (err) {
+        console.error(`Failed to decrypt credentials for target ${t.name}:`, err);
+        return {
+          ...t,
+          clientSecret: '••••••••',
+          certificate: t.certificate ? '••••••••' : null,
+        };
+      }
     });
 
     return { success: true, data: maskedTargets };

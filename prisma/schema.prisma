@@ -720,8 +720,8 @@ model SyncHistory {
   id                    String                @id @default(uuid()) @map("sync_history_id")
   sessionId             String                @map("session_id")
   
-  targetId              String                @map("target_id")
-  target                SynchronizationTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  targetId              String?               @map("target_id")
+  target                SynchronizationTarget? @relation(fields: [targetId], references: [id], onDelete: SetNull)
   
   targetName            String                @map("target_name")
   targetType            String                @map("target_type")

@@ -375,7 +375,7 @@ export default function SyncHistoryTab({
                       {/* Target */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium text-gray-800 dark:text-gray-200">
-                          {record.targetName}
+                          {record.targetName} {!record.targetId && ' (Deleted)'}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {record.platform}
@@ -537,7 +537,9 @@ export default function SyncHistoryTab({
                   <div className="space-y-2 text-xs">
                     <div className="flex gap-2 items-start">
                       <span className="text-gray-500 w-28 shrink-0 text-left">Name:</span>
-                      <span className="font-semibold text-gray-900 dark:text-white text-left truncate max-w-[150px] block" title={selectedRecord.targetName}>{selectedRecord.targetName}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white text-left truncate max-w-[150px] block" title={selectedRecord.targetName}>
+                        {selectedRecord.targetName} {!selectedRecord.targetId && ' (Deleted)'}
+                      </span>
                     </div>
                     <div className="flex gap-2 items-start">
                       <span className="text-gray-500 w-28 shrink-0 text-left">Platform:</span>
