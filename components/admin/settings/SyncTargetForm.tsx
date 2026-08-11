@@ -24,9 +24,10 @@ import {
 interface SyncTargetFormProps {
   initialTarget?: any; // populated in edit mode
   canEdit?: boolean;
+  canTest?: boolean;
 }
 
-export default function SyncTargetForm({ initialTarget, canEdit = true }: SyncTargetFormProps) {
+export default function SyncTargetForm({ initialTarget, canEdit = true, canTest = true }: SyncTargetFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -316,6 +317,15 @@ export default function SyncTargetForm({ initialTarget, canEdit = true }: SyncTa
         </div>
       )}
 
+      {!canEdit && canTest && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md flex items-center gap-2 border border-blue-200 dark:border-blue-800/30">
+          <Info className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">
+            You are viewing this target in read-only mode because its scope exceeds your assigned permissions. You can still test the connection.
+          </span>
+        </div>
+      )}
+
       <form onSubmit={handleSave} className="space-y-6">
         {/* Section 1: General Details */}
         <div className="space-y-4">
@@ -573,7 +583,7 @@ export default function SyncTargetForm({ initialTarget, canEdit = true }: SyncTa
               <Server className="w-5 h-5 text-gray-500" />
               <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Connection Diagnostics</h4>
             </div>
-            {canEdit && (
+            {(canEdit || canTest) && (
               <Button
                 type="button"
                 size="sm"

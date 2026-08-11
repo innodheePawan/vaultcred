@@ -336,10 +336,10 @@ export async function saveSyncTargetAction(
       if (dbTargetRecord) {
         const dbCats = Array.isArray(dbTargetRecord.categories) ? (dbTargetRecord.categories as string[]) : [];
         const dbEnvs = Array.isArray(dbTargetRecord.environments) ? (dbTargetRecord.environments as string[]) : [];
-        const dbCatOverlap = allowedCats.includes('*') || dbCats.some((c) => allowedCats.includes(c));
-        const dbEnvOverlap = allowedEnvs.includes('*') || dbEnvs.some((e) => allowedEnvs.includes(e));
-        if (!dbCatOverlap || !dbEnvOverlap) {
-          return { error: 'Unauthorized: Cannot edit targets outside of your assigned scope' };
+        const isDbCatSubset = allowedCats.includes('*') || dbCats.every((c) => allowedCats.includes(c));
+        const isDbEnvSubset = allowedEnvs.includes('*') || dbEnvs.every((e) => allowedEnvs.includes(e));
+        if (!isDbCatSubset || !isDbEnvSubset) {
+          return { error: 'Unauthorized: Cannot edit a target that has a broader scope than your assigned scope' };
         }
       }
     }
@@ -511,10 +511,10 @@ export async function toggleSyncTargetStatusAction(id: string, enable: boolean) 
     const targetCats = Array.isArray(existing.categories) ? (existing.categories as string[]) : [];
     const targetEnvs = Array.isArray(existing.environments) ? (existing.environments as string[]) : [];
 
-    const catOverlap = allowedCats.includes('*') || targetCats.some((c) => allowedCats.includes(c));
-    const envOverlap = allowedEnvs.includes('*') || targetEnvs.some((e) => allowedEnvs.includes(e));
-    if (!catOverlap || !envOverlap) {
-      return { error: 'Unauthorized: Cannot toggle targets outside of your assigned scope' };
+    const isCatSubset = allowedCats.includes('*') || targetCats.every((c) => allowedCats.includes(c));
+    const isEnvSubset = allowedEnvs.includes('*') || targetEnvs.every((e) => allowedEnvs.includes(e));
+    if (!isCatSubset || !isEnvSubset) {
+      return { error: 'Unauthorized: Cannot toggle targets that have a broader scope than your assigned scope' };
     }
   }
 
@@ -575,10 +575,10 @@ export async function deleteSyncTargetAction(id: string) {
     const targetCats = Array.isArray(existing.categories) ? (existing.categories as string[]) : [];
     const targetEnvs = Array.isArray(existing.environments) ? (existing.environments as string[]) : [];
 
-    const catOverlap = allowedCats.includes('*') || targetCats.some((c) => allowedCats.includes(c));
-    const envOverlap = allowedEnvs.includes('*') || targetEnvs.some((e) => allowedEnvs.includes(e));
-    if (!catOverlap || !envOverlap) {
-      return { error: 'Unauthorized: Cannot delete targets outside of your assigned scope' };
+    const isCatSubset = allowedCats.includes('*') || targetCats.every((c) => allowedCats.includes(c));
+    const isEnvSubset = allowedEnvs.includes('*') || targetEnvs.every((e) => allowedEnvs.includes(e));
+    if (!isCatSubset || !isEnvSubset) {
+      return { error: 'Unauthorized: Cannot delete targets that have a broader scope than your assigned scope' };
     }
   }
 

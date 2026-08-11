@@ -38,5 +38,19 @@ export default async function EditSyncTargetPage(props: EditSyncTargetPageProps)
     notFound();
   }
 
-  return <SyncTargetForm initialTarget={res.data} canEdit={canEdit} />;
+  const target = res.data;
+  const isScoped = ctx.featurePermissions['SYNC_TARGETS'] === 'ALL_SCOPED';
+  let isEditable: boolean = canEdit;
+  if (isScoped && canEdit) {
+    const allowedCats = ctx.allowedCategories || [];
+    const allowedEnvs = ctx.allowedEnvironments || [];
+    const targetCats = Array.isArray(target.categories) ? (target.categories as string[]) : [];
+    const targetEnvs = Array.isArray(target.environments) ? (target.environments as string[]) : [];
+
+    const isCatSubset = allowedCats.includes('*') || targetCats.every((c) => allowedCats.includes(c));
+    const isEnvSubset = allowedEnvs.includes('*') || targetEnvs.every((e) => allowedEnvs.includes(e));
+    isEditable = isCatSubset && isEnvSubset;
+  }
+
+  return <SyncTargetForm initialTarget={target} canEdit={isEditable} canTest={canEdit} />;
 }

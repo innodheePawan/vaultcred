@@ -53,6 +53,17 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
     return catOverlap && envOverlap;
   };
 
+  const isTargetEditable = (target: any) => {
+    if (!isScoped) return true;
+    const allowedCats = ctx.allowedCategories || [];
+    const allowedEnvs = ctx.allowedEnvironments || [];
+    const targetCats = Array.isArray(target.categories) ? (target.categories as string[]) : [];
+    const targetEnvs = Array.isArray(target.environments) ? (target.environments as string[]) : [];
+    const isCatSubset = allowedCats.includes('*') || targetCats.every((c) => allowedCats.includes(c));
+    const isEnvSubset = allowedEnvs.includes('*') || targetEnvs.every((e) => allowedEnvs.includes(e));
+    return isCatSubset && isEnvSubset;
+  };
+
   const params = await searchParams;
   const tab = params.tab || 'targets';
 
@@ -216,7 +227,7 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
                           <StatusToggle
                             id={target.id}
                             initialStatus={target.status === 'ENABLED'}
-                            canEdit={hasEditPermission && isTargetWithinScope(target)}
+                            canEdit={hasEditPermission && isTargetEditable(target)}
                           />
                         </td>
 
@@ -229,7 +240,7 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    title="Edit connection details"
+                                    title={isTargetEditable(target) ? "Edit connection details" : "View & Test connection details"}
                                   >
                                     <Edit2 className="w-4 h-4 text-gray-500 hover:text-gray-700" />
                                   </Button>
@@ -246,7 +257,7 @@ export default async function SyncTargetsPage({ searchParams }: PageProps) {
                                 </Button>
                               )}
 
-                              {canDelete && isTargetWithinScope(target) && (
+                              {canDelete && isTargetEditable(target) && (
                                 <DeleteTargetButton id={target.id} name={target.name} />
                               )}
                             </div>

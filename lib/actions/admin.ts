@@ -163,7 +163,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
         targetGroupIds.push(targetGroup.id);
     }
 
-    if (role !== 'SUPER_ADMIN') {
+    if (role !== 'SUPER_ADMIN' && role !== 'AUDITOR') {
         const cat = formData.get('scopedCategories') as string;
         if (cat) scopedCats = cat;
 
@@ -420,8 +420,8 @@ export async function updateUser(userId: string, formData: FormData) {
             });
 
             if (newRole !== 'SUPER_ADMIN') {
-                const categories = formData.get('scopedCategories') as string;
-                const environments = formData.get('scopedEnvironments') as string;
+                const categories = newRole === 'AUDITOR' ? '' : formData.get('scopedCategories') as string;
+                const environments = newRole === 'AUDITOR' ? '' : formData.get('scopedEnvironments') as string;
 
                 if (session.user.role !== 'SUPER_ADMIN') {
                     if (categories && !ctx.allowedCategories.includes('*')) {

@@ -222,6 +222,8 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                             {/* Scope Display */}
                                             {user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? (
                                                 <span className="text-[10px] text-gray-400 italic mt-0.5">Full System Access</span>
+                                            ) : user.role === 'AUDITOR' ? (
+                                                <span className="text-[10px] text-gray-400 italic mt-0.5">Scope Not Applicable</span>
                                             ) : (
                                                 <div className="flex flex-col text-[10px] text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
                                                     {(() => {

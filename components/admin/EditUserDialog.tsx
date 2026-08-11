@@ -352,7 +352,14 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Scoped Role</label>
                                         <select
                                             value={scopedRole}
-                                            onChange={(e) => setScopedRole(e.target.value)}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setScopedRole(val);
+                                                if (val === 'AUDITOR') {
+                                                    setSelectedCats([]);
+                                                    setSelectedEnvs([]);
+                                                }
+                                            }}
                                             disabled={isSelfEdit}
                                             className="w-full text-black p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 disabled:opacity-50"
                                         >
