@@ -600,8 +600,8 @@ export default function SyncHistoryTab({
                 </div>
               </div>
 
-              {/* Headers and Bodies display (Sanitized) - Failures only */}
-              {selectedRecord.status === 'FAILED' && (
+              {/* Headers and Bodies display (Sanitized) */}
+              {(selectedRecord.requestHeaders || selectedRecord.requestBody || selectedRecord.responseHeaders || selectedRecord.responseBody || selectedRecord.status === 'FAILED') && (
                 <>
                   <div className="space-y-3">
                     <h4 className="font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-1.5">

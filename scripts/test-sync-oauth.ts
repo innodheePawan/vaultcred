@@ -228,7 +228,14 @@ async function main() {
     assert.strictEqual(syncHistoryCreate.status, 'SUCCESS');
     assert.strictEqual(syncHistoryCreate.httpMethod, 'POST');
     assert.strictEqual(syncHistoryCreate.endpoint, '/api/v1/OAuth2ClientCredentials');
-    console.log('✅ CREATE Sync History verified successfully.');
+    
+    // Assert request and response bodies and headers are logged on success
+    assert.ok(syncHistoryCreate.requestHeaders, 'requestHeaders should be logged on success');
+    assert.ok(syncHistoryCreate.requestBody, 'requestBody should be logged on success');
+    assert.ok(syncHistoryCreate.responseHeaders, 'responseHeaders should be logged on success');
+    assert.ok(syncHistoryCreate.responseBody, 'responseBody should be logged on success');
+    
+    console.log('✅ CREATE Sync History with request/response headers/bodies verified successfully.');
 
     // ==========================================
     // TEST FLOW B: UPDATE OPERATION (PUT)

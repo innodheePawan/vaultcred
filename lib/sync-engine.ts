@@ -686,6 +686,7 @@ async function executeSingleTargetSync(
     httpMethod = syncRes.httpMethod || (exists ? 'PUT' : 'POST');
     responseHeadersString = serializeResponseHeaders(syncRes.headers);
     providerCorrelationId = getCorrelationId(syncRes.headers);
+    responseBodyString = sanitizeRequestBody(syncRes.text);
 
     if (syncRes.status >= 200 && syncRes.status < 300) {
       status = 'SUCCESS';
@@ -738,10 +739,10 @@ async function executeSingleTargetSync(
           ? (credential.type === 'PASSWORD' ? '/api/v1/UserCredentials' : (credential.type === 'API_OAUTH' ? '/api/v1/OAuth2ClientCredentials' : '/api/v1/SecureParameters'))
           : (credential.type === 'PASSWORD' ? `/api/v1/UserCredentials('${encodeURIComponent(credential.name)}')` : (credential.type === 'API_OAUTH' ? `/api/v1/OAuth2ClientCredentials('${encodeURIComponent(credential.name)}')` : `/api/v1/SecureParameters('${encodeURIComponent(credential.name)}')`))),
         httpMethod: httpMethod || (operation === 'CREATE' ? 'POST' : 'PUT'),
-        requestHeaders: status === 'FAILED' ? requestHeadersString : null,
-        requestBody: status === 'FAILED' ? requestBodyString : null,
-        responseHeaders: status === 'FAILED' ? responseHeadersString : null,
-        responseBody: status === 'FAILED' ? responseBodyString : null,
+        requestHeaders: requestHeadersString || null,
+        requestBody: requestBodyString || null,
+        responseHeaders: responseHeadersString || null,
+        responseBody: responseBodyString || null,
         httpStatus,
         providerCorrelationId,
         errorMessage,
