@@ -80,7 +80,7 @@ export function Sidebar({
     const searchParams = useSearchParams();
     const currentType = searchParams.get('type');
     const { data: session, status } = useSession();
-    const { isCollapsed } = useLayout();
+    const { isCollapsed, toggleSidebar } = useLayout();
 
     // Use server-passed role (immediate) or client-side session role (fallback/update)
     const userRole = initialRole || session?.user?.role;
@@ -189,12 +189,36 @@ export function Sidebar({
     }
 
     return (
-        <aside className={clsx(
-            "bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full z-30 relative transition-all duration-300",
-            isCollapsed ? "w-20" : "w-64",
-            className
-        )}>
-            <div className="flex-1 overflow-y-auto py-4">
+        <>
+            {/* Mobile drawer backdrop */}
+            {!isCollapsed && (
+                <div
+                    onClick={toggleSidebar}
+                    className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 md:hidden transition-opacity duration-300"
+                />
+            )}
+            <aside className={clsx(
+                "bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full transition-all duration-300",
+                // Mobile styles (drawer layout overlay)
+                "fixed inset-y-0 left-0 w-64 shadow-2xl z-50 transform",
+                isCollapsed ? "-translate-x-full pointer-events-none" : "translate-x-0",
+                // Desktop styles (relative inline container)
+                "md:relative md:translate-x-0 md:shadow-none md:pointer-events-auto",
+                isCollapsed ? "md:w-20" : "md:w-64",
+                className
+            )}>
+                {/* Mobile Drawer Header with Close Button */}
+                <div className="flex items-center justify-between px-4 py-4 border-b border-gray-150 dark:border-gray-700 md:hidden">
+                    <span className="font-bold text-gray-900 dark:text-white">Navigation</span>
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-750 dark:hover:text-gray-300"
+                    >
+                        <ChevronRight className="w-5 h-5 rotate-180" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto py-4">
                 <nav className="space-y-1 px-2">
                     {filteredItems.map((item) => (
                         <div key={item.title}>
@@ -267,5 +291,6 @@ export function Sidebar({
                 </nav>
             </div>
         </aside>
-    );
+    </>
+);
 }

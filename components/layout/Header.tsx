@@ -92,7 +92,7 @@ export function Header({ settings, user, publicView = false, showSettings = fals
         <header className="h-[60px] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center z-40 relative">
             {/* Logo Section - Matches Sidebar Width (w-64/w-20), auto-fits any logo size */}
             <div className={clsx(
-                "flex-shrink-0 h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900/50 overflow-hidden transition-all duration-300",
+                "hidden md:flex flex-shrink-0 h-full items-center justify-center bg-gray-50 dark:bg-gray-900/50 overflow-hidden transition-all duration-300",
                 !publicView && isCollapsed ? "w-20" : "w-64"
             )}>
                 <Link href={publicView ? "#" : "/dashboard"} className="flex items-center justify-center w-full h-full">
@@ -110,10 +110,9 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                 </Link>
             </div>
 
-            {/* Toggle & Application Name Section */}
             <div className={clsx(
-                "flex-shrink-0 flex items-center justify-start h-full pl-4 gap-4 transition-all duration-300",
-                !publicView && isCollapsed ? "w-48" : "w-64"
+                "flex-shrink-0 flex items-center justify-start h-full pl-2 md:pl-4 gap-2 md:gap-4 transition-all duration-300",
+                !publicView && isCollapsed ? "w-auto md:w-48" : "w-auto md:w-64"
             )}>
                 {!publicView && (
                     <button
@@ -123,21 +122,18 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                         <Menu className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                     </button>
                 )}
-                {/* Show App Name if NOT collapsed OR if Public View (always show in public) */}
-                {(publicView || !isCollapsed) && (
-                    <span className="text-xl font-bold text-gray-900 dark:text-white truncate text-left">
-                        {applicationName}
-                    </span>
-                )}
+                <span className="text-lg md:text-xl font-bold text-gray-900 dark:text-white truncate text-left">
+                    {applicationName}
+                </span>
             </div>
 
             {/* Header Content */}
-            <div className="flex-1 flex items-center justify-between px-6 h-full">
+            <div className="flex-1 flex items-center justify-between px-2 md:px-6 h-full">
 
                 {/* Global Search - Centered */}
                 <div className="flex-1 flex max-w-2xl mx-auto">
                     {!publicView && (
-                        <div className="w-full max-w-md relative">
+                        <div className="w-full max-w-md relative hidden md:block">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-5 w-5 text-gray-500" />
                             </div>
@@ -232,7 +228,7 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                                             userInitials
                                         )}
                                     </div>
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</span>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:inline">{userName}</span>
                                     <ChevronDown className={clsx("h-4 w-4 text-gray-400 transition-transform duration-200", isProfileOpen && "rotate-180")} />
                                 </button>
 

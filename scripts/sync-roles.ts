@@ -6,13 +6,13 @@ const prisma = new PrismaClient()
 async function main() {
     console.log('Syncing Roles based on Groups...')
 
-    // 1. Get Administrator Group ID
+    // 1. Get Super Admin Group ID
     const adminGroup = await prisma.userGroup.findUnique({
-        where: { name: 'Administrator' }
+        where: { name: 'Super Admin' }
     });
 
     if (!adminGroup) {
-        throw new Error('Administrator group not found! Run seed first.');
+        throw new Error('Super Admin group not found! Run seed first.');
     }
 
     const users = await prisma.user.findMany({
@@ -30,7 +30,7 @@ async function main() {
         if (isAdminGroupMember && user.role !== 'ADMIN') {
             newRole = 'ADMIN';
             needsUpdate = true;
-            console.log(`- Updating ${user.email}: Group Administrator -> Role ADMIN`);
+            console.log(`- Updating ${user.email}: Group Super Admin -> Role ADMIN`);
         }
 
         // Case B: User has no Admin Group but role is ADMIN -> Fix to USER (or add to group?)
@@ -40,7 +40,7 @@ async function main() {
             // If we demote the main admin we might lock ourselves out if we rely on group check.
             // But we said we want to synchronize.
             // Let's Add them to the group instead to be safe.
-            console.log(`- Fixing ${user.email}: Role ADMIN -> Added to Administrator Group`);
+            console.log(`- Fixing ${user.email}: Role ADMIN -> Added to Super Admin Group`);
             await prisma.userGroupMapping.create({
                 data: {
                     userId: user.id,

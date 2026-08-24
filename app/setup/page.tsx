@@ -3,7 +3,7 @@ export const maxDuration = 60;
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2, Lock } from 'lucide-react';
+import { Database, Server, Save, Copy, CheckCircle, AlertTriangle, Link as LinkIcon, RefreshCw, Loader2, Lock, Eye, EyeOff } from 'lucide-react';
 import { prepareEnvironment, syncDatabase, seedRolesAction, seedSuperAdminAction, seedBrandingAction, testDbConnection, purgeDatabase, getSyncStatusAction, verifyTablesAction } from '@/lib/actions/setup';
 
 type SetupStep = 'IDLE' | 'PURGING_DB' | 'SYNCING_DB' | 'SEEDING_ROLES' | 'SEEDING_ADMIN' | 'SEEDING_BRANDING' | 'PREPARING_ENV' | 'COMPLETE' | 'FAILED';
@@ -22,6 +22,8 @@ export default function SetupPage() {
 
     const [adminPassword, setAdminPassword] = useState('');
     const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
@@ -278,20 +280,40 @@ export default function SetupPage() {
 
                                     <div>
                                         <label htmlFor="adminPassword" className="block text-xs font-medium text-gray-400">Password</label>
-                                        <input
-                                            id="adminPassword" name="adminPassword" type="password" required minLength={12}
-                                            value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)}
-                                            className="mt-1 block w-full sm:text-sm border-gray-700 rounded-md bg-gray-900/50 text-white py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 outline-none border hover:border-gray-600 transition-colors"
-                                        />
+                                        <div className="mt-1 relative">
+                                            <input
+                                                id="adminPassword" name="adminPassword" type={showPassword ? 'text' : 'password'} required minLength={12}
+                                                value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)}
+                                                className="block w-full sm:text-sm border-gray-700 rounded-md bg-gray-900/50 text-white py-2 pl-3 pr-10 focus:ring-indigo-500 focus:border-indigo-500 outline-none border hover:border-gray-600 transition-colors"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200"
+                                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                            >
+                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div>
                                         <label htmlFor="adminPasswordConfirm" className="block text-xs font-medium text-gray-400">Confirm Password</label>
-                                        <input
-                                            id="adminPasswordConfirm" name="adminPasswordConfirm" type="password" required
-                                            value={adminPasswordConfirm} onChange={(e) => setAdminPasswordConfirm(e.target.value)}
-                                            className={`mt-1 block w-full sm:text-sm border rounded-md bg-gray-900/50 text-white py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all ${adminPasswordConfirm !== '' ? (passwordsMatch ? 'border-green-500/50' : 'border-red-500/50') : 'border-gray-700'}`}
-                                        />
+                                        <div className="mt-1 relative">
+                                            <input
+                                                id="adminPasswordConfirm" name="adminPasswordConfirm" type={showConfirmPassword ? 'text' : 'password'} required
+                                                value={adminPasswordConfirm} onChange={(e) => setAdminPasswordConfirm(e.target.value)}
+                                                className={`block w-full sm:text-sm border rounded-md bg-gray-900/50 text-white py-2 pl-3 pr-10 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all ${adminPasswordConfirm !== '' ? (passwordsMatch ? 'border-green-500/50' : 'border-red-500/50') : 'border-gray-700'}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200"
+                                                aria-label={showConfirmPassword ? "Hide password confirm" : "Show password confirm"}
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
                                         {adminPasswordConfirm !== '' && !passwordsMatch && <p className="mt-1 text-[10px] text-red-400">Passwords do not match</p>}
                                     </div>
                                 </div>

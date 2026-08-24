@@ -18,6 +18,10 @@ export function LayoutProvider({ children }: { children: React.ReactNode }) {
         const saved = localStorage.getItem('sidebar-collapsed');
         if (saved !== null) {
             setIsCollapsed(saved === 'true');
+        } else {
+            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                setIsCollapsed(true);
+            }
         }
     }, []);
 

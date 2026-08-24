@@ -106,6 +106,15 @@ export default async function middleware(req: any) {
     const path = req.nextUrl.pathname;
 
     const isSetup = path.startsWith('/setup');
+    const isSetupPage = path === '/setup' || path.startsWith('/setup/');
+
+    // Route away from setup page if SETUP_MODE is false
+    if (!isSetupMode && isSetupPage) {
+        const url = req.nextUrl.clone();
+        url.pathname = '/';
+        return NextResponse.redirect(url);
+    }
+
     const isEnvValue = path.startsWith('/env-value');
     const isAsset = path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
     const isNextInternal = path.startsWith('/_next');
@@ -135,7 +144,7 @@ export default async function middleware(req: any) {
     }
 
     // B. UNCONFIGURED BYPASS
-    if (isUnconfigured) {
+    if (isUnconfigured && isSetupMode) {
         if (isSetup || isEnvValue || isNextInternal || isAsset || isApi) return;
         const url = req.nextUrl.clone();
         url.pathname = '/setup';

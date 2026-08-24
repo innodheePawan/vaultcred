@@ -67,7 +67,7 @@ export async function getUsersAndInvites(page = 1, limit = 10) {
     });
 
     // System Admin = Full Global Admin
-    const isSystemAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || currentUser?.userGroups.some(ug => ug.group.name === 'Administrator') || false;
+    const isSystemAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || currentUser?.userGroups.some(ug => ug.group.name === 'Administrator' || ug.group.name === 'Super Admin') || false;
 
     // Can Invite = System Admin OR Scoped Admin
     const canInvite = isSystemAdmin || hasAdminAccess;

@@ -106,7 +106,7 @@ export default function GeneralSettingsForm({ initialSettings, canEdit = true }:
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Application Logo
                 </label>
-                <div className="mt-2 flex items-center gap-6">
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-6">
                     <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-600 overflow-hidden">
                         {logoPreview ? (
                             <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-contain" />

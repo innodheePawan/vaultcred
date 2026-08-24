@@ -345,8 +345,8 @@ export async function seedSuperAdminAction(email: string, passwordRaw: string) {
             },
         });
 
-        await appendTaskLog('Mapping Admin to Administrator group...');
-        const adminGroup = await prisma.userGroup.findUnique({ where: { name: 'Administrator' } });
+        await appendTaskLog('Mapping Admin to Super Admin group...');
+        const adminGroup = await prisma.userGroup.findUnique({ where: { name: 'Super Admin' } });
         if (adminGroup) {
             await prisma.userGroupMapping.upsert({
                 where: { userId_groupId: { userId: user.id, groupId: adminGroup.id } },

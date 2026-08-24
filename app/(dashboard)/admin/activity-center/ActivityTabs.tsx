@@ -66,7 +66,7 @@ export function ActivityTabs({ featurePermissions }: Props) {
   return (
     <div className="flex flex-col space-y-6">
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-8 overflow-x-auto whitespace-nowrap" aria-label="Tabs">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -75,7 +75,7 @@ export function ActivityTabs({ featurePermissions }: Props) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                  group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 shrink-0 whitespace-nowrap
                   ${
                     isActive
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
