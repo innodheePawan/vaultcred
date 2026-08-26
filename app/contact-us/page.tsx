@@ -4,7 +4,6 @@ import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { ContactUsForm } from "./ContactUsForm";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
-import { QuickActionsFloatingWidget } from "@/components/marketing/QuickActionsFloatingWidget";
 import { Mail, Phone, Linkedin, ExternalLink, ShieldCheck, Clock, MessageSquare, Building2 } from "lucide-react";
 
 export const metadata = {
@@ -157,9 +156,6 @@ export default async function ContactUsPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 companyName={settings.companyName || "Innodhee Services Pvt Ltd"}
             />
-
-            {/* Quick Actions Floating Right Button */}
-            <QuickActionsFloatingWidget />
 
             {/* Floating Credential Utility */}
             <FloatingCredentialWidget />

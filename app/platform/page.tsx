@@ -4,7 +4,6 @@ import { getSystemSettings } from "@/lib/actions/settings";
 import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
-import { QuickActionsFloatingWidget } from "@/components/marketing/QuickActionsFloatingWidget";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
@@ -407,9 +406,6 @@ export default async function PlatformPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 companyName={settings.companyName || "Innodhee Services Pvt Ltd"}
             />
-
-            {/* Quick Actions Floating Right Button */}
-            <QuickActionsFloatingWidget />
 
             {/* Floating Credential Utility */}
             <FloatingCredentialWidget />

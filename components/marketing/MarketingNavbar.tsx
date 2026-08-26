@@ -59,7 +59,7 @@ export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbar
                         </div>
 
                         {/* Desktop CTA */}
-                        <div className="hidden md:flex items-center gap-3">
+                        <div className="hidden md:flex items-center gap-3.5">
                             {isLoggedIn ? (
                                 <Link href="/dashboard">
                                     <Button className="h-9 px-4 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-[13px] font-semibold rounded-lg transition-colors">
@@ -71,6 +71,22 @@ export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbar
                                     Sign In
                                 </Link>
                             )}
+
+                            <Link
+                                href="/contact-us"
+                                className={`text-[13px] font-medium transition-colors ${pathname === "/contact-us"
+                                        ? "text-slate-900 dark:text-white font-semibold"
+                                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                                    }`}
+                            >
+                                Contact Us
+                            </Link>
+
+                            <Link href="/request-demo">
+                                <Button className="h-9 px-3.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-[13px] font-semibold rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
+                                    Request Demo <ArrowRight className="w-3.5 h-3.5" />
+                                </Button>
+                            </Link>
                         </div>
 
                         {/* Mobile Hamburger */}
@@ -119,6 +135,18 @@ export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbar
                                     </Button>
                                 </Link>
                             )}
+
+                            <Link href="/contact-us" onClick={() => setMobileOpen(false)}>
+                                <Button variant="outline" className="w-full h-11 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04]">
+                                    Contact Us
+                                </Button>
+                            </Link>
+
+                            <Link href="/request-demo" onClick={() => setMobileOpen(false)}>
+                                <Button className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2">
+                                    Request Demo <ArrowRight className="w-4 h-4" />
+                                </Button>
+                            </Link>
                         </div>
                     </div>
                 </div>
