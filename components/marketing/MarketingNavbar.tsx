@@ -16,7 +16,6 @@ const NAV_LINKS = [
     { label: "Security", href: "/security" },
     { label: "Use Cases", href: "/use-cases" },
     { label: "Features", href: "/features" },
-    { label: "Contact Us", href: "/contact-us" },
 ];
 
 export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbarProps) {
@@ -68,17 +67,9 @@ export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbar
                                     </Button>
                                 </Link>
                             ) : (
-                                <>
-                                    <Link href="/login" className="text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                                        Sign In
-                                    </Link>
-                                    <Link href="/request-demo">
-                                        <Button className="h-9 px-4 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-[13px] font-semibold rounded-lg transition-colors flex items-center gap-1.5">
-                                            Request Demo
-                                            <ArrowRight className="w-3.5 h-3.5" />
-                                        </Button>
-                                    </Link>
-                                </>
+                                <Link href="/login" className="text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                                    Sign In
+                                </Link>
                             )}
                         </div>
 
@@ -122,19 +113,11 @@ export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbar
                                     </Button>
                                 </Link>
                             ) : (
-                                <>
-                                    <Link href="/login" onClick={() => setMobileOpen(false)}>
-                                        <Button variant="outline" className="w-full h-11 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04]">
-                                            Sign In
-                                        </Button>
-                                    </Link>
-                                    <Link href="/request-demo" onClick={() => setMobileOpen(false)}>
-                                        <Button className="w-full h-11 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-sm font-semibold rounded-lg flex items-center justify-center gap-1.5">
-                                            Request Demo
-                                            <ArrowRight className="w-3.5 h-3.5" />
-                                        </Button>
-                                    </Link>
-                                </>
+                                <Link href="/login" onClick={() => setMobileOpen(false)}>
+                                    <Button variant="outline" className="w-full h-11 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04]">
+                                        Sign In
+                                    </Button>
+                                </Link>
                             )}
                         </div>
                     </div>
