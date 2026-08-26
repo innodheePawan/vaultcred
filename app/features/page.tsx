@@ -5,6 +5,7 @@ import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { ExpandableFeatureCard } from "@/components/marketing/ExpandableFeatureCard";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
+import { QuickActionsFloatingWidget } from "@/components/marketing/QuickActionsFloatingWidget";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -220,6 +221,9 @@ export default async function FeaturesPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 companyName={settings.companyName || "Innodhee Services Pvt Ltd"}
             />
+
+            {/* Quick Actions Floating Right Button */}
+            <QuickActionsFloatingWidget />
 
             {/* Floating Credential Utility */}
             <FloatingCredentialWidget />

@@ -21,7 +21,7 @@ const authHandler = auth((req) => {
     const isShare = path.startsWith('/share');
     const isActivation = path.startsWith('/activation');
     const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa || isShare || isActivation;
-    const isMarketing = path.startsWith('/platform') || path.startsWith('/security') || path.startsWith('/use-cases') || path.startsWith('/features') || path.startsWith('/request-demo');
+    const isMarketing = path.startsWith('/platform') || path.startsWith('/security') || path.startsWith('/use-cases') || path.startsWith('/features') || path.startsWith('/request-demo') || path.startsWith('/contact-us');
 
     // Auth Session
     const isLoggedIn = !!req.auth;

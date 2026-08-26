@@ -3,7 +3,7 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/crypto';
-import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate, getOneTimeSecretEmailTemplate, getDemoRequestConfirmationEmailTemplate, getDemoRequestAdminNotificationEmailTemplate } from '@/lib/email-templates';
+import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate, getOneTimeSecretEmailTemplate, getDemoRequestConfirmationEmailTemplate, getDemoRequestAdminNotificationEmailTemplate, getContactUsConfirmationEmailTemplate, getContactUsAdminNotificationEmailTemplate } from '@/lib/email-templates';
 
 /**
  * Sends an invite activation email.
@@ -348,4 +348,59 @@ export async function sendDemoRequestEmails(data: {
         return { success: false, error: error.message || 'Failed to send demo request.' };
     }
 }
+
+/**
+ * Sends a contact us confirmation email to the user and notification to admin.
+ */
+export async function sendContactUsEmails(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    company?: string;
+    subject: string;
+    message: string;
+}) {
+    const { name, email, phone, company, subject, message } = data;
+
+    if (!name || !email || !subject || !message) {
+        return { success: false, error: 'Name, email, topic, and message are required.' };
+    }
+
+    try {
+        const settings = await prisma.systemSettings.findFirst();
+        const appName = settings?.applicationName || 'CredSecure';
+        const logoUrl = settings?.logoUrl || null;
+        const adminEmail = settings?.smtpFromEmail || 'customer-support@innodhee.com';
+
+        // 1. Send confirmation email to user
+        const confirmationHtml = getContactUsConfirmationEmailTemplate({
+            appName,
+            logoUrl,
+            name,
+            subject,
+        });
+        await sendEmail(email, `We received your message - ${appName}`, confirmationHtml);
+
+        // 2. Send notification to admin/support
+        if (adminEmail) {
+            const adminHtml = getContactUsAdminNotificationEmailTemplate({
+                appName,
+                logoUrl,
+                name,
+                email,
+                phone,
+                company,
+                subject,
+                message,
+            });
+            await sendEmail(adminEmail, `[Contact Us] ${subject} - ${name}`, adminHtml);
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error sending contact us emails:', error);
+        return { success: false, error: error.message || 'Failed to send message.' };
+    }
+}
+
 

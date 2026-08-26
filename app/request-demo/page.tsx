@@ -4,6 +4,7 @@ import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { RequestDemoForm } from "./RequestDemoForm";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
+import { QuickActionsFloatingWidget } from "@/components/marketing/QuickActionsFloatingWidget";
 
 export const metadata = {
     title: "Request Demo | CredSecure",
@@ -94,6 +95,9 @@ export default async function RequestDemoPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 companyName={settings.companyName || "Innodhee Services Pvt Ltd"}
             />
+
+            {/* Quick Actions Floating Right Button */}
+            <QuickActionsFloatingWidget />
 
             {/* Floating Credential Utility */}
             <FloatingCredentialWidget />

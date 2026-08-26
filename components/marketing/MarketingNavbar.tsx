@@ -16,6 +16,7 @@ const NAV_LINKS = [
     { label: "Security", href: "/security" },
     { label: "Use Cases", href: "/use-cases" },
     { label: "Features", href: "/features" },
+    { label: "Contact Us", href: "/contact-us" },
 ];
 
 export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbarProps) {
