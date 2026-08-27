@@ -103,8 +103,8 @@ export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbar
 
             {/* Mobile Menu */}
             {mobileOpen && (
-                <div className="fixed inset-0 z-40 bg-white/95 dark:bg-[#030712]/95 backdrop-blur-xl pt-16 md:hidden">
-                    <div className="flex flex-col px-6 py-8 gap-1">
+                <div className="fixed inset-0 z-40 bg-white/95 dark:bg-[#030712]/95 backdrop-blur-xl pt-16 md:hidden overflow-y-auto">
+                    <div className="flex flex-col px-6 py-8 gap-1 min-h-[calc(100vh-4rem)]">
                         {NAV_LINKS.map((link) => {
                             const isActive = pathname === link.href;
                             return (

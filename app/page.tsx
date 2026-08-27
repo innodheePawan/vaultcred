@@ -56,15 +56,15 @@ export default async function LandingPage() {
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
                                 Secure, govern, and trace system accounts, API client scopes, database keys, and operational credentials across your enterprise landscapes.
                             </p>
-                            <div className="flex flex-col sm:flex-row items-start gap-3 pt-2">
-                                <Link href="/request-demo">
-                                    <Button className="h-10 px-5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3 pt-2">
+                                <Link href="/request-demo" className="w-full sm:w-auto">
+                                    <Button className="w-full h-10 px-5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
                                         Request Demo
                                         <ArrowRight className="w-3.5 h-3.5" />
                                     </Button>
                                 </Link>
-                                <Link href="/platform">
-                                    <Button variant="outline" className="h-10 px-5 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
+                                <Link href="/platform" className="w-full sm:w-auto">
+                                    <Button variant="outline" className="w-full h-10 px-5 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
                                         Explore Platform
                                     </Button>
                                 </Link>
@@ -255,15 +255,19 @@ export default async function LandingPage() {
                         <div className="border border-slate-200 dark:border-white/[0.08] rounded-lg bg-white dark:bg-[#0b0f19] shadow-2xl overflow-hidden font-sans text-slate-800 dark:text-slate-200">
                             {/* Browser Header Bar */}
                             <div className="bg-slate-50 dark:bg-[#060a13] px-4 py-3 border-b border-slate-200 dark:border-white/[0.06] flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" />
-                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" />
-                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" />
-                                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest ml-4 font-semibold">CredSecure Dashboard v1.4</span>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest ml-2 sm:ml-4 font-semibold truncate">
+                                        <span className="hidden sm:inline">CredSecure </span>Dashboard <span className="hidden sm:inline">v1.4</span>
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[9px] font-mono text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold">ALL GOVERNED SYSTEMS OPERATIONAL</span>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                                    <span className="text-[9px] font-mono text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold">
+                                        <span className="hidden sm:inline">ALL GOVERNED </span>SYSTEMS OPERATIONAL
+                                    </span>
                                 </div>
                             </div>
 
@@ -494,7 +498,7 @@ export default async function LandingPage() {
                 ═══════════════════════════════════════════════════════════ */}
                 <section className="border-y border-slate-200 dark:border-white/[0.05] bg-slate-100/80 dark:bg-[#060a13]">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 lg:divide-x divide-slate-200 dark:divide-white/[0.05] text-left">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-slate-200/60 dark:bg-white/[0.06] rounded-lg overflow-hidden">
                             {[
                                 { label: "Time-Bound Access", val: "100%", desc: "Mandatory Revocation" },
                                 { label: "Immutable Audit Visibility", val: "Complete", desc: "SIEM & Audits ready" },
@@ -502,10 +506,10 @@ export default async function LandingPage() {
                                 { label: "Access Scopes Computed", val: "Per-Request", desc: "Zero trust evaluation" },
                                 { label: "External Support Enforced", val: "Controlled", desc: "Time & Space Scoped" },
                             ].map((metric, idx) => (
-                                <div key={idx} className="p-4 space-y-1">
+                                <div key={idx} className="p-5 bg-slate-100/80 dark:bg-[#060a13] space-y-1">
                                     <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-bold">{metric.label}</div>
                                     <div className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-sans">{metric.val}</div>
-                                    <div className="text-[10px] text-slate-600 font-mono">{metric.desc}</div>
+                                    <div className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">{metric.desc}</div>
                                 </div>
                             ))}
                         </div>

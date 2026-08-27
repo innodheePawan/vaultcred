@@ -10,9 +10,9 @@ export function MarketingFooter({ applicationName, companyName }: MarketingFoote
     return (
         <footer className="border-t border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#020617]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
+                <div className="grid grid-cols-3 lg:grid-cols-12 gap-8 lg:gap-12">
                     {/* Brand Column */}
-                    <div className="space-y-4 lg:col-span-4">
+                    <div className="space-y-4 col-span-3 lg:col-span-3">
                         <div className="flex items-center">
                             {/* <div className="bg-white dark:bg-slate-900/90 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs inline-flex"> */}
                             <img
@@ -28,7 +28,7 @@ export function MarketingFooter({ applicationName, companyName }: MarketingFoote
                     </div>
 
                     {/* Product Links */}
-                    <div className="space-y-3 lg:col-span-2">
+                    <div className="space-y-3 col-span-1 lg:col-span-2">
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Product
                         </h4>
@@ -61,7 +61,7 @@ export function MarketingFooter({ applicationName, companyName }: MarketingFoote
                     </div>
 
                     {/* Solutions Links */}
-                    <div className="space-y-3 lg:col-span-2">
+                    <div className="space-y-3 col-span-1 lg:col-span-2">
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Solutions
                         </h4>
@@ -85,8 +85,33 @@ export function MarketingFooter({ applicationName, companyName }: MarketingFoote
                         </ul>
                     </div>
 
+                    {/* Legal Links */}
+                    <div className="space-y-3 col-span-1 lg:col-span-2">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                            Legal
+                        </h4>
+                        <ul className="space-y-2.5">
+                            <li>
+                                <Link
+                                    href="/privacy"
+                                    className="text-sm text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+                                >
+                                    Privacy Policy
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/terms"
+                                    className="text-sm text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+                                >
+                                    Terms of Service
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
                     {/* Contact Us Column */}
-                    <div className="space-y-3 lg:col-span-4">
+                    <div className="space-y-3 col-span-3 lg:col-span-3">
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Contact Us
                         </h4>

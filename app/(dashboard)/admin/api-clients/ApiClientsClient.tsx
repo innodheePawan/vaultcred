@@ -198,7 +198,7 @@ export default function ApiClientsClient({ initialClients, availableScopes, curr
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg">
                         <Key className="w-5 h-5" />
@@ -210,7 +210,7 @@ export default function ApiClientsClient({ initialClients, availableScopes, curr
                 </div>
                 <button
                     onClick={() => setIsCreateOpen(true)}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
+                    className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition w-full sm:w-auto"
                 >
                     <Plus className="w-4 h-4" />
                     <span>Create Client</span>

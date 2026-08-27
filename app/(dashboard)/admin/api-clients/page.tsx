@@ -30,7 +30,7 @@ export default async function ApiClientsPage(props: {
     }));
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">API Clients</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage external applications interfacing with the vault securely.</p>

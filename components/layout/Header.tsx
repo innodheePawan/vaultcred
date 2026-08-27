@@ -22,6 +22,7 @@ export function Header({ settings, user, publicView = false, showSettings = fals
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
     // ── Dynamic Release Notes from DB ──
     const [notifications, setNotifications] = useState<{ id: string; text: string; tag: string; version: string; isNew: boolean }[]>([]);
@@ -154,9 +155,49 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                 </div>
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-4 flex-shrink-0">
+                <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                     {!publicView && (
                         <>
+                            {/* Mobile Search Button */}
+                            <button
+                                onClick={() => setIsMobileSearchOpen(true)}
+                                className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 rounded-lg md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="Open Search"
+                            >
+                                <Search className="h-5 w-5" />
+                            </button>
+
+                            {/* Mobile Search Input Overlay */}
+                            {isMobileSearchOpen && (
+                                <div className="absolute inset-0 bg-white dark:bg-gray-800 z-50 flex items-center px-4 gap-2 md:hidden">
+                                    <div className="relative flex-1">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Search className="h-5 w-5 text-gray-500" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 focus:outline-none text-black dark:text-white focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                            placeholder="Search users, credentials..."
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && searchQuery.trim()) {
+                                                    router.push(`/credentials?q=${encodeURIComponent(searchQuery.trim())}`);
+                                                    setIsMobileSearchOpen(false);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => setIsMobileSearchOpen(false)}
+                                        className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Notifications Dropdown */}
                             <div className="relative" ref={notificationRef}>
                                 <button

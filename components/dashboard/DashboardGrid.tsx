@@ -60,16 +60,16 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
     return (
         <div className="space-y-4 h-full flex flex-col pb-2">
             {/* Greeting + Toggle row */}
-            <div className="flex items-end justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {greeting}, {userName || 'there'} 👋
                     </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                         Here&apos;s your credential vault overview
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                     <button
                         onClick={togglePersonal}
                         className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
@@ -222,9 +222,9 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
             </div>
 
             {/* ── Row 3: Charts with dynamic heights ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-[180px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Category Donut Chart */}
-                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-[320px] sm:h-[360px]">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Credentials by Category</h3>
                         <span className="text-xs text-gray-400 dark:text-gray-500">Click to filter</span>
@@ -235,7 +235,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                 </div>
 
                 {/* Environment Bar Chart */}
-                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                <div className="rounded-2xl bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-[320px] sm:h-[360px]">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Credentials by Environment</h3>
                         <span className="text-xs text-gray-400 dark:text-gray-500">Click to filter</span>

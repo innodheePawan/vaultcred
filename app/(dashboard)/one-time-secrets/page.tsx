@@ -78,18 +78,18 @@ export default function OneTimeSecretsPage() {
     };
 
     return (
-        <div className="container mx-auto px-6 py-8">
-            <div className="flex justify-between items-center mb-8">
+        <div className="container mx-auto px-4 sm:px-6 py-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">One-Time Secrets</h1>
-                    <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your secure links and shared secrets.</p>
+                    <p className="mt-2 text-gray-600 dark:text-gray-400 text-sm sm:text-base">Manage your secure links and shared secrets.</p>
                     {process.env.NODE_ENV === 'development' && (
                         <div className="text-xs text-red-500 font-mono">
                             DEBUG ROLE: {session?.user?.role} | SERVER PERMS CREATE: {String(secrets.permissions?.CREATE)}
                         </div>
                     )}
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3 w-full sm:w-auto">
                     {secrets.permissions?.DELETE && (
                         <button
                             onClick={async () => {
@@ -102,7 +102,7 @@ export default function OneTimeSecretsPage() {
                                     fetchSecrets();
                                 }
                             }}
-                            className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-900/20 transition"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-900/20 transition text-sm font-medium"
                         >
                             <Trash2 className="w-4 h-4" />
                             Cleanup Expired
@@ -111,7 +111,7 @@ export default function OneTimeSecretsPage() {
                     {secrets.permissions?.CREATE && (
                         <Link
                             href="/one-time-secrets/create"
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
                         >
                             <Plus className="w-5 h-5" />
                             Share New Secret
@@ -121,7 +121,8 @@ export default function OneTimeSecretsPage() {
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
@@ -136,7 +137,7 @@ export default function OneTimeSecretsPage() {
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-505">
                                         Loading secrets...
                                     </td>
                                 </tr>
@@ -206,6 +207,76 @@ export default function OneTimeSecretsPage() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Cards List View */}
+                <div className="block md:hidden divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {loading ? (
+                        <div className="p-6 text-center text-gray-500">Loading secrets...</div>
+                    ) : secrets.data.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">No active secrets found. Create one to get started.</div>
+                    ) : (
+                        secrets.data.map((secret: Secret) => (
+                            <div key={secret.id} className="p-4 flex flex-col gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            {secret.name || 'Untitled Secret'}
+                                        </h3>
+                                        <div className="text-xs text-gray-550 dark:text-gray-400 mt-0.5 flex items-center gap-1">
+                                            {secret.sharedVia === 'EMAIL' ? '📧 Email' : '🔗 Link'}
+                                            {secret.recipientEmail && <span className="truncate max-w-[150px] font-medium">: {secret.recipientEmail}</span>}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <SecretStatusBadge status={secret.status} />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 text-[11px] mt-1 border-y border-gray-100 dark:border-gray-700/40 py-2">
+                                    <div>
+                                        <span className="text-gray-400 dark:text-gray-500 block font-medium">Views</span>
+                                        <span className="text-gray-700 dark:text-gray-300 font-semibold flex items-center gap-1 mt-0.5">
+                                            {secret.currentViews} / {secret.maxViews}
+                                        </span>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <span className="text-gray-400 dark:text-gray-500 block font-medium">Expires</span>
+                                        <span className="text-gray-700 dark:text-gray-300 font-semibold flex items-center gap-1 mt-0.5" title={new Date(secret.expiresAt).toLocaleString()}>
+                                            <Clock className="w-3 h-3 text-gray-400 shrink-0" />
+                                            {getTimeRemaining(new Date(secret.expiresAt))}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center mt-1">
+                                    <span className="text-[10px] text-gray-400">
+                                        Created {new Date(secret.createdAt).toLocaleDateString()}
+                                    </span>
+                                    {secret.status === 'ACTIVE' && (
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => copyLink(secret.token)}
+                                                className="px-2.5 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded border border-indigo-200 dark:border-indigo-800 flex items-center gap-1"
+                                                title="Copy Link"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                                Copy
+                                            </button>
+                                            <button
+                                                onClick={() => handleRevoke(secret.id)}
+                                                className="px-2.5 py-1.5 text-xs font-semibold text-red-605 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded border border-red-200 dark:border-red-800 flex items-center gap-1"
+                                                title="Revoke Access"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Revoke
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
             
