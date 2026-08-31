@@ -59,3 +59,16 @@ export function decrypt(text: string): string {
 
     return decrypted;
 }
+
+/**
+ * Safely decrypts a string, returning an empty string or error fallback if decryption fails.
+ */
+export function safeDecrypt(text: string | null | undefined): string {
+    if (!text) return '';
+    try {
+        return decrypt(text);
+    } catch (e) {
+        console.error('Decryption failed for ciphertext:', e);
+        return '[Decryption Error]';
+    }
+}

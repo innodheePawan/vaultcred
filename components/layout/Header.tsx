@@ -9,14 +9,23 @@ function formatRole(role?: string): string {
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Search, Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { Search, Bell, User, LogOut, Settings, ChevronDown, Menu } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { clsx } from 'clsx';
 import { useLayout } from './LayoutContext';
-import { Menu } from 'lucide-react';
+import { getReleaseNotes, markNotificationsRead } from '@/lib/actions/release-notes';
+import { logUserLogout } from '@/lib/actions/login-activity';
+
+function useSafeSession() {
+    try {
+        return useSession();
+    } catch (e) {
+        return { data: null, status: 'unauthenticated' as const };
+    }
+}
 
 export function Header({ settings, user, publicView = false, showSettings = false }: { settings?: any, user?: any, publicView?: boolean, showSettings?: boolean }) {
-    const { data: session } = useSession();
+    const { data: session } = useSafeSession();
     const router = useRouter();
     const pathname = usePathname();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -31,7 +40,6 @@ export function Header({ settings, user, publicView = false, showSettings = fals
     useEffect(() => {
         async function loadNotes() {
             try {
-                const { getReleaseNotes } = await import('@/lib/actions/release-notes');
                 const payload = await getReleaseNotes();
                 setNotifications(
                     payload.notes.map(n => ({
@@ -207,7 +215,6 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                                             setHasUnread(false);
                                             setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
                                             try {
-                                                const { markNotificationsRead } = await import('@/lib/actions/release-notes');
                                                 await markNotificationsRead();
                                             } catch (e) {
                                                 // Non-critical
@@ -293,7 +300,6 @@ export function Header({ settings, user, publicView = false, showSettings = fals
                                         )}
                                         <button
                                             onClick={async () => {
-                                                const { logUserLogout } = await import('@/lib/actions/login-activity');
                                                 await logUserLogout();
                                                 signOut({ callbackUrl: '/login' });
                                             }}

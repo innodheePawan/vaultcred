@@ -18,6 +18,17 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
         notFound();
     }
 
+    const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
+    const ctx = session?.user?.id ? await getUserAccessContext(session.user.id) : null;
+    const isOwner = credential.createdById === session?.user?.id;
+    const isAdmin = ctx?.role === 'ADMIN' || session?.user?.role === 'ADMIN';
+    const isExternal = ctx?.isExternal ?? false;
+
+    let canEdit = false;
+    if (isAdmin || isOwner) canEdit = true;
+    else if (isExternal) canEdit = false;
+    else if (ctx) canEdit = canAccess(ctx, 'FEATURE:CREDENTIALS', 'EDIT');
+
     const isExpired = credential.expiryDate ? new Date(credential.expiryDate) < new Date() : false;
 
     return (
@@ -85,33 +96,17 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
 
                 <div className="flex items-center gap-3">
                     {/* Action Buttons: Only visible if Admin, Owner, or Internal with Permission */}
-                    {(async () => {
-                        const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
-                        const ctx = await getUserAccessContext(session?.user?.id as string);
-                        const isOwner = credential.createdById === session?.user?.id;
-                        const isAdmin = ctx.role === 'ADMIN';
-                        const isExternal = ctx.isExternal;
-
-                        let canEdit = false;
-                        if (isAdmin || isOwner) canEdit = true;
-                        else if (isExternal) canEdit = false;
-                        else canEdit = canAccess(ctx, 'FEATURE:CREDENTIALS', 'EDIT');
-
-                        if (canEdit) {
-                            return (
-                                <>
-                                    <Link href={`/credentials/${credential.id}/edit`}>
-                                        <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-transparent dark:text-gray-200 dark:hover:bg-gray-800 text-xs px-4 py-2 flex items-center gap-1.5">
-                                            <Pencil className="w-4 h-4" />
-                                            Edit
-                                        </Button>
-                                    </Link>
-                                    <DeleteCredentialButton id={credential.id} />
-                                </>
-                            );
-                        }
-                        return null;
-                    })()}
+                    {canEdit && (
+                        <>
+                            <Link href={`/credentials/${credential.id}/edit`}>
+                                <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-transparent dark:text-gray-200 dark:hover:bg-gray-800 text-xs px-4 py-2 flex items-center gap-1.5">
+                                    <Pencil className="w-4 h-4" />
+                                    Edit
+                                </Button>
+                            </Link>
+                            <DeleteCredentialButton id={credential.id} />
+                        </>
+                    )}
                 </div>
             </div>
 

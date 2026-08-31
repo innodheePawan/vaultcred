@@ -132,6 +132,12 @@ export default async function middleware(req: any) {
         if (isSetup || isEnvValue || isNextInternal || isAsset) return;
 
         if (isApi) {
+            if (path.startsWith('/api/auth')) {
+                return new NextResponse(JSON.stringify(null), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
             return new NextResponse(
                 JSON.stringify({ error: 'System in Setup Mode. Access restricted.' }),
                 { status: 403, headers: { 'Content-Type': 'application/json' } }

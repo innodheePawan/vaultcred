@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Clock, ShieldAlert, MousePointerClick } from 'lucide-react';
+import { logUserLogout } from '@/lib/actions/login-activity';
 
 interface SessionTimeoutProps {
     timeoutMs?: number; // Default 15 minutes (900000 ms)
@@ -30,7 +31,6 @@ export function SessionTimeout({ timeoutMs = 900000, warningMs = 60000 }: Sessio
 
         try {
             if (status === 'authenticated') {
-                const { logUserLogout } = await import('@/lib/actions/login-activity');
                 await logUserLogout();
             }
         } catch (e) {

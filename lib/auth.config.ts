@@ -79,8 +79,8 @@ export const authConfig = {
                 token.lastActivity = now;
             }
 
-            // DB-specific enrichment (refreshing state) - helps with middleware consistency
-            if (token?.id) {
+            // DB-specific enrichment (refreshing state) - only run on Node.js server, NOT in Edge Middleware
+            if (process.env.NEXT_RUNTIME !== 'edge' && token?.id) {
                 try {
                     const { prisma } = await import('@/lib/prisma');
                     const dbUser = await prisma.user.findUnique({

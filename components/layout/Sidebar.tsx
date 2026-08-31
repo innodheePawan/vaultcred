@@ -62,6 +62,14 @@ const MENU_ITEMS: MenuItem[] = [
     },
 ];
 
+function useSafeSession() {
+    try {
+        return useSession();
+    } catch (e) {
+        return { data: null, status: 'unauthenticated' as const };
+    }
+}
+
 export function Sidebar({
     className,
     role: initialRole,
@@ -79,7 +87,7 @@ export function Sidebar({
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const currentType = searchParams.get('type');
-    const { data: session, status } = useSession();
+    const { data: session, status } = useSafeSession();
     const { isCollapsed, toggleSidebar } = useLayout();
 
     // Use server-passed role (immediate) or client-side session role (fallback/update)

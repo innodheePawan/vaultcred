@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { encrypt, decrypt } from '@/lib/crypto';
+import { encrypt, decrypt, safeDecrypt } from '@/lib/crypto';
 import { logAudit } from '@/lib/actions/audit';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -522,7 +522,7 @@ export async function getCredentialById(id: string) {
         const d = credential.detailsPassword;
         details = {
             username: d.username,
-            password: d.passwordEncrypted ? decrypt(d.passwordEncrypted) : '',
+            password: safeDecrypt(d.passwordEncrypted),
             host: d.host,
             port: d.port
         };
@@ -531,7 +531,7 @@ export async function getCredentialById(id: string) {
         let decryptedParams: any[] = [];
         if (d.customParameters) {
             try {
-                const jsonStr = decrypt(d.customParameters);
+                const jsonStr = safeDecrypt(d.customParameters);
                 decryptedParams = JSON.parse(jsonStr);
             } catch (e) {
                 console.error('Failed to decrypt customParameters:', e);
@@ -540,8 +540,8 @@ export async function getCredentialById(id: string) {
 
         details = {
             clientId: d.clientId || '',
-            clientSecret: d.clientSecretEnc ? decrypt(d.clientSecretEnc) : undefined,
-            apiKey: d.apiKeyEncrypted ? decrypt(d.apiKeyEncrypted) : undefined,
+            clientSecret: d.clientSecretEnc ? safeDecrypt(d.clientSecretEnc) : undefined,
+            apiKey: d.apiKeyEncrypted ? safeDecrypt(d.apiKeyEncrypted) : undefined,
             tokenEndpoint: d.tokenEndpoint || '',
             authEndpoint: d.authEndpoint || undefined,
             scope: d.scope || (d as any).scopes || '',
@@ -561,15 +561,15 @@ export async function getCredentialById(id: string) {
             keyFormat: d.keyFormat,
             publicKey: d.publicKey, // PEM String
             publicKeyFileName: d.publicKeyFileName,
-            privateKey: d.privateKeyEnc ? decrypt(d.privateKeyEnc) : undefined,
+            privateKey: d.privateKeyEnc ? safeDecrypt(d.privateKeyEnc) : undefined,
             privateKeyFileName: d.privateKeyFileName,
-            passphrase: d.passphraseEnc ? decrypt(d.passphraseEnc) : undefined,
+            passphrase: d.passphraseEnc ? safeDecrypt(d.passphraseEnc) : undefined,
             expiryDate: d.validTo
         };
     } else if (credential.type === 'TOKEN' && credential.detailsToken) {
         const d = credential.detailsToken;
         details = {
-            token: d.tokenEncrypted ? decrypt(d.tokenEncrypted) : '',
+            token: d.tokenEncrypted ? safeDecrypt(d.tokenEncrypted) : '',
             tokenType: d.tokenType,
             issuer: d.issuer,
             expiryDate: d.expiresAt
@@ -577,14 +577,14 @@ export async function getCredentialById(id: string) {
     } else if (credential.type === 'SECURE_NOTE' && credential.detailsNote) {
         const d = credential.detailsNote;
         details = {
-            note: d.noteEncrypted ? decrypt(d.noteEncrypted) : ''
+            note: d.noteEncrypted ? safeDecrypt(d.noteEncrypted) : ''
         };
     } else if (credential.type === 'FILE' && credential.detailsFile) {
         const d = credential.detailsFile;
         // If content is in DB as Base64 String
         let content = '';
         if (d.fileContent) {
-            content = decrypt(d.fileContent); // Decrypt from DB
+            content = safeDecrypt(d.fileContent); // Decrypt from DB
         } else {
             // Fallback to disk read (migration support?)
             try {
