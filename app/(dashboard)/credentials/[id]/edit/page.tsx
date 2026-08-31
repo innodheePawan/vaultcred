@@ -3,6 +3,8 @@ import CredentialForm from '@/components/credentials/CredentialForm';
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getUserAccessContext } from '@/lib/iam/permissions';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default async function EditCredentialPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
@@ -29,18 +31,26 @@ export default async function EditCredentialPage(props: { params: Promise<{ id: 
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
+            {/* Back to Credentials Link */}
+            <div className="mb-6">
+                <Link href="/credentials" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center text-sm font-medium transition-colors gap-1.5">
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Credentials
+                </Link>
+            </div>
+
             <div className="md:flex md:items-center md:justify-between mb-8">
                 <div className="min-w-0 flex-1">
                     <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
                         Edit Credential
                     </h2>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {credential.name}
                     </p>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <div className="mt-2">
                 <CredentialForm
                     action={updateAction}
                     initialData={credential}

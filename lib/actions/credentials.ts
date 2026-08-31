@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { sanitizeCredentialData, computeDiff } from '@/lib/audit-utils';
+import { validateAndExtractKeyCert } from '@/lib/crypto-validation';
 import { after } from 'next/server';
 import { triggerCredentialSync } from '@/lib/sync-engine';
 
@@ -224,17 +225,37 @@ export async function createCredential(prevState: any, formData: FormData) {
                     }
                 });
             } else if (data.type === 'KEY_CERT') {
+                const keyCertVal = validateAndExtractKeyCert({
+                    keyType: data.keyType,
+                    keyFormat: data.keyFormat,
+                    publicKey: data.publicKey,
+                    privateKey: data.privateKey,
+                    passphrase: data.passphrase,
+                });
+
+                if (!keyCertVal.valid) {
+                    throw new Error(keyCertVal.error || 'Key/Certificate validation failed');
+                }
+
+                const meta = keyCertVal.extractedMetadata || {};
+
                 await tx.credKeyCert.create({
                     data: {
                         credentialId: master.id,
                         keyType: data.keyType,
                         keyFormat: data.keyFormat || null,
-                        publicKey: data.publicKey || null, // Assuming String (PEM)
+                        publicKey: data.publicKey || null,
                         publicKeyFileName: data.publicKeyFileName || null,
                         privateKeyEnc: data.privateKey ? encrypt(data.privateKey) : null,
                         privateKeyFileName: data.privateKeyFileName || null,
                         passphraseEnc: data.passphrase ? encrypt(data.passphrase) : null,
-                        validTo: data.expiryDate ? new Date(data.expiryDate) : null,
+                        validFrom: meta.validFrom || null,
+                        validTo: meta.validTo || (data.expiryDate ? new Date(data.expiryDate) : null),
+                        issuer: meta.issuer || null,
+                        subject: meta.subject || null,
+                        algorithm: meta.algorithm || null,
+                        keySize: meta.keySize || null,
+                        fingerprint: meta.fingerprint || null,
                     }
                 });
             } else if (data.type === 'TOKEN') {
@@ -629,10 +650,6 @@ export async function updateCredential(id: string, prevState: any, formData: For
     if (!session?.user || session.user.isActive === false) return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session invalid' } };
 
     const rawData = Object.fromEntries(formData.entries());
-    // For Update, secrets are optional (if empty, keep existing).
-    // Zod schema enforces required. We might need to populate with placeholders or partial validate.
-    // simpler: valid fields manually or use partial schema?
-    // Let's rely on basic validation but handle secrets specifically.
 
     // FETCH EXISTING
     const credential = await prisma.credentialMaster.findUnique({
@@ -653,40 +670,136 @@ export async function updateCredential(id: string, prevState: any, formData: For
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const accessContext = await getUserAccessContext(session.user.id, session.user);
     const hasAccess = canAccess(accessContext, 'CREDENTIALS', 'EDIT');
-    const isOwner = credential.createdById === session.user.id; // Corrected from ownerId
+    const isOwner = credential.createdById === session.user.id;
 
     if (!isOwner && accessContext.role !== 'ADMIN' && accessContext.role !== 'SUPER_ADMIN' && !hasAccess) {
         return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
     }
 
-    // CONSTRUCT OLD DATA (Decrypted for Diff)
-    // We strictly use this for Audit Diffing.
-    const oldUnsanitized: any = { ...credential };
-    if (credential.type === 'PASSWORD' && credential.detailsPassword) {
+    // 1. BACKEND ENFORCEMENT OF IMMUTABLE FIELDS
+    // Rely exclusively on existing DB values for name, type, grantType
+    const type = credential.type;
+
+    // 2. PUBLIC/PERSONAL TOGGLE & VALIDATION
+    const hasIsPersonalInForm = rawData.isPersonal !== undefined;
+    const newIsPersonal = hasIsPersonalInForm
+        ? (String(rawData.isPersonal) === 'true' || String(rawData.isPersonal) === 'on')
+        : credential.isPersonal;
+
+    let finalCategory: string | null = null;
+    let finalEnvironment: string | null = null;
+
+    if (newIsPersonal) {
+        finalCategory = null;
+        finalEnvironment = null;
+    } else {
+        const cat = rawData.category as string | undefined;
+        const env = rawData.environment as string | undefined;
+        const targetCat = cat || credential.category;
+        const targetEnv = env || credential.environment;
+        if (!targetCat || !targetEnv) {
+            return { error: 'Category and Environment are required for Shared credentials.' };
+        }
+        finalCategory = targetCat;
+        finalEnvironment = targetEnv;
+    }
+
+    // CONSTRUCT OLD DATA (Decrypted for Diffing & Validation)
+    const oldUnsanitized: any = {
+        name: credential.name,
+        type: credential.type,
+        category: credential.category,
+        environment: credential.environment,
+        description: credential.description,
+        isPersonal: credential.isPersonal,
+        expiryDate: credential.expiryDate,
+    };
+
+    if (type === 'PASSWORD' && credential.detailsPassword) {
         const d = credential.detailsPassword;
         oldUnsanitized.username = d.username;
         oldUnsanitized.host = d.host;
         oldUnsanitized.port = d.port;
         oldUnsanitized.password = d.passwordEncrypted ? decrypt(d.passwordEncrypted) : null;
-    }
-    // ... (Other types would follow similar pattern, implementing Password & API for brevity in this large block, others generic)
-    // Actually I'll implement API and Key too.
-    if (credential.type === 'API_OAUTH' && credential.detailsApi) {
+    } else if (type === 'API_OAUTH' && credential.detailsApi) {
         const d = credential.detailsApi;
         oldUnsanitized.clientId = d.clientId;
         oldUnsanitized.clientSecret = d.clientSecretEnc ? decrypt(d.clientSecretEnc) : null;
         oldUnsanitized.apiKey = d.apiKeyEncrypted ? decrypt(d.apiKeyEncrypted) : null;
         oldUnsanitized.tokenEndpoint = d.tokenEndpoint;
         oldUnsanitized.authEndpoint = d.authEndpoint;
-        oldUnsanitized.scopes = d.scopes;
-    }
-    if (credential.type === 'SECURE_NOTE' && credential.detailsNote) {
+        oldUnsanitized.scope = d.scope;
+        oldUnsanitized.scopes = d.scope;
+        oldUnsanitized.grantTypeTransmission = d.grantTypeTransmission;
+        oldUnsanitized.clientAuthentication = d.clientAuthentication;
+        oldUnsanitized.contentType = d.contentType;
+        oldUnsanitized.resource = d.resource;
+        oldUnsanitized.audience = d.audience;
+    } else if (type === 'KEY_CERT' && credential.detailsKeyCert) {
+        const d = credential.detailsKeyCert;
+        oldUnsanitized.keyType = d.keyType;
+        oldUnsanitized.keyFormat = d.keyFormat;
+        oldUnsanitized.publicKey = d.publicKey;
+        oldUnsanitized.publicKeyFileName = d.publicKeyFileName;
+        oldUnsanitized.privateKey = d.privateKeyEnc ? decrypt(d.privateKeyEnc) : null;
+        oldUnsanitized.privateKeyFileName = d.privateKeyFileName;
+        oldUnsanitized.passphrase = d.passphraseEnc ? decrypt(d.passphraseEnc) : null;
+    } else if (type === 'TOKEN' && credential.detailsToken) {
+        const d = credential.detailsToken;
+        oldUnsanitized.token = d.tokenEncrypted ? decrypt(d.tokenEncrypted) : null;
+        oldUnsanitized.tokenType = d.tokenType;
+        oldUnsanitized.issuer = d.issuer;
+    } else if (type === 'SECURE_NOTE' && credential.detailsNote) {
         const d = credential.detailsNote;
         oldUnsanitized.note = d.noteEncrypted ? decrypt(d.noteEncrypted) : null;
+    } else if (type === 'FILE' && credential.detailsFile) {
+        const d = credential.detailsFile;
+        oldUnsanitized.fileName = d.fileName;
+        oldUnsanitized.fileType = d.fileType;
+        oldUnsanitized.filePath = d.filePath;
+        oldUnsanitized.fileContent = d.fileContent ? decrypt(d.fileContent) : null;
     }
-    // ... Implement others as needed or basic fallback
 
-    const data: any = rawData; // Trust inputs for now
+    // 3. DETECT SECRET CHANGES (For conditional version increment)
+    let secretsChanged = false;
+
+    if (type === 'PASSWORD') {
+        const p = rawData.password as string | undefined;
+        if (p && p.trim().length > 0 && p !== oldUnsanitized.password) {
+            secretsChanged = true;
+        }
+    } else if (type === 'API_OAUTH') {
+        const cs = rawData.clientSecret as string | undefined;
+        const ak = rawData.apiKey as string | undefined;
+        if ((cs && cs.trim().length > 0 && cs !== oldUnsanitized.clientSecret) ||
+            (ak && ak.trim().length > 0 && ak !== oldUnsanitized.apiKey)) {
+            secretsChanged = true;
+        }
+    } else if (type === 'KEY_CERT') {
+        const pk = rawData.privateKey as string | undefined;
+        const pub = rawData.publicKey as string | undefined;
+        const pass = rawData.passphrase as string | undefined;
+        if ((pk && pk.trim().length > 0 && pk !== oldUnsanitized.privateKey) ||
+            (pub && pub.trim() !== (oldUnsanitized.publicKey || '').trim()) ||
+            (pass !== undefined && pass !== '' && pass !== oldUnsanitized.passphrase)) {
+            secretsChanged = true;
+        }
+    } else if (type === 'TOKEN') {
+        const tok = rawData.token as string | undefined;
+        if (tok && tok.trim().length > 0 && tok !== oldUnsanitized.token) {
+            secretsChanged = true;
+        }
+    } else if (type === 'SECURE_NOTE') {
+        const n = rawData.note as string | undefined;
+        if (n && n.trim().length > 0 && n !== oldUnsanitized.note) {
+            secretsChanged = true;
+        }
+    } else if (type === 'FILE') {
+        const fc = rawData.fileContent as string | undefined;
+        if (fc && fc.trim().length > 0 && fc !== oldUnsanitized.fileContent) {
+            secretsChanged = true;
+        }
+    }
 
     // UPDATE LOGIC
     try {
@@ -695,42 +808,49 @@ export async function updateCredential(id: string, prevState: any, formData: For
             await tx.credentialMaster.update({
                 where: { id },
                 data: {
-                    description: data.description,
-                    category: credential.isPersonal ? null : (data.category || credential.category),
-                    environment: credential.isPersonal ? null : (data.environment || credential.environment),
-                    expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+                    description: (rawData.description as string) || null,
+                    isPersonal: newIsPersonal,
+                    category: finalCategory,
+                    environment: finalEnvironment,
+                    expiryDate: rawData.expiryDate ? new Date(rawData.expiryDate as string) : null,
                     lastModifiedById: session.user.id,
+                    ...(secretsChanged && { version: { increment: 1 } })
                 }
             });
 
-            // Type Specific Update
-            if (credential.type === 'PASSWORD') {
+            // Type Specific Updates
+            if (type === 'PASSWORD') {
                 const updateData: any = {
-                    username: data.username,
-                    host: data.host,
-                    port: data.port ? parseInt(data.port) : null,
+                    username: (rawData.username as string) || oldUnsanitized.username,
+                    host: rawData.host !== undefined ? (rawData.host as string) : oldUnsanitized.host,
+                    port: rawData.port ? parseInt(rawData.port as string) : null,
                 };
-                if (data.password) {
-                    updateData.passwordEncrypted = encrypt(data.password);
+                if (rawData.password && (rawData.password as string).trim().length > 0) {
+                    updateData.passwordEncrypted = encrypt(rawData.password as string);
                 }
                 await tx.credPassword.update({ where: { credentialId: id }, data: updateData });
-            } else if (credential.type === 'API_OAUTH') {
+
+            } else if (type === 'API_OAUTH') {
                 const updateData: any = {
-                    clientId: data.clientId,
-                    tokenEndpoint: data.tokenEndpoint,
-                    authEndpoint: data.authEndpoint || undefined,
-                    scope: data.scope || data.scopes || null,
-                    grantTypeTransmission: data.grantTypeTransmission || 'body',
-                    clientAuthentication: data.clientAuthentication || 'header',
-                    contentType: data.contentType || 'application_x_www_form_urlencoded',
-                    resource: data.resource || null,
-                    audience: data.audience || null,
+                    clientId: (rawData.clientId as string) || oldUnsanitized.clientId,
+                    tokenEndpoint: (rawData.tokenEndpoint as string) || oldUnsanitized.tokenEndpoint,
+                    authEndpoint: (rawData.authEndpoint as string) || undefined,
+                    scope: (rawData.scope as string) || (rawData.scopes as string) || oldUnsanitized.scope || null,
+                    grantTypeTransmission: (rawData.grantTypeTransmission as any) || oldUnsanitized.grantTypeTransmission || 'body',
+                    clientAuthentication: (rawData.clientAuthentication as any) || oldUnsanitized.clientAuthentication || 'header',
+                    contentType: (rawData.contentType as any) || oldUnsanitized.contentType || 'application_x_www_form_urlencoded',
+                    resource: (rawData.resource as string) || null,
+                    audience: (rawData.audience as string) || null,
                 };
-                if (data.clientSecret) updateData.clientSecretEnc = encrypt(data.clientSecret);
-                if (data.apiKey) updateData.apiKeyEncrypted = encrypt(data.apiKey);
-                if (data.customParameters !== undefined) {
+                if (rawData.clientSecret && (rawData.clientSecret as string).trim().length > 0) {
+                    updateData.clientSecretEnc = encrypt(rawData.clientSecret as string);
+                }
+                if (rawData.apiKey && (rawData.apiKey as string).trim().length > 0) {
+                    updateData.apiKeyEncrypted = encrypt(rawData.apiKey as string);
+                }
+                if (rawData.customParameters !== undefined) {
                     try {
-                        const parsed = typeof data.customParameters === 'string' ? JSON.parse(data.customParameters) : data.customParameters;
+                        const parsed = typeof rawData.customParameters === 'string' ? JSON.parse(rawData.customParameters as string) : rawData.customParameters;
                         if (Array.isArray(parsed) && parsed.length > 0) {
                             updateData.customParameters = encrypt(JSON.stringify(parsed));
                         } else {
@@ -741,47 +861,162 @@ export async function updateCredential(id: string, prevState: any, formData: For
                     }
                 }
                 await tx.credApiOAuth.update({ where: { credentialId: id }, data: updateData });
-            } else if (credential.type === 'SECURE_NOTE') {
-                const updateData: any = {};
-                if (data.note) {
-                    updateData.noteEncrypted = encrypt(data.note);
+
+            } else if (type === 'KEY_CERT') {
+                const oldKeyCert = credential.detailsKeyCert;
+                const newPublicKey = rawData.publicKey !== undefined ? (rawData.publicKey as string) : (oldKeyCert?.publicKey || null);
+                const newPrivateKey = (rawData.privateKey as string) && (rawData.privateKey as string).trim().length > 0
+                    ? (rawData.privateKey as string)
+                    : (oldKeyCert?.privateKeyEnc ? decrypt(oldKeyCert.privateKeyEnc) : null);
+                const newPassphrase = rawData.passphrase !== undefined && (rawData.passphrase as string) !== ''
+                    ? (rawData.passphrase as string)
+                    : (oldKeyCert?.passphraseEnc ? decrypt(oldKeyCert.passphraseEnc) : null);
+                const newKeyType = (rawData.keyType as string) || oldKeyCert?.keyType || 'SSL';
+
+                const valRes = validateAndExtractKeyCert({
+                    keyType: newKeyType,
+                    keyFormat: (rawData.keyFormat as string) || oldKeyCert?.keyFormat || undefined,
+                    publicKey: newPublicKey,
+                    privateKey: newPrivateKey,
+                    passphrase: newPassphrase,
+                });
+
+                if (!valRes.valid) {
+                    throw new Error(valRes.error || 'Cryptographic validation failed for Key/Certificate.');
                 }
-                await tx.credSecureNote.update({ where: { credentialId: id }, data: updateData });
+
+                const meta = valRes.extractedMetadata || {};
+                await tx.credKeyCert.update({
+                    where: { credentialId: id },
+                    data: {
+                        keyType: newKeyType,
+                        keyFormat: (rawData.keyFormat as string) || oldKeyCert?.keyFormat || null,
+                        publicKey: newPublicKey,
+                        publicKeyFileName: (rawData.publicKeyFileName as string) || oldKeyCert?.publicKeyFileName || null,
+                        privateKeyFileName: (rawData.privateKeyFileName as string) || oldKeyCert?.privateKeyFileName || null,
+                        privateKeyEnc: rawData.privateKey && (rawData.privateKey as string).trim().length > 0 ? encrypt(rawData.privateKey as string) : oldKeyCert?.privateKeyEnc,
+                        passphraseEnc: rawData.passphrase && (rawData.passphrase as string).trim().length > 0 ? encrypt(rawData.passphrase as string) : oldKeyCert?.passphraseEnc,
+                        validFrom: meta.validFrom || oldKeyCert?.validFrom || null,
+                        validTo: meta.validTo || (rawData.expiryDate ? new Date(rawData.expiryDate as string) : oldKeyCert?.validTo) || null,
+                        issuer: meta.issuer || oldKeyCert?.issuer || null,
+                        subject: meta.subject || oldKeyCert?.subject || null,
+                        algorithm: meta.algorithm || oldKeyCert?.algorithm || null,
+                        keySize: meta.keySize || oldKeyCert?.keySize || null,
+                        fingerprint: meta.fingerprint || oldKeyCert?.fingerprint || null,
+                    }
+                });
+
+            } else if (type === 'TOKEN') {
+                const oldToken = credential.detailsToken;
+                const newTokenType = (rawData.tokenType as string) || oldToken?.tokenType || 'Bearer';
+                let newExpiresAt: Date = rawData.expiryDate
+                    ? new Date(rawData.expiryDate as string)
+                    : (oldToken?.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+                let tokenIssuer: string | null = (rawData.issuer as string) || oldToken?.issuer || null;
+
+                const tokenStr = rawData.token && (rawData.token as string).trim().length > 0
+                    ? (rawData.token as string)
+                    : (oldToken?.tokenEncrypted ? decrypt(oldToken.tokenEncrypted) : '');
+
+                if (tokenStr && (newTokenType === 'JWT' || tokenStr.split('.').length === 3)) {
+                    try {
+                        const parts = tokenStr.split('.');
+                        if (parts.length === 3) {
+                            const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
+                            const parsedPayload = JSON.parse(payloadJson);
+                            if (parsedPayload.exp) {
+                                newExpiresAt = new Date(parsedPayload.exp * 1000);
+                            }
+                            if (parsedPayload.iss) {
+                                tokenIssuer = parsedPayload.iss;
+                            }
+                        }
+                    } catch (jwtErr) {
+                        // Ignore parsing failure
+                    }
+                }
+
+                const tokenUpdateData: any = {
+                    tokenType: newTokenType,
+                    issuer: tokenIssuer,
+                    expiresAt: newExpiresAt,
+                };
+                if (rawData.token && (rawData.token as string).trim().length > 0) {
+                    tokenUpdateData.tokenEncrypted = encrypt(rawData.token as string);
+                }
+                await tx.credToken.update({ where: { credentialId: id }, data: tokenUpdateData });
+
+            } else if (type === 'SECURE_NOTE') {
+                if (rawData.note && (rawData.note as string).trim().length > 0) {
+                    await tx.credSecureNote.update({
+                        where: { credentialId: id },
+                        data: { noteEncrypted: encrypt(rawData.note as string) }
+                    });
+                }
+
+            } else if (type === 'FILE') {
+                const oldFile = credential.detailsFile;
+                const newFileName = (rawData.fileName as string) || oldFile?.fileName || 'file';
+                const newFileType = (rawData.fileType as string) || oldFile?.fileType || 'unknown';
+                const uploadDir = join(process.cwd(), 'secure_uploads');
+                const filePath = join(uploadDir, `${id}_${newFileName}`);
+
+                const fileUpdateData: any = {
+                    fileName: newFileName,
+                    fileType: newFileType,
+                    filePath: filePath,
+                };
+                if (rawData.fileContent && (rawData.fileContent as string).trim().length > 0) {
+                    fileUpdateData.fileContent = encrypt(rawData.fileContent as string);
+                }
+                await tx.credFile.update({ where: { credentialId: id }, data: fileUpdateData });
             }
-            // Add other types similarly...
         });
 
         // CONSTRUCT NEW DATA for Diff
-        // Merge old data with new inputs
-        const newUnsanitized = { ...oldUnsanitized, ...data, name: credential.name };
-        // Validating secrets: if input empty, use old secret.
-        if (credential.type === 'PASSWORD' && !data.password) newUnsanitized.password = oldUnsanitized.password;
-        if (credential.type === 'API_OAUTH') {
-            if (!data.clientSecret) newUnsanitized.clientSecret = oldUnsanitized.clientSecret;
-            if (!data.apiKey) newUnsanitized.apiKey = oldUnsanitized.apiKey;
+        const newUnsanitized = {
+            ...oldUnsanitized,
+            ...rawData,
+            name: credential.name,
+            type: credential.type,
+            isPersonal: newIsPersonal,
+            category: finalCategory,
+            environment: finalEnvironment,
+        };
+
+        if (type === 'PASSWORD' && (!rawData.password || (rawData.password as string).trim().length === 0)) {
+            newUnsanitized.password = oldUnsanitized.password;
         }
-        if (credential.type === 'SECURE_NOTE') {
-            if (!data.note) newUnsanitized.note = oldUnsanitized.note;
+        if (type === 'API_OAUTH') {
+            if (!rawData.clientSecret || (rawData.clientSecret as string).trim().length === 0) newUnsanitized.clientSecret = oldUnsanitized.clientSecret;
+            if (!rawData.apiKey || (rawData.apiKey as string).trim().length === 0) newUnsanitized.apiKey = oldUnsanitized.apiKey;
         }
+        if (type === 'KEY_CERT') {
+            if (!rawData.privateKey || (rawData.privateKey as string).trim().length === 0) newUnsanitized.privateKey = oldUnsanitized.privateKey;
+            if (!rawData.passphrase || (rawData.passphrase as string).trim().length === 0) newUnsanitized.passphrase = oldUnsanitized.passphrase;
+        }
+        if (type === 'TOKEN' && (!rawData.token || (rawData.token as string).trim().length === 0)) newUnsanitized.token = oldUnsanitized.token;
+        if (type === 'SECURE_NOTE' && (!rawData.note || (rawData.note as string).trim().length === 0)) newUnsanitized.note = oldUnsanitized.note;
+        if (type === 'FILE' && (!rawData.fileContent || (rawData.fileContent as string).trim().length === 0)) newUnsanitized.fileContent = oldUnsanitized.fileContent;
 
         // COMPUTE DIFF
-        const oldSafe = sanitizeCredentialData(credential.type, oldUnsanitized);
-        const newSafe = sanitizeCredentialData(credential.type, newUnsanitized);
+        const oldSafe = sanitizeCredentialData(type, oldUnsanitized);
+        const newSafe = sanitizeCredentialData(type, newUnsanitized);
         const diff = computeDiff(oldSafe, newSafe);
 
         if (Object.keys(diff).length > 0) {
             await logAudit({
                 action: 'UPDATE_CREDENTIAL',
                 credentialId: id,
-                details: `Updated credential '${credential.name}'`,
-                newValue: JSON.stringify(diff), // Differential Log
+                details: `Updated credential '${credential.name}'${secretsChanged ? ' (Secrets Rotated)' : ''}`,
+                newValue: JSON.stringify(diff),
                 userId: session.user.id,
-                isPersonal: credential.isPersonal
+                isPersonal: newIsPersonal
             });
         }
 
-        // Trigger Synchronization Framework (Phase 2)
-        if (credential.type === 'SECURE_NOTE' || credential.type === 'PASSWORD' || credential.type === 'API_OAUTH') {
+        // Trigger Synchronization Framework (only for shared credentials)
+        if (!newIsPersonal && (type === 'SECURE_NOTE' || type === 'PASSWORD' || type === 'API_OAUTH')) {
             try {
                 await triggerCredentialSync(id, session.user.id!);
             } catch (err) {
@@ -793,7 +1028,6 @@ export async function updateCredential(id: string, prevState: any, formData: For
         return { success: true, message: 'Credential updated successfully!' };
 
     } catch (error: any) {
-
         return { error: error.message };
     }
 }

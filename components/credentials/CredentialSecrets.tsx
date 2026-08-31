@@ -47,13 +47,13 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
 
         return (
             <div>
-                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider mb-1.5">{label}</label>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">{label}</label>
                 <div className="relative flex items-center">
                     <input
                         type={isVisible ? "text" : "password"}
                         value={value}
                         readOnly
-                        className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-200 select-all pr-20"
+                        className="block w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-950/40 dark:border-slate-800 dark:text-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono select-all pr-20"
                     />
                     <div className="absolute right-1.5 flex items-center gap-1">
                         {isSecret && (
@@ -62,7 +62,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                 variant="ghost" 
                                 size="sm" 
                                 onClick={() => toggleVisibility(fieldKey)} 
-                                className="h-8 w-8 p-0 hover:bg-slate-800/50 text-gray-400 hover:text-gray-200"
+                                className="h-8 w-8 p-0 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:hover:bg-slate-800/50 dark:text-gray-400 dark:hover:text-gray-200"
                             >
                                 {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
@@ -72,9 +72,9 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                             variant="ghost" 
                             size="sm" 
                             onClick={() => copyToClipboard(value, fieldKey)} 
-                            className="h-8 w-8 p-0 hover:bg-slate-800/50 text-gray-400 hover:text-gray-200"
+                            className="h-8 w-8 p-0 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:hover:bg-slate-800/50 dark:text-gray-400 dark:hover:text-gray-200"
                         >
-                            {copied === fieldKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                            {copied === fieldKey ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
                         </Button>
                     </div>
                 </div>
@@ -89,27 +89,27 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
 
         return (
             <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">{label}</label>
                 <div className="relative">
                     {isMultiline ? (
-                        <div className={`block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-900 dark:text-gray-200 font-mono whitespace-pre-wrap break-all ${!isVisible ? 'h-10 truncate' : ''}`}>
+                        <div className={`block w-full rounded-md border border-slate-200 dark:border-gray-600 px-3 py-2 text-sm bg-slate-50 dark:bg-gray-900 text-slate-900 dark:text-gray-200 font-mono whitespace-pre-wrap break-all ${!isVisible ? 'h-10 truncate' : ''}`}>
                             {isVisible ? value : '••••••••••••••••••••••••'}
                         </div>
                     ) : (
-                        <div className={`block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-900 dark:text-gray-200 font-mono break-all ${!isVisible ? 'truncate' : ''}`}>
+                        <div className={`block w-full rounded-md border border-slate-200 dark:border-gray-600 px-3 py-2 text-sm bg-slate-50 dark:bg-gray-900 text-slate-900 dark:text-gray-200 font-mono break-all ${!isVisible ? 'truncate' : ''}`}>
                             {isVisible ? value : '••••••••••••••••'}
                         </div>
                     )}
 
                     <div className="absolute top-1 right-1 flex items-center">
                         {isSecret && (
-                            <Button variant="ghost" size="sm" onClick={() => toggleVisibility(fieldKey)} className="h-7 w-7 p-0 mr-1">
+                            <Button variant="ghost" size="sm" onClick={() => toggleVisibility(fieldKey)} className="h-7 w-7 p-0 mr-1 text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200">
                                 {isVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                                 <span className="sr-only">{isVisible ? 'Hide' : 'Show'}</span>
                             </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(value, fieldKey)} className="h-7 w-7 p-0">
-                            {copied === fieldKey ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(value, fieldKey)} className="h-7 w-7 p-0 text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200">
+                            {copied === fieldKey ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                             <span className="sr-only">Copy</span>
                         </Button>
                     </div>
@@ -118,7 +118,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
         );
     };
 
-    if (!data) return <div className="text-gray-500 italic">No details available.</div>;
+    if (!data) return <div className="text-slate-500 dark:text-gray-500 italic">No details available.</div>;
 
     const navigateToEdit = () => {
         if (typeof window !== 'undefined') {
@@ -140,19 +140,19 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                 </>
             )}
 
-            {/* API / OAUTH TYPE - MATCHING SAMPLE SCREENSHOT */}
+            {/* API / OAUTH TYPE */}
             {type === 'API_OAUTH' && (
                 <div className="space-y-4">
                     {/* Inner Content Card Header */}
-                    <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-5 shadow-xs">
+                    <div className="bg-slate-50/70 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
                         <div className="flex items-center justify-between gap-3 mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
+                                <div className="p-2.5 bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 rounded-lg">
                                     <Key className="h-5 w-5" />
                                 </div>
-                                <h3 className="text-base font-bold text-white">OAuth 2.0 Client Credentials</h3>
+                                <h3 className="text-base font-bold text-slate-900 dark:text-white">OAuth 2.0 Client Credentials</h3>
                             </div>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950/40 text-emerald-400 border border-emerald-800/60 uppercase tracking-wider">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60 uppercase tracking-wider">
                                 ACTIVE
                             </span>
                         </div>
@@ -170,35 +170,35 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                     </div>
 
                     {/* Accordion 1: Advanced OAuth Configuration */}
-                    <details className="group border border-slate-800 rounded-xl overflow-hidden bg-slate-950/20">
-                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                            <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-200">
-                                <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                    <details className="group border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-100/50 dark:hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                            <div className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-gray-200">
+                                <ChevronRight className="h-4 w-4 text-slate-400 dark:text-gray-400 group-open:rotate-90 transition-transform" />
                                 Advanced OAuth Configuration
                             </div>
                         </summary>
-                        <div className="px-5 pb-5 pt-3 border-t border-slate-800 bg-slate-950/10 space-y-4">
+                        <div className="px-5 pb-5 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/10 space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Grant Type */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Grant Type</label>
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Grant Type</label>
                                     <input
                                         type="text"
                                         value={data.grantType?.toLowerCase() === 'client_credentials' || !data.grantType ? 'Client Credentials' : data.grantType}
                                         readOnly
                                         disabled
-                                        className="block w-full bg-slate-950/20 border border-slate-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-500 font-mono select-none cursor-not-allowed"
+                                        className="block w-full bg-slate-100/80 border border-slate-200 text-slate-600 dark:bg-slate-950/20 dark:border-slate-800/80 dark:text-gray-500 rounded-lg px-3 py-2.5 text-xs font-mono select-none cursor-not-allowed"
                                     />
                                 </div>
 
                                 {/* Grant Transmission */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Grant Transmission</label>
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Grant Transmission</label>
                                     <div className="relative">
-                                        <select disabled className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-400 appearance-none font-mono">
+                                        <select disabled className="block w-full bg-slate-100/80 border border-slate-200 text-slate-600 dark:bg-slate-950/40 dark:border-slate-800 dark:text-gray-400 rounded-lg px-3 py-2.5 text-xs appearance-none font-mono">
                                             <option>{data.grantTypeTransmission?.toLowerCase() === 'url' ? 'URL Query Parameter' : 'Request Body (Recommended)'}</option>
                                         </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 dark:text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />
                                         </div>
                                     </div>
@@ -206,12 +206,12 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
 
                                 {/* Client Authentication */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Client Authentication</label>
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Client Authentication</label>
                                     <div className="relative">
-                                        <select disabled className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-400 appearance-none font-mono">
+                                        <select disabled className="block w-full bg-slate-100/80 border border-slate-200 text-slate-600 dark:bg-slate-950/40 dark:border-slate-800 dark:text-gray-400 rounded-lg px-3 py-2.5 text-xs appearance-none font-mono">
                                             <option>{data.clientAuthentication?.toLowerCase() === 'body' ? 'Request Body Payload' : 'HTTP Basic Auth Header (Recommended)'}</option>
                                         </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 dark:text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />
                                         </div>
                                     </div>
@@ -219,12 +219,12 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
 
                                 {/* HTTP Content-Type */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">HTTP Content-Type</label>
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">HTTP Content-Type</label>
                                     <div className="relative">
-                                        <select disabled className="block w-full bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-gray-400 appearance-none font-mono">
+                                        <select disabled className="block w-full bg-slate-100/80 border border-slate-200 text-slate-600 dark:bg-slate-950/40 dark:border-slate-800 dark:text-gray-400 rounded-lg px-3 py-2.5 text-xs appearance-none font-mono">
                                             <option>{data.contentType?.toLowerCase() === 'application_json' ? 'application/json' : 'application/x-www-form-urlencoded'}</option>
                                         </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 dark:text-gray-500">
                                             <ChevronRight className="h-3 w-3 rotate-90" />
                                         </div>
                                     </div>
@@ -242,20 +242,20 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                     </details>
 
                     {/* Accordion 2: Custom Parameters */}
-                    <details className="group border border-slate-800 rounded-xl overflow-hidden bg-slate-950/20">
-                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                            <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-200">
-                                <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                    <details className="group border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-100/50 dark:hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                            <div className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-gray-200">
+                                <ChevronRight className="h-4 w-4 text-slate-400 dark:text-gray-400 group-open:rotate-90 transition-transform" />
                                 Custom Parameters {Array.isArray(data.customParameters) && `(${data.customParameters.length})`}
                             </div>
                         </summary>
-                        <div className="px-5 pb-5 pt-3 border-t border-slate-800 bg-slate-950/10">
+                        <div className="px-5 pb-5 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/10">
                             {(!Array.isArray(data.customParameters) || data.customParameters.length === 0) ? (
-                                <div className="text-center py-4 text-xs text-gray-500 italic">No custom parameters configured.</div>
+                                <div className="text-center py-4 text-xs text-slate-500 dark:text-gray-500 italic">No custom parameters configured.</div>
                             ) : (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-xs text-left text-gray-300">
-                                        <thead className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 border-b border-slate-800">
+                                    <table className="w-full text-xs text-left text-slate-800 dark:text-gray-300">
+                                        <thead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-500 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
                                                 <th className="py-2.5 px-3">Name</th>
                                                 <th className="py-2.5 px-3">Value</th>
@@ -263,13 +263,13 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                                 <th className="py-2.5 px-3 text-right">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-850">
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
                                             {data.customParameters.map((param: any, idx: number) => {
                                                 const isParamVisible = visibleParams[idx];
                                                 const copyKey = `custom_param_${idx}`;
                                                 return (
-                                                    <tr key={idx} className="hover:bg-slate-900/20 font-mono">
-                                                        <td className="py-3 px-3 text-gray-200 font-semibold">{param.name}</td>
+                                                    <tr key={idx} className="hover:bg-slate-100/50 dark:hover:bg-slate-900/20 font-mono">
+                                                        <td className="py-3 px-3 text-slate-900 dark:text-gray-200 font-semibold">{param.name}</td>
                                                         <td className="py-3 px-3">
                                                             <span className="break-all">
                                                                 {isParamVisible ? param.value : '••••••••••••••••'}
@@ -278,10 +278,10 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                                         <td className="py-3 px-3">
                                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
                                                                 param.location === 'URL' 
-                                                                    ? 'bg-amber-950/30 text-amber-400 border-amber-900/40' 
+                                                                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/40' 
                                                                     : (param.location === 'HEADER' 
-                                                                        ? 'bg-blue-950/30 text-blue-400 border-blue-900/40' 
-                                                                        : 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40')
+                                                                        ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/40' 
+                                                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/40')
                                                             }`}>
                                                                 {param.location === 'URL' ? 'URL Query' : (param.location === 'HEADER' ? 'HTTP Header' : 'Request Body')}
                                                             </span>
@@ -292,7 +292,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => toggleParamVisibility(idx)}
-                                                                    className="p-1 hover:bg-slate-800 rounded text-gray-400 hover:text-gray-200 transition-colors"
+                                                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-200 transition-colors"
                                                                 >
                                                                     {isParamVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                                                                 </button>
@@ -300,15 +300,15 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => copyToClipboard(param.value, copyKey)}
-                                                                    className="p-1 hover:bg-slate-800 rounded text-gray-400 hover:text-gray-200 transition-colors"
+                                                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-200 transition-colors"
                                                                 >
-                                                                    {copied === copyKey ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                                                                    {copied === copyKey ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                                                                 </button>
                                                                 {/* Edit Icon */}
                                                                 <button
                                                                     type="button"
                                                                     onClick={navigateToEdit}
-                                                                    className="p-1 hover:bg-slate-800 rounded text-gray-400 hover:text-gray-200 transition-colors"
+                                                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-200 transition-colors"
                                                                 >
                                                                     <Pencil className="h-3.5 w-3.5" />
                                                                 </button>
@@ -316,7 +316,7 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                                                                 <button
                                                                     type="button"
                                                                     onClick={navigateToEdit}
-                                                                    className="p-1 hover:bg-slate-800 rounded text-gray-400 hover:text-red-400 transition-colors"
+                                                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                                                                 >
                                                                     <Trash2 className="h-3.5 w-3.5" />
                                                                 </button>
@@ -331,11 +331,11 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                             )}
 
                             {/* Add parameter link */}
-                            <div className="mt-4 pt-3 border-t border-slate-800/80">
+                            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/80">
                                 <button
                                     type="button"
                                     onClick={navigateToEdit}
-                                    className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
                                 >
                                     + Add Parameter
                                 </button>
@@ -345,14 +345,14 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
 
                     {/* Accordion 3: Legacy Configuration (Optional fallback fields) */}
                     {(data.apiKey || data.authEndpoint) && (
-                        <details className="group border border-slate-800 rounded-xl overflow-hidden bg-slate-950/20">
-                            <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                                <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-200">
-                                    <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                        <details className="group border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
+                            <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-100/50 dark:hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                <div className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-gray-200">
+                                    <ChevronRight className="h-4 w-4 text-slate-400 dark:text-gray-400 group-open:rotate-90 transition-transform" />
                                     Legacy Configuration
                                 </div>
                             </summary>
-                            <div className="px-5 pb-5 pt-3 border-t border-slate-800 bg-slate-950/10 space-y-4">
+                            <div className="px-5 pb-5 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/10 space-y-4">
                                 {data.authEndpoint && (
                                     <StyledField label="Authorization Endpoint (Legacy)" value={data.authEndpoint} fieldKey="authEndpoint" />
                                 )}
@@ -364,16 +364,16 @@ export default function CredentialSecrets({ type, data }: { type: string, data: 
                     )}
 
                     {/* Accordion 4: Audit Information */}
-                    <details className="group border border-slate-800 rounded-xl overflow-hidden bg-slate-950/20">
-                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                            <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-200">
-                                <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                    <details className="group border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-slate-100/50 dark:hover:bg-slate-900/25 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                            <div className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-gray-200">
+                                <ChevronRight className="h-4 w-4 text-slate-400 dark:text-gray-400 group-open:rotate-90 transition-transform" />
                                 Audit Information
                             </div>
                         </summary>
-                        <div className="px-5 pb-5 pt-3 border-t border-slate-800 bg-slate-950/10 text-xs text-gray-400 space-y-2 font-mono">
-                            <div><span className="text-gray-500">Flow Version:</span> <span className="text-gray-300">2.0</span></div>
-                            <div><span className="text-gray-500">Security Cipher:</span> <span className="text-emerald-400">AES-256-GCM (Authenticated)</span></div>
+                        <div className="px-5 pb-5 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/10 text-xs text-slate-600 dark:text-gray-400 space-y-2 font-mono">
+                            <div><span className="text-slate-400 dark:text-gray-500">Flow Version:</span> <span className="text-slate-800 dark:text-gray-300">2.0</span></div>
+                            <div><span className="text-slate-400 dark:text-gray-500">Security Cipher:</span> <span className="text-emerald-600 dark:text-emerald-400 font-semibold">AES-256-GCM (Authenticated)</span></div>
                         </div>
                     </details>
                 </div>

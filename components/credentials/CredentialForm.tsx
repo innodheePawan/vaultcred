@@ -174,104 +174,146 @@ export default function CredentialForm({
                 </>
             )}
 
+            {/* Hidden input to pass isPersonal state cleanly */}
+            <input type="hidden" name="isPersonal" value={isPersonal ? "true" : "false"} />
+
             {/* -------------------- MASTER FIELDS -------------------- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
+                {/* Credential Name */}
+                <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Credential Name <span className="text-red-500">*</span>
+                        <span className="flex items-center gap-2">
+                            Credential Name <span className="text-red-500">*</span>
+                            {isEdit && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
+                                    <Lock className="w-3 h-3" /> Immutable
+                                </span>
+                            )}
+                        </span>
                     </label>
-                    <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        required
-                        defaultValue={initialData?.name}
-                        readOnly={isEdit}
-                        className={`mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 ${
-                            isEdit
-                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                : 'dark:bg-gray-700 dark:text-white'
-                        }`}
-                        placeholder="e.g. Production AWS Root"
-                    />
+                    <div className="relative mt-1">
+                        <input
+                            type="text"
+                            name="name"
+                            id="name"
+                            required
+                            defaultValue={initialData?.name}
+                            readOnly={isEdit}
+                            className={`block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm px-3 py-2.5 ${
+                                isEdit
+                                    ? 'bg-gray-100 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 cursor-not-allowed pr-10 border-dashed'
+                                    : 'dark:bg-gray-700 dark:text-white'
+                            }`}
+                            placeholder="e.g. Production AWS Root"
+                        />
+                        {isEdit && (
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-amber-500 dark:text-amber-400">
+                                <Lock className="h-4 w-4" />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
+                {/* Type */}
                 <div>
                     <label htmlFor="type" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Type <span className="text-red-500">*</span>
+                        <span className="flex items-center gap-2">
+                            Type <span className="text-red-500">*</span>
+                            {isEdit && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
+                                    <Lock className="w-3 h-3" /> Immutable
+                                </span>
+                            )}
+                        </span>
                     </label>
-                    <select
-                        id="type"
-                        name="type"
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                        disabled={isEdit}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white"
-                    >
-
-                        <option value="PASSWORD">Password / Database</option>
-                        <option value="API_OAUTH">API / OAuth</option>
-                        <option value="KEY_CERT">Key / Certificate</option>
-                        <option value="TOKEN">Token</option>
-                        <option value="SECURE_NOTE">Secure Note</option>
-                        <option value="FILE">File</option>
-                    </select>
+                    <div className="relative mt-1">
+                        <select
+                            id="type"
+                            name="type"
+                            value={type}
+                            onChange={(e) => setType(e.target.value)}
+                            disabled={isEdit}
+                            className={`block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm px-3 py-2.5 ${
+                                isEdit
+                                    ? 'bg-gray-100 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 cursor-not-allowed appearance-none pr-10 border-dashed'
+                                    : 'dark:bg-gray-700 dark:text-white'
+                            }`}
+                        >
+                            <option value="PASSWORD">Password / Database</option>
+                            <option value="API_OAUTH">API / OAuth</option>
+                            <option value="KEY_CERT">Key / Certificate</option>
+                            <option value="TOKEN">Token</option>
+                            <option value="SECURE_NOTE">Secure Note</option>
+                            <option value="FILE">File</option>
+                        </select>
+                        {isEdit && (
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-amber-500 dark:text-amber-400">
+                                <Lock className="h-4 w-4" />
+                            </div>
+                        )}
+                    </div>
+                    {isEdit && <input type="hidden" name="type" value={type} />}
                 </div>
 
+                {/* Category */}
                 <div>
                     <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Category
+                        Category {!isPersonal && <span className="text-red-500">*</span>}
                     </label>
                     <select
                         id="category"
                         name="category"
-                        defaultValue={initialData?.category || filteredCategories[0]}
-                        // Don't disable if it's the only option, just let it be. Or if disabled, we MUST pass hidden.
-                        // Better UX: If 1 option, just show it. If we disable, we lose the value in FormData.
-                        // Strategy: Keep enabled but if only 1, user can't change it anyway.
-                        // Actually, if we want to enforce it visually as locked, we can disable but add hidden.
-                        disabled={isPersonal || filteredCategories.length <= 1}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-80"
+                        defaultValue={initialData?.category || filteredCategories[0] || ''}
+                        disabled={isPersonal || filteredCategories.length === 0}
+                        required={!isPersonal}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm px-3 py-2.5 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-80"
                     >
-                        {filteredCategories.map(c => (
-                            <option key={c} value={c}>{c}</option>
-                        ))}
+                        {isPersonal ? (
+                            <option value="">N/A (Personal Credential)</option>
+                        ) : (
+                            filteredCategories.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))
+                        )}
                     </select>
-                    {/* HIDDEN INPUT IF DISABLED (Only 1 option and NOT Personal) */}
-                    {!isPersonal && filteredCategories.length <= 1 && filteredCategories[0] && (
+                    {!isPersonal && filteredCategories.length === 1 && filteredCategories[0] && (
                         <input type="hidden" name="category" value={filteredCategories[0]} />
                     )}
-
                     {filteredCategories.length === 0 && !isPersonal && (
                         <p className="text-xs text-red-500 mt-1">No allowed categories.</p>
                     )}
                 </div>
 
+                {/* Environment */}
                 <div>
                     <label htmlFor="environment" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Environment
+                        Environment {!isPersonal && <span className="text-red-500">*</span>}
                     </label>
                     <select
                         id="environment"
                         name="environment"
-                        defaultValue={initialData?.environment || filteredEnvironments[0]}
-                        disabled={isPersonal || filteredEnvironments.length <= 1}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-80"
+                        defaultValue={initialData?.environment || filteredEnvironments[0] || ''}
+                        disabled={isPersonal || filteredEnvironments.length === 0}
+                        required={!isPersonal}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm px-3 py-2.5 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-80"
                     >
-                        {filteredEnvironments.map(e => (
-                            <option key={e} value={e}>{e === 'QA' ? 'QA / Staging' : (e === 'Dev' ? 'Development' : 'Production')}</option>
-                        ))}
+                        {isPersonal ? (
+                            <option value="">N/A (Personal Credential)</option>
+                        ) : (
+                            filteredEnvironments.map(e => (
+                                <option key={e} value={e}>{e === 'QA' ? 'QA / Staging' : (e === 'Dev' ? 'Development' : 'Production')}</option>
+                            ))
+                        )}
                     </select>
-                    {/* HIDDEN INPUT IF DISABLED */}
-                    {!isPersonal && filteredEnvironments.length <= 1 && filteredEnvironments[0] && (
+                    {!isPersonal && filteredEnvironments.length === 1 && filteredEnvironments[0] && (
                         <input type="hidden" name="environment" value={filteredEnvironments[0]} />
                     )}
-
                     {filteredEnvironments.length === 0 && !isPersonal && (
                         <p className="text-xs text-red-500 mt-1">No allowed environments.</p>
                     )}
                 </div>
 
+                {/* Expiry Date */}
                 <div>
                     <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Expiry Date
@@ -281,12 +323,13 @@ export default function CredentialForm({
                         name="expiryDate"
                         id="expiryDate"
                         defaultValue={initialData?.expiryDate ? new Date(initialData.expiryDate).toISOString().split('T')[0] : ''}
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 dark:bg-gray-700 dark:text-white"
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm px-3 py-2.5 dark:bg-gray-700 dark:text-white"
                     />
                 </div>
 
+                {/* Personal Credential Toggle Banner */}
                 {!isExternal && (
-                    <div className="md:col-span-2 flex items-center space-x-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
+                    <div className="md:col-span-2 flex items-center space-x-3 bg-blue-50 dark:bg-blue-900/20 p-3.5 rounded-lg border border-blue-100 dark:border-blue-800/60 mt-2">
                         <div className="flex items-center h-5">
                             <input
                                 id="isPersonal"
@@ -295,18 +338,18 @@ export default function CredentialForm({
                                 value="true"
                                 checked={isPersonal}
                                 onChange={(e) => setIsPersonal(e.target.checked)}
-                                className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                                className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer"
                             />
                         </div>
                         <div className="ml-3">
-                            <label htmlFor="isPersonal" className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            <label htmlFor="isPersonal" className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2 cursor-pointer text-sm">
                                 Personal Credential
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
                                     Private
                                 </span>
                             </label>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                If checked, this credential will be <strong>hidden from everyone else</strong>, including Admins. Only you can access it.
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                If checked, this credential will be <strong>hidden from everyone else</strong>, including Admins. Category and Environment will be disabled.
                             </p>
                         </div>
                     </div>
@@ -474,7 +517,12 @@ export default function CredentialForm({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Grant Type */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Grant Type</label>
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                                        <span>Grant Type</span>
+                                        <span className="text-[11px] font-normal text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                            <Lock className="w-3 h-3" /> Immutable
+                                        </span>
+                                    </label>
                                     <input
                                         type="text"
                                         value="Client Credentials"
@@ -482,6 +530,7 @@ export default function CredentialForm({
                                         disabled
                                         className="block w-full bg-slate-100 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-400 dark:text-gray-500 font-mono select-none cursor-not-allowed"
                                     />
+                                    <input type="hidden" name="grantType" value="client_credentials" />
                                 </div>
 
                                 {/* Grant Transmission */}
