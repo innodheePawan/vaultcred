@@ -24,7 +24,7 @@ const BaseSchema = z.object({
     description: z.string().optional(),
     folder: z.string().optional(),
     tags: z.string().optional(),
-    isPersonal: z.coerce.boolean().optional(),
+    isPersonal: z.preprocess((val) => val === true || val === 'true' || val === 'on', z.boolean()).optional(),
     expiryDate: z.string().optional(), // ISO format date string
 });
 

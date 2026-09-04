@@ -333,7 +333,6 @@ export default function CredentialForm({
                         <div className="flex items-center h-5">
                             <input
                                 id="isPersonal"
-                                name="isPersonal"
                                 type="checkbox"
                                 value="true"
                                 checked={isPersonal}
