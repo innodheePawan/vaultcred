@@ -28,7 +28,7 @@ export function PlatformHeroVisual() {
                             { name: "Passwords", icon: KeyRound, color: "text-blue-500" },
                             { name: "API Keys", icon: Server, color: "text-indigo-500" },
                             { name: "Certificates", icon: FileKey, color: "text-violet-500" },
-                            { name: "OAuth Scopes", icon: Shield, color: "text-purple-500" },
+                            { name: "OAuth 2.0", icon: Shield, color: "text-purple-500" },
                             { name: "Secure Files", icon: FileLock, color: "text-amber-500" },
                             { name: "Security Keys", icon: FileText, color: "text-emerald-500" },
                         ].map((item, idx) => (
@@ -71,7 +71,7 @@ export function PlatformHeroVisual() {
                 {/* Bottom Architectural Caption */}
                 <div className="p-2.5 rounded-lg border border-slate-200/80 dark:border-white/[0.04] bg-slate-50/50 dark:bg-white/[0.01] text-center">
                     <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
-                        One Central Vault • Soft Ingest • Governed Enforcement
+                        Centralized Governance • Controlled Access • Complete Traceability
                     </span>
                 </div>
             </div>

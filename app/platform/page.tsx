@@ -55,14 +55,14 @@ export default async function PlatformPage() {
                                 See how CredSecure brings credential security, access control, lifecycle management and audit together in one governed platform.
                             </p>
                             <div className="flex flex-wrap items-center gap-3 pt-2">
-                                <Link href="/request-demo">
+                                <Link href="#credential-governance">
                                     <Button className="h-11 px-6 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs sm:text-sm font-semibold rounded-lg shadow-sm cursor-pointer flex items-center gap-2">
-                                        Request Demo <ArrowRight className="w-4 h-4" />
+                                        Explore Capabilities <ArrowRight className="w-4 h-4" />
                                     </Button>
                                 </Link>
-                                <Link href="#credential-governance">
+                                <Link href="/request-demo">
                                     <Button variant="outline" className="h-11 px-6 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer">
-                                        Explore Domains
+                                        Request Demo
                                     </Button>
                                 </Link>
                             </div>
