@@ -9,6 +9,7 @@ import { FloatingCredentialWidget } from "@/components/shared/FloatingCredential
 import { BeforeAfterHeroVisual } from "@/components/marketing/BeforeAfterHeroVisual";
 import {
     ArrowRight,
+    ArrowDown,
     CheckCircle2,
     Timer,
     UserX,
@@ -64,11 +65,11 @@ export default async function LandingPage() {
                             </p>
 
                             <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-200 leading-relaxed max-w-xl">
-                                CredSecure brings them into one secure, controlled place — so you know what credentials exist, who can access them, when they expire, where they&apos;re used, and what changed.
+                                CredSecure brings them into one secure, controlled place — giving you visibility into what exists, who can access it, when it expires, where it&apos;s used, and what changed.
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3 pt-2">
-                                <Link href="/use-cases" className="w-full sm:w-auto">
+                                <Link href="#how-it-works" className="w-full sm:w-auto">
                                     <Button className="w-full h-11 px-6 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs sm:text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md">
                                         See How It Works
                                         <ArrowRight className="w-4 h-4" />
@@ -82,40 +83,49 @@ export default async function LandingPage() {
                             </div>
                         </div>
 
-                        {/* Right Side: Receding Architectural Visualization (5 Cols) */}
-                        <div className="hidden lg:block lg:col-span-5 opacity-90 hover:opacity-100 transition-opacity duration-200">
-                            <div className="relative border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white dark:bg-[#0b0f19] p-6 shadow-xl">
-                                <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-5 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/60" />
-                                    <span>Credential Governance Lifecycle</span>
+                        {/* Right Side: Simple & Scannable Credential Vault Visual (5 Cols) */}
+                        <div className="hidden lg:block lg:col-span-5 opacity-95 hover:opacity-100 transition-opacity duration-200">
+                            <div className="relative border border-slate-200 dark:border-white/[0.08] rounded-2xl bg-white dark:bg-[#0b0f19] p-6 shadow-2xl space-y-6">
+                                {/* CREDSECURE Badge Header */}
+                                <div className="flex flex-col items-center justify-center pt-1">
+                                    <div className="px-5 py-2.5 rounded-xl border border-indigo-500/30 dark:border-indigo-400/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 text-xs sm:text-sm font-extrabold tracking-widest font-mono flex items-center gap-2 shadow-xs">
+                                        <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                        CREDSECURE
+                                    </div>
                                 </div>
-                                <div className="space-y-0 font-sans">
+
+                                {/* Scannable 2-Column Grid */}
+                                <div className="grid grid-cols-2 gap-2.5">
                                     {[
-                                        { step: "01", label: "Request", desc: "Access request initiated", active: false },
-                                        { step: "02", label: "Validate", desc: "RBAC policy evaluated", active: false },
-                                        { step: "03", label: "Deliver", desc: "Scoped credential issued", active: false },
-                                        { step: "04", label: "Monitor", desc: "Real-time usage tracked", active: true },
-                                        { step: "05", label: "Revoke", desc: "Time-bound expiry enforced", active: false },
-                                        { step: "06", label: "Audit", desc: "Immutable trail recorded", active: false },
+                                        { label: "Passwords", icon: "🔐", sub: "User Credentials" },
+                                        { label: "API Keys", icon: "🔑", sub: "Service Tokens" },
+                                        { label: "Certificates", icon: "📄", sub: "mTLS & SSL" },
+                                        { label: "OAuth", icon: "🔗", sub: "Client Credentials" },
+                                        { label: "Secure Files", icon: "🗂", sub: "Keys & Notes" },
+                                        { label: "Security Keys", icon: "🔑", sub: "SSH & Envs" },
                                     ].map((item, idx) => (
-                                        <div key={idx} className="flex items-start gap-4 group">
-                                            <div className="flex flex-col items-center">
-                                                <div className={`w-7 h-7 rounded-full border transition-colors flex items-center justify-center text-[9px] font-mono font-bold ${item.active
-                                                    ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]"
-                                                    : "border-slate-200 dark:border-white/[0.04] bg-slate-50 dark:bg-white/[0.01] text-slate-500"
-                                                    }`}>
-                                                    {item.step}
-                                                </div>
-                                                {idx < 5 && <div className="w-px h-5 bg-slate-200 dark:bg-white/[0.04]" />}
-                                            </div>
-                                            <div className="pb-4 pt-0.5">
-                                                <div className={`text-xs font-semibold tracking-wide ${item.active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>
-                                                    {item.label}
-                                                </div>
-                                                <div className="text-[10px] text-slate-500 dark:text-slate-600 font-mono mt-0.5">{item.desc}</div>
+                                        <div key={idx} className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] flex items-center gap-2.5">
+                                            <span className="text-base select-none">{item.icon}</span>
+                                            <div>
+                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.label}</div>
+                                                <div className="text-[9px] text-slate-500 font-mono">{item.sub}</div>
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+
+                                {/* Down Arrow Indicator */}
+                                <div className="flex justify-center -my-2">
+                                    <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                        <ArrowDown className="w-3.5 h-3.5 animate-pulse" />
+                                    </div>
+                                </div>
+
+                                {/* Bottom Strip */}
+                                <div className="p-3 rounded-xl border border-indigo-500/20 dark:border-indigo-400/20 bg-indigo-500/5 dark:bg-indigo-500/10 text-center">
+                                    <span className="text-xs font-extrabold font-mono tracking-widest text-indigo-700 dark:text-indigo-300 uppercase">
+                                        SECURE • CONTROL • TRACK
+                                    </span>
                                 </div>
                             </div>
                         </div>

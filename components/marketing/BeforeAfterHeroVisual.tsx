@@ -3,13 +3,13 @@ import { FileSpreadsheet, MessageSquare, Share2, Mail, HelpCircle, ShieldCheck, 
 
 export function BeforeAfterHeroVisual() {
     return (
-        <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200 dark:border-white/[0.06]">
+        <section id="how-it-works" className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200 dark:border-white/[0.06] scroll-mt-20">
             <div className="text-center max-w-3xl mx-auto mb-10">
                 <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">
                     Visual Explanation
                 </div>
                 <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                    Before <span className="text-slate-400 font-normal mx-2">→</span> <span className="text-indigo-600 dark:text-indigo-400">With CredSecure</span>
+                    Before CredSecure <span className="text-slate-400 font-normal mx-2">→</span> <span className="text-indigo-600 dark:text-indigo-400">With CredSecure</span>
                 </h3>
             </div>
 
