@@ -6,6 +6,7 @@ import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { ExpandableFeatureCard } from "@/components/marketing/ExpandableFeatureCard";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
+import { BeforeAfterHeroVisual } from "@/components/marketing/BeforeAfterHeroVisual";
 import {
     ArrowRight,
     CheckCircle2,
@@ -45,27 +46,37 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 1 — HERO
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="pt-16 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                <section className="pt-16 pb-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                         {/* Left Side: Dominant Copy (7 Cols) */}
                         <div className="space-y-6 lg:col-span-7">
-                            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.12] text-slate-900 dark:text-white text-balance">
-                                Govern Enterprise Credentials with{" "}
-                                <span className="text-indigo-600 dark:text-indigo-400">Visibility, Traceability, and Control.</span>
-                            </h1>
+                            <div>
+                                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15] text-slate-900 dark:text-white mb-2">
+                                    Your Business Credentials Are Everywhere.
+                                </h1>
+                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
+                                    Bring Them Under Control.
+                                </h2>
+                            </div>
+
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
-                                Secure, govern, and trace system accounts, API client scopes, database keys, and operational credentials across your enterprise landscapes.
+                                Passwords, API keys, certificates and application credentials often end up scattered across spreadsheets, shared files, emails, developer systems and different applications.
                             </p>
+
+                            <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-200 leading-relaxed max-w-xl">
+                                CredSecure brings them into one secure, controlled place — so you know what credentials exist, who can access them, when they expire, where they&apos;re used, and what changed.
+                            </p>
+
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3 pt-2">
-                                <Link href="/request-demo" className="w-full sm:w-auto">
-                                    <Button className="w-full h-10 px-5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
-                                        Request Demo
-                                        <ArrowRight className="w-3.5 h-3.5" />
+                                <Link href="/use-cases" className="w-full sm:w-auto">
+                                    <Button className="w-full h-11 px-6 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs sm:text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md">
+                                        See How It Works
+                                        <ArrowRight className="w-4 h-4" />
                                     </Button>
                                 </Link>
-                                <Link href="/platform" className="w-full sm:w-auto">
-                                    <Button variant="outline" className="w-full h-10 px-5 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                                        Explore Platform
+                                <Link href="/request-demo" className="w-full sm:w-auto">
+                                    <Button variant="outline" className="w-full h-11 px-6 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
+                                        Request Demo
                                     </Button>
                                 </Link>
                             </div>
@@ -106,29 +117,37 @@ export default async function LandingPage() {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
                         </div>
                     </div>
                 </section>
 
                 {/* ═══════════════════════════════════════════════════════════
-                    SECTION 2 — TRUST BAR
+                    SECTION 1.5 — VISUAL EXPLANATION (TODAY vs WITH CREDSECURE)
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="border-y border-slate-200 dark:border-white/[0.05] bg-slate-100/80 dark:bg-[#060a13]">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-                            {[
-                                "AES-256-GCM Encryption",
-                                "Runtime-Only Decryption",
-                                "Immutable Audit Logging",
-                                "Zero Trust Access Validation",
-                                "SAP Landscape Ready",
-                            ].map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5">
-                                    <span className="w-1 h-1 rounded-full bg-indigo-500/50" />
-                                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">{item}</span>
-                                </div>
-                            ))}
+                <BeforeAfterHeroVisual />
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 2 — ONE PLATFORM. COMPLETE CREDENTIAL CONTROL.
+                ═══════════════════════════════════════════════════════════ */}
+                <section className="border-y border-slate-200 dark:border-white/[0.05] bg-slate-100/80 dark:bg-[#060a13] py-6">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
+                        <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
+                            One Platform. Complete Credential Control.
+                        </h2>
+                        <div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 font-sans">
+                            <span>Secure Storage</span>
+                            <span className="text-slate-300 dark:text-slate-700">·</span>
+                            <span>Controlled Access</span>
+                            <span className="text-slate-300 dark:text-slate-700">·</span>
+                            <span>Expiry Alerts</span>
+                            <span className="text-slate-300 dark:text-slate-700">·</span>
+                            <span>Ownership</span>
+                            <span className="text-slate-300 dark:text-slate-700">·</span>
+                            <span>Audit History</span>
+                            <span className="text-slate-300 dark:text-slate-700">·</span>
+                            <span>Application Access</span>
+                            <span className="text-slate-300 dark:text-slate-700">·</span>
+                            <span>Credential Provisioning</span>
                         </div>
                     </div>
                 </section>
