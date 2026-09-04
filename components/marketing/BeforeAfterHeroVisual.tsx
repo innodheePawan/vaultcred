@@ -96,9 +96,9 @@ export function BeforeAfterHeroVisual() {
 
                         {/* Central Hub */}
                         <div className="flex flex-col items-center justify-center mb-6">
-                            <div className="w-full py-3 px-6 rounded-xl border border-indigo-500/30 dark:border-indigo-400/30 bg-gradient-to-r from-indigo-900 to-slate-900 text-white text-center shadow-md flex items-center justify-center gap-2.5">
-                                <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                                <span className="text-sm font-extrabold tracking-wider font-mono">CREDSECURE</span>
+                            <div className="w-full py-3 px-6 rounded-xl border border-indigo-500/30 dark:border-indigo-400/30 bg-slate-900 dark:bg-slate-950 text-white text-center shadow-md flex items-center justify-center gap-3">
+                                <img src="/shield-logo.png" alt="CredSecure Shield Logo" className="h-7 w-7 object-contain" />
+                                <span className="text-base font-extrabold tracking-tight font-sans">CredSecure</span>
                             </div>
                         </div>
 
