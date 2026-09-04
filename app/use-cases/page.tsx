@@ -6,6 +6,7 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { UseCaseNavigator } from "@/components/marketing/UseCaseNavigator";
 import { BeforeAfterEnvVisual } from "@/components/marketing/BeforeAfterEnvVisual";
+import { BeforeAfterBtpVisual } from "@/components/marketing/BeforeAfterBtpVisual";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
@@ -17,12 +18,13 @@ import {
     FileSearch,
     AlertTriangle,
     FileCode,
+    Layers,
     Info,
 } from "lucide-react";
 
 export const metadata = {
     title: "Use Cases | CredSecure — Operational Workflows We Secure",
-    description: "Discover how CredSecure governs SAP integration credentials, production support access, vendor access control, application credential provisioning, service accounts, API security, compliance investigations, and incident response.",
+    description: "Discover how CredSecure governs SAP integration credentials, production support access, vendor access control, application credential provisioning, BTP security material provisioning, service accounts, API security, and compliance investigations.",
 };
 
 export default async function UseCasesPage() {
@@ -125,7 +127,36 @@ export default async function UseCasesPage() {
             outcomeSub: "Applications consume only the credential configuration they are authorized to access, while credential governance and audit remain centralized in CredSecure.",
             color: "border-l-emerald-500/40",
             dotColor: "bg-emerald-500/60",
-            showVisual: true,
+            visualType: "env",
+        },
+        {
+            id: "btp-security-material-provisioning",
+            icon: Layers,
+            title: "BTP Security Material Provisioning",
+            subtitle: "From third-party credential onboarding to BTP Integration Suite — without internal credential handling.",
+            problem: "Enterprise integrations frequently depend on credentials, OAuth configurations, secure notes, keys and other supported security material provided by third parties. Traditionally, internal teams must receive these credentials and manually recreate the required security material in BTP Integration Suite. This introduces unnecessary credential handling, additional exposure and operational dependency between vendors and internal teams.",
+            pain: [
+                "Third-Party Credential Sharing: Vendors may need to communicate sensitive credentials to internal teams through an agreed exchange mechanism",
+                "Unnecessary Credential Visibility: Internal integration or administration teams may gain visibility into credential values they only need to configure, rather than know",
+                "Manual BTP Provisioning: Internal teams must manually create or update corresponding security material in BTP Integration Suite",
+                "Operational Dependency: Credential onboarding requires coordination between the vendor, administrators and integration teams before the integration can consume the required security material",
+            ],
+            solution: "An administrator configures the BTP Integration Suite synchronization target and grants the third party controlled access to the required credential category/scope in CredSecure. The vendor creates the credential directly within its authorized boundary. CredSecure then provisions the applicable security material to the configured BTP Integration Suite target — without requiring internal teams to manually receive or recreate the credential. Credential creation, access and provisioning remain governed and auditable through CredSecure.",
+            workflow: [
+                { step: "Configure Target", desc: "Administrator configures the BTP Integration Suite synchronization target in CredSecure." },
+                { step: "Grant Vendor Access", desc: "Administrator grants the vendor controlled access to the required credential category/scope." },
+                { step: "Create Credential", desc: "Vendor creates the required credential directly within CredSecure." },
+                { step: "Govern", desc: "CredSecure applies access control, ownership, scope and audit policies." },
+                { step: "Provision", desc: "CredSecure provisions the applicable security material to the configured BTP Integration Suite target." },
+                { step: "Consume", desc: "The integration consumes the provisioned security material from BTP Integration Suite." },
+            ],
+            extensibilityTitle: "Built for BTP Integration Suite today. Designed to evolve.",
+            extensibilityNote: "BTP Integration Suite is the currently implemented provisioning target. Additional target-system integrations can be explored through co-innovation based on customer architecture, security and business requirements.",
+            outcomeHeadline: "Vendors provide the credential. CredSecure governs and delivers it.",
+            outcomeSub: "Third-party credentials can move from controlled vendor onboarding to BTP Integration Suite security material while reducing internal credential handling and maintaining centralized governance and audit traceability.",
+            color: "border-l-amber-500/40",
+            dotColor: "bg-amber-500/60",
+            visualType: "btp",
         },
     ];
 
@@ -208,7 +239,7 @@ export default async function UseCasesPage() {
                                     </div>
 
                                     {uc.subtitle && (
-                                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-4 ml-8">
+                                        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-4 ml-8">
                                             {uc.subtitle}
                                         </p>
                                     )}
@@ -238,10 +269,9 @@ export default async function UseCasesPage() {
                                         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{uc.solution}</p>
                                     </div>
 
-                                    {/* Embedded Before vs With CredSecure Visual Diagram */}
-                                    {uc.showVisual && (
-                                        <BeforeAfterEnvVisual />
-                                    )}
+                                    {/* Embedded Visual Diagram */}
+                                    {uc.visualType === "env" && <BeforeAfterEnvVisual />}
+                                    {uc.visualType === "btp" && <BeforeAfterBtpVisual />}
                                 </div>
 
                                 {/* Workflow */}
@@ -268,6 +298,21 @@ export default async function UseCasesPage() {
                                             <p className="leading-relaxed">
                                                 <span className="font-semibold text-slate-700 dark:text-slate-300">Credential Updates: </span>
                                                 {uc.updateNote}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Extensibility / Co-Innovation Note */}
+                                {uc.extensibilityNote && (
+                                    <div className="px-6 sm:px-8 py-3 border-t border-slate-200 dark:border-white/[0.04] bg-slate-50/80 dark:bg-white/[0.01]">
+                                        <div className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-400">
+                                            <Info className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                                            <p className="leading-relaxed">
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                                    {uc.extensibilityTitle || "Extensibility Note"}{" "}
+                                                </span>
+                                                {uc.extensibilityNote}
                                             </p>
                                         </div>
                                     </div>
