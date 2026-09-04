@@ -1,5 +1,5 @@
 import React from "react";
-import { FileSpreadsheet, MessageSquare, Share2, Mail, HelpCircle, ShieldCheck, Database, Lock, History, FileSearch, ArrowDown } from "lucide-react";
+import { FileSpreadsheet, MessageSquare, Share2, Mail, HelpCircle, ShieldCheck, Database, Lock, History, ArrowDown, CheckCircle2 } from "lucide-react";
 
 export function BeforeAfterHeroVisual() {
     return (
@@ -49,27 +49,30 @@ export function BeforeAfterHeroVisual() {
                             <div className="text-slate-400 dark:text-slate-600 text-xs font-mono tracking-widest hidden sm:block">
                                 {"\\   |   |   /"}
                             </div>
-                            <div className="w-px h-4 bg-rose-300 dark:bg-rose-800 my-1" />
-                            <div className="px-4 py-2 rounded-full border border-rose-300 dark:border-rose-700 bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 text-xs font-bold font-mono shadow-xs">
-                                Credentials Everywhere
+                            <div className="w-px h-3 bg-rose-300 dark:bg-rose-800 my-1" />
+                            <div className="px-4 py-1.5 rounded-full border border-rose-300 dark:border-rose-700 bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 text-xs font-bold font-mono shadow-xs">
+                                Scattered Credentials
                             </div>
                             <ArrowDown className="w-4 h-4 text-rose-500 my-2 animate-bounce" />
                         </div>
 
-                        {/* Unanswered Questions Box */}
-                        <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-white/70 dark:bg-slate-950/70 space-y-2">
+                        {/* Operational Blind Spots Box */}
+                        <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-white/70 dark:bg-slate-950/70 space-y-2.5">
                             <div className="text-[10px] font-mono uppercase tracking-wider text-rose-600 dark:text-rose-400 font-bold mb-2">
                                 Operational Blind Spots
                             </div>
                             {[
-                                "Who has access?",
-                                "Which is current?",
-                                "When does it expire?",
-                                "Who changed it?",
+                                { question: "Who has access?", detail: "Unmanaged sharing" },
+                                { question: "Which is current?", detail: "Stale static copies" },
+                                { question: "When does it expire?", detail: "Surprise outages" },
+                                { question: "Who changed it?", detail: "Zero audit trail" },
                             ].map((q, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                                    <HelpCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                                    <span>{q}</span>
+                                <div key={idx} className="flex items-center justify-between p-2 rounded bg-rose-50/60 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/30 text-xs font-medium text-slate-800 dark:text-slate-200">
+                                    <div className="flex items-center gap-2">
+                                        <HelpCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                        <span>{q.question}</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-rose-600/80 dark:text-rose-400/80">{q.detail}</span>
                                 </div>
                             ))}
                         </div>
@@ -93,21 +96,20 @@ export function BeforeAfterHeroVisual() {
 
                         {/* Central Hub */}
                         <div className="flex flex-col items-center justify-center mb-6">
-                            <div className="w-full py-3.5 px-6 rounded-xl border border-indigo-500/30 dark:border-indigo-400/30 bg-gradient-to-r from-indigo-900 to-slate-900 text-white text-center shadow-md flex items-center justify-center gap-2.5">
+                            <div className="w-full py-3 px-6 rounded-xl border border-indigo-500/30 dark:border-indigo-400/30 bg-gradient-to-r from-indigo-900 to-slate-900 text-white text-center shadow-md flex items-center justify-center gap-2.5">
                                 <ShieldCheck className="w-5 h-5 text-indigo-400" />
                                 <span className="text-sm font-extrabold tracking-wider font-mono">CREDSECURE</span>
                             </div>
-                            <div className="w-px h-5 bg-emerald-400 dark:bg-emerald-600 my-1" />
                         </div>
 
                         {/* 3 Pillars Branch */}
                         <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center mb-5">
                             {[
-                                { title: "Store", desc: "Credentials", icon: Database, color: "text-indigo-600 dark:text-indigo-400" },
+                                { title: "Secure", desc: "Credentials", icon: Database, color: "text-indigo-600 dark:text-indigo-400" },
                                 { title: "Control", desc: "Access", icon: Lock, color: "text-emerald-600 dark:text-emerald-400" },
                                 { title: "Track", desc: "Lifecycle", icon: History, color: "text-amber-600 dark:text-amber-400" },
                             ].map((pillar, idx) => (
-                                <div key={idx} className="p-3 rounded-lg border border-emerald-200/60 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-950/60 flex flex-col items-center justify-center shadow-xs">
+                                <div key={idx} className="p-2.5 rounded-lg border border-emerald-200/60 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-950/60 flex flex-col items-center justify-center shadow-xs">
                                     <pillar.icon className={`w-4 h-4 ${pillar.color} mb-1`} strokeWidth={2} />
                                     <span className="text-xs font-bold text-slate-900 dark:text-white">{pillar.title}</span>
                                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">{pillar.desc}</span>
@@ -115,15 +117,25 @@ export function BeforeAfterHeroVisual() {
                             ))}
                         </div>
 
-                        {/* Bottom Output: Audit */}
-                        <div className="flex flex-col items-center">
-                            <div className="w-px h-4 bg-emerald-400 dark:bg-emerald-600 my-0.5" />
-                            <div className="w-full p-3 rounded-lg border border-emerald-300 dark:border-emerald-700/60 bg-emerald-100/70 dark:bg-emerald-900/40 text-center flex items-center justify-center gap-2">
-                                <FileSearch className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100 font-mono">
-                                    Audit
-                                </span>
+                        {/* 1:1 Governed Direct Answers Box */}
+                        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-white/70 dark:bg-slate-950/70 space-y-2.5">
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold mb-2">
+                                Governed Control Answers
                             </div>
+                            {[
+                                { answer: "Controlled Access", detail: "RBAC & Scoped Rules" },
+                                { answer: "Version History", detail: "Single Source of Truth" },
+                                { answer: "Expiry Tracking", detail: "Automated Triggers" },
+                                { answer: "Complete Audit Trail", detail: "Immutable Activity Log" },
+                            ].map((ans, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-2 rounded bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 text-xs font-medium text-slate-800 dark:text-slate-200">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                        <span className="font-bold text-slate-900 dark:text-slate-100">{ans.answer}</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 font-semibold">{ans.detail}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -132,7 +144,7 @@ export function BeforeAfterHeroVisual() {
             {/* Underneath Callout */}
             <div className="mt-8 p-5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0b0f19] text-center shadow-sm max-w-4xl mx-auto">
                 <p className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
-                    One governed source for your operational credentials — with controlled access, ownership, expiry tracking, history and complete traceability.
+                    One governed source for your credentials. Controlled access. Complete traceability.
                 </p>
             </div>
         </section>
