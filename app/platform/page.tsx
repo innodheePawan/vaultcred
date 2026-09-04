@@ -4,6 +4,7 @@ import { getSystemSettings } from "@/lib/actions/settings";
 import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
+import { PlatformHeroVisual } from "@/components/marketing/PlatformHeroVisual";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
@@ -41,15 +42,34 @@ export default async function PlatformPage() {
             <main className="relative z-10 pt-16">
 
                 {/* Hero */}
-                <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                    <div className="max-w-3xl">
-                        <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400/70 mb-4">Platform Overview</div>
-                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
-                            One Platform to Secure, Control and Track Your Credentials
-                        </h1>
-                        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
-                            See how CredSecure brings credential security, access control, lifecycle management and audit together in one governed platform.
-                        </p>
+                <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                        <div className="lg:col-span-7 space-y-6">
+                            <div>
+                                <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400/70 mb-3 font-semibold">Platform Overview</div>
+                                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+                                    One Platform to Secure, Control and Track Your Credentials
+                                </h1>
+                            </div>
+                            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
+                                See how CredSecure brings credential security, access control, lifecycle management and audit together in one governed platform.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3 pt-2">
+                                <Link href="/request-demo">
+                                    <Button className="h-11 px-6 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs sm:text-sm font-semibold rounded-lg shadow-sm cursor-pointer flex items-center gap-2">
+                                        Request Demo <ArrowRight className="w-4 h-4" />
+                                    </Button>
+                                </Link>
+                                <Link href="#credential-governance">
+                                    <Button variant="outline" className="h-11 px-6 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer">
+                                        Explore Domains
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                        <div className="lg:col-span-5">
+                            <PlatformHeroVisual />
+                        </div>
                     </div>
                 </section>
 
