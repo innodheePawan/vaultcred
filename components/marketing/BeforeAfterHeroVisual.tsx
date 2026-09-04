@@ -47,7 +47,7 @@ export function BeforeAfterHeroVisual() {
                         {/* Converging Visual Lines */}
                         <div className="flex flex-col items-center justify-center my-4">
                             <div className="text-slate-400 dark:text-slate-600 text-xs font-mono tracking-widest hidden sm:block">
-                                \ &nbsp; | &nbsp; | &nbsp; /
+                                {"\\   |   |   /"}
                             </div>
                             <div className="w-px h-4 bg-rose-300 dark:bg-rose-800 my-1" />
                             <div className="px-4 py-2 rounded-full border border-rose-300 dark:border-rose-700 bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 text-xs font-bold font-mono shadow-xs">

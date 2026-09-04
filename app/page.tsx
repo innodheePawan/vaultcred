@@ -117,6 +117,7 @@ export default async function LandingPage() {
                                         </div>
                                     ))}
                                 </div>
+                            </div>
                         </div>
                     </div>
                 </section>
