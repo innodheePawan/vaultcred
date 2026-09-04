@@ -45,10 +45,10 @@ export default async function PlatformPage() {
                     <div className="max-w-3xl">
                         <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400/70 mb-4">Platform Overview</div>
                         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
-                            How CredSecure Governs Credential Operations
+                            One Platform to Secure, Control and Track Your Credentials
                         </h1>
                         <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
-                            Six integrated governance domains that provide lifecycle control, access enforcement, audit traceability, and operational visibility across your credential infrastructure.
+                            See how CredSecure brings credential security, access control, lifecycle management and audit together in one governed platform.
                         </p>
                     </div>
                 </section>
@@ -59,12 +59,12 @@ export default async function PlatformPage() {
                         <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-6 text-center">Operational Governance Lifecycle</div>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-0">
                             {[
-                                { label: "Provision", desc: "Register & classify" },
-                                { label: "Govern", desc: "RBAC & scoping" },
-                                { label: "Monitor", desc: "Track & observe" },
-                                { label: "Enforce", desc: "Time-bound access" },
-                                { label: "Revoke", desc: "Automatic expiry" },
-                                { label: "Audit", desc: "Immutable trails" },
+                                { label: "Provision", desc: "Register & organize" },
+                                { label: "Govern", desc: "Control access" },
+                                { label: "Monitor", desc: "Track activity" },
+                                { label: "Enforce", desc: "Apply policies" },
+                                { label: "Revoke", desc: "Expire access" },
+                                { label: "Audit", desc: "Record every change" },
                             ].map((step, idx) => (
                                 <div key={idx} className="flex items-center">
                                     <div className="text-center px-4 py-3 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] min-w-[120px]">
