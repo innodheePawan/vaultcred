@@ -135,10 +135,10 @@ export function BeforeAfterHeroVisual() {
                                 Governed Control Answers
                             </div>
                             {[
-                                { answer: "Controlled Access", detail: "RBAC & Scoped Rules" },
+                                { answer: "Controlled Access", detail: "Role-Based Access" },
                                 { answer: "Version History", detail: "Single Source of Truth" },
-                                { answer: "Expiry Tracking", detail: "Automated Triggers" },
-                                { answer: "Complete Audit Trail", detail: "Immutable Activity Log" },
+                                { answer: "Expiry Tracking", detail: "Automated Alerts" },
+                                { answer: "Complete Audit Trail", detail: "Every Change Recorded" },
                             ].map((ans, idx) => (
                                 <div key={idx} className="h-9 flex items-center justify-between px-3 py-1.5 rounded bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 text-xs font-medium text-slate-800 dark:text-slate-200">
                                     <div className="flex items-center gap-2">
