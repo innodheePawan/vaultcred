@@ -5,6 +5,7 @@ import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { PlatformHeroVisual } from "@/components/marketing/PlatformHeroVisual";
+import { MarketingHero } from "@/components/marketing/MarketingHero";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
@@ -21,6 +22,7 @@ import {
     FileLock,
     FileCode,
     Shield,
+    Layers,
 } from "lucide-react";
 
 export const metadata = {
@@ -42,39 +44,30 @@ export default async function PlatformPage() {
             <main className="relative z-10 pt-16">
 
                 {/* Hero */}
-                <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                        <div className="lg:col-span-7 space-y-6">
-                            <div>
-                                <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400/70 mb-3 font-semibold">Platform Overview</div>
-                                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-                                    One Platform to Secure, Control and Track Your Credentials
-                                </h1>
-                            </div>
-                            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
-                                See how CredSecure brings credential security, access control, lifecycle management and audit together in one governed platform.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-3 pt-2">
-                                <Link href="#credential-governance">
-                                    <Button className="h-11 px-6 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs sm:text-sm font-semibold rounded-lg shadow-sm cursor-pointer flex items-center gap-2">
-                                        Explore Capabilities <ArrowRight className="w-4 h-4" />
-                                    </Button>
-                                </Link>
-                                <Link href="/request-demo">
-                                    <Button variant="outline" className="h-11 px-6 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer">
-                                        Request Demo
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-                        <div className="lg:col-span-5">
-                            <PlatformHeroVisual />
-                        </div>
-                    </div>
-                </section>
+                <MarketingHero
+                    eyebrow={{
+                        icon: Layers,
+                        label: "PLATFORM OVERVIEW",
+                    }}
+                    title={{
+                        line1: "One Platform to Secure,",
+                        gradientLine: "Control and Track Your Credentials",
+                    }}
+                    description="See how CredSecure brings credential security, access control, lifecycle management and audit together in one governed platform."
+                    primaryCta={{
+                        label: "Explore Capabilities",
+                        href: "#governance-lifecycle",
+                        icon: <ArrowRight className="w-4 h-4" />,
+                    }}
+                    secondaryCta={{
+                        label: "Request Demo",
+                        href: "/request-demo",
+                    }}
+                    visual={<PlatformHeroVisual />}
+                />
 
                 {/* Governance Lifecycle Flow */}
-                <section className="border-y border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]">
+                <section className="scroll-mt-20 border-y border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]" id="governance-lifecycle">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                         <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-6 text-center">Operational Governance Lifecycle</div>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-0">
@@ -104,7 +97,7 @@ export default async function PlatformPage() {
                 <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16">
 
                     {/* Domain 1: Credential Governance */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="credential-governance">
+                    <div className="scroll-mt-20 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start" id="credential-governance">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <Database className="w-5 h-5 text-blue-500 dark:text-blue-400" strokeWidth={1.5} />

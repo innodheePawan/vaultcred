@@ -7,6 +7,7 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { ExpandableFeatureCard } from "@/components/marketing/ExpandableFeatureCard";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { BeforeAfterHeroVisual } from "@/components/marketing/BeforeAfterHeroVisual";
+import { MarketingHero } from "@/components/marketing/MarketingHero";
 import {
     ArrowRight,
     ArrowDown,
@@ -28,6 +29,7 @@ import {
     AlertTriangle,
     Workflow,
     ChevronRight,
+    Shield,
 } from "lucide-react";
 
 export default async function LandingPage() {
@@ -47,55 +49,55 @@ export default async function LandingPage() {
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 1 — HERO
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="pt-16 pb-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                        {/* Left Side: Dominant Copy (7 Cols) */}
-                        <div className="space-y-6 lg:col-span-7">
-                            <div>
-                                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15] text-slate-900 dark:text-white mb-2">
-                                    Your Business Credentials Are Everywhere.
-                                </h1>
-                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
-                                    Bring Them Under Control.
-                                </h2>
-                            </div>
-
-                            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
+                <MarketingHero
+                    eyebrow={{
+                        icon: Shield,
+                        label: "CREDENTIAL GOVERNANCE",
+                    }}
+                    title={{
+                        line1: "Your Business Credentials Are Everywhere.",
+                        gradientLine: "Bring Them Under Control.",
+                    }}
+                    description={
+                        <>
+                            <p className="text-base sm:text-lg text-slate-650 dark:text-slate-300 leading-relaxed max-w-xl">
                                 Passwords, API keys, certificates and application credentials often end up scattered across spreadsheets, shared files, emails, developer systems and different applications.
                             </p>
-
                             <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-200 leading-relaxed max-w-xl">
                                 CredSecure brings them into one secure, controlled place — giving you visibility into what exists, who can access it, when it expires, where it&apos;s used, and what changed.
                             </p>
+                        </>
+                    }
+                    primaryCta={{
+                        label: "See How It Works",
+                        href: "#how-it-works",
+                        icon: <ArrowRight className="w-4 h-4" />,
+                    }}
+                    secondaryCta={{
+                        label: "Request Demo",
+                        href: "/request-demo",
+                    }}
+                    visual={
+                        <div className="opacity-95 hover:opacity-100 transition-opacity duration-200">
+                            <div className="relative border border-slate-200 dark:border-white/[0.08] rounded-2xl bg-white dark:bg-[#0b0f19] p-6 shadow-2xl min-h-[460px] flex flex-col justify-between select-none">
+                                {/* Ambient Background Glow */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3 pt-2">
-                                <Link href="#how-it-works" className="w-full sm:w-auto">
-                                    <Button className="w-full h-11 px-6 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs sm:text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md">
-                                        See How It Works
-                                        <ArrowRight className="w-4 h-4" />
-                                    </Button>
-                                </Link>
-                                <Link href="/request-demo" className="w-full sm:w-auto">
-                                    <Button variant="outline" className="w-full h-11 px-6 bg-transparent border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                                        Request Demo
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Right Side: Simple & Scannable Credential Vault Visual (5 Cols) */}
-                        <div className="hidden lg:block lg:col-span-5 opacity-95 hover:opacity-100 transition-opacity duration-200">
-                            <div className="relative border border-slate-200 dark:border-white/[0.08] rounded-2xl bg-white dark:bg-[#0b0f19] p-6 shadow-2xl space-y-6">
-                                {/* CREDSECURE Badge Header */}
-                                <div className="flex flex-col items-center justify-center pt-1">
-                                    <div className="px-5 py-2.5 rounded-xl border border-indigo-500/30 dark:border-indigo-400/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 text-xs sm:text-sm font-extrabold tracking-widest font-mono flex items-center gap-2 shadow-xs">
-                                        <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                                        CREDSECURE
+                                {/* CREDSECURE Logo + Credential Vault Badge Header (Center Aligned) */}
+                                <div className="relative z-10 flex flex-col items-center justify-center border-b border-slate-100 dark:border-white/[0.06] pb-3 space-y-1.5">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <img src="/shield-logo.png" alt="CredSecure Shield Logo" className="h-6 w-6 object-contain" />
+                                        <span className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white font-mono uppercase">
+                                            CRED<span className="text-indigo-600 dark:text-indigo-400 font-extrabold">SECURE</span>
+                                        </span>
                                     </div>
+                                    <span className="text-[9.5px] font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-0.5 rounded-full font-bold uppercase tracking-wider border border-indigo-200 dark:border-indigo-800/50 shadow-2xs">
+                                        CREDENTIAL VAULT
+                                    </span>
                                 </div>
 
                                 {/* Scannable 2-Column Grid */}
-                                <div className="grid grid-cols-2 gap-2.5">
+                                <div className="relative z-10 grid grid-cols-2 gap-2.5 py-2">
                                     {[
                                         { label: "Passwords", icon: "🔐", sub: "User Credentials" },
                                         { label: "API Keys", icon: "🔑", sub: "Service Tokens" },
@@ -115,22 +117,22 @@ export default async function LandingPage() {
                                 </div>
 
                                 {/* Down Arrow Indicator */}
-                                <div className="flex justify-center -my-2">
+                                <div className="relative z-10 flex justify-center -my-1">
                                     <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                                         <ArrowDown className="w-3.5 h-3.5 animate-pulse" />
                                     </div>
                                 </div>
 
                                 {/* Bottom Strip */}
-                                <div className="p-3 rounded-xl border border-indigo-500/20 dark:border-indigo-400/20 bg-indigo-500/5 dark:bg-indigo-500/10 text-center">
+                                <div className="relative z-10 p-3 rounded-xl border border-indigo-500/20 dark:border-indigo-400/20 bg-indigo-500/5 dark:bg-indigo-500/10 text-center">
                                     <span className="text-xs font-extrabold font-mono tracking-widest text-indigo-700 dark:text-indigo-300 uppercase">
                                         SECURE • CONTROL • TRACK
                                     </span>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    }
+                />
 
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 1.5 — VISUAL EXPLANATION (TODAY vs WITH CREDSECURE)

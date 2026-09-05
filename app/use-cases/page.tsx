@@ -4,37 +4,32 @@ import { getSystemSettings } from "@/lib/actions/settings";
 import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
-import { UseCaseNavigator } from "@/components/marketing/UseCaseNavigator";
-import { BeforeAfterEnvVisual } from "@/components/marketing/BeforeAfterEnvVisual";
-import { BeforeAfterBtpVisual } from "@/components/marketing/BeforeAfterBtpVisual";
+import { UseCaseWorkflowVisual } from "@/components/marketing/UseCaseWorkflowVisual";
+import { UseCasesSection } from "@/components/marketing/UseCasesSection";
+import { Tier1UseCaseData } from "@/components/marketing/ExpandableUseCaseCard";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
-    ChevronRight,
+    ArrowDown,
     Server,
     Users,
-    Globe,
-    KeyRound,
     FileSearch,
     AlertTriangle,
-    FileCode,
-    Layers,
-    Info,
+    Workflow,
 } from "lucide-react";
 
 export const metadata = {
-    title: "Use Cases | CredSecure — Operational Workflows We Secure",
-    description: "Discover how CredSecure governs SAP integration credentials, production support access, vendor access control, application credential provisioning, BTP security material provisioning, service accounts, API security, and compliance investigations.",
+    title: "Use Cases | CredSecure — Real Credential Problems, Solved",
+    description: "Discover how CredSecure governs SAP integration credentials, production support access, vendor access custody, application credential provisioning, and BTP security material provisioning.",
 };
 
 export default async function UseCasesPage() {
     const session = await auth();
     const settings = await getSystemSettings();
 
-    const tier1UseCases = [
+    const tier1UseCases: Tier1UseCaseData[] = [
         {
             id: "sap-credential-governance",
-            icon: Server,
             title: "SAP Landscape Integration Credential Governance",
             problem: "SAP landscapes rely on middleware tokens, RFC connections, and system-to-system credentials that are often permanently active, shared across teams, and invisible to security governance.",
             pain: [
@@ -57,7 +52,6 @@ export default async function UseCasesPage() {
         },
         {
             id: "production-access",
-            icon: KeyRound,
             title: "Production maintenance access with automatic revocation",
             problem: "Engineers need access to production credentials during maintenance windows and incident response. Without governance, these become permanent backdoors that persist long after the work is complete.",
             pain: [
@@ -80,7 +74,6 @@ export default async function UseCasesPage() {
         },
         {
             id: "external-vendor-access",
-            icon: Globe,
             title: "External Vendor Access Custody",
             problem: "External vendors and contractors need access to specific credentials for implementation, support, or integration work. Without governance, vendor access becomes permanent, over-scoped, and invisible.",
             pain: [
@@ -103,7 +96,6 @@ export default async function UseCasesPage() {
         },
         {
             id: "application-credential-provisioning",
-            icon: FileCode,
             title: "Application Credential Provisioning",
             subtitle: "Deploy applications without manually distributing .env or credential files.",
             problem: "Applications commonly depend on .env files and credential configurations during deployment. Manually sharing these files with developers or deployment teams increases credential exposure and creates unmanaged copies outside centralized governance.",
@@ -131,7 +123,6 @@ export default async function UseCasesPage() {
         },
         {
             id: "btp-security-material-provisioning",
-            icon: Layers,
             title: "BTP Security Material Provisioning",
             subtitle: "From third-party credential onboarding to BTP Integration Suite — without internal credential handling.",
             problem: "Enterprise integrations frequently depend on credentials, OAuth configurations, secure notes, keys and other supported security material provided by third parties. Traditionally, internal teams must receive these credentials and manually recreate the required security material in BTP Integration Suite. This introduces unnecessary credential handling, additional exposure and operational dependency between vendors and internal teams.",
@@ -196,153 +187,59 @@ export default async function UseCasesPage() {
 
             <main className="relative z-10 pt-16">
 
-                {/* Hero */}
-                <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                    <div className="max-w-3xl">
-                        <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400/70 mb-4">Use Cases</div>
-                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
-                            Operational Workflows We Secure
-                        </h1>
-                        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
-                            Enterprise credential governance for the operational workflows that create the most risk — and the most value when governed properly.
-                        </p>
-                    </div>
-                </section>
-
-                {/* Use Case Navigator (Immediately Below Hero) */}
-                <UseCaseNavigator />
-
-                {/* Category Hook */}
-                <section className="border-y border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]">
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
-                        <p className="text-sm text-slate-600 dark:text-slate-400 italic">
-                            &ldquo;Most credential risks begin after storage. These use cases show how governance addresses the operational lifecycle — not just the encryption.&rdquo;
-                        </p>
-                    </div>
-                </section>
-
-                {/* Tier 1: Full Deep-Dive Use Cases */}
-                <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-20">
-                    {tier1UseCases.map((uc) => {
-                        const IconComponent = uc.icon;
-                        return (
-                            <div
-                                key={uc.id}
-                                id={uc.id}
-                                className={`scroll-mt-24 border border-slate-200 dark:border-white/[0.06] rounded-xl bg-white dark:bg-white/[0.02] border-l-2 ${uc.color} overflow-hidden`}
-                            >
-                                {/* Header */}
-                                <div className="px-6 sm:px-8 pt-8 pb-6">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <IconComponent className="w-5 h-5 text-slate-500 dark:text-slate-400" strokeWidth={1.5} />
-                                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{uc.title}</h2>
-                                    </div>
-
-                                    {uc.subtitle && (
-                                        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-4 ml-8">
-                                            {uc.subtitle}
-                                        </p>
-                                    )}
-
-                                    {/* Problem */}
-                                    <div className="mb-6 mt-4">
-                                        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600 mb-2">The Problem</div>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{uc.problem}</p>
-                                    </div>
-
-                                    {/* Pain Points */}
-                                    <div className="mb-6">
-                                        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600 mb-2">Operational Pain</div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                            {uc.pain.map((p, pIdx) => (
-                                                <div key={pIdx} className="flex items-start gap-2">
-                                                    <div className="w-1 h-1 rounded-full bg-rose-500/60 mt-2 shrink-0" />
-                                                    <span className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{p}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Solution */}
-                                    <div className="mb-2">
-                                        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600 mb-2">How CredSecure Solves It</div>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{uc.solution}</p>
-                                    </div>
-
-                                    {/* Embedded Visual Diagram */}
-                                    {uc.visualType === "env" && <BeforeAfterEnvVisual />}
-                                    {uc.visualType === "btp" && <BeforeAfterBtpVisual />}
-                                </div>
-
-                                {/* Workflow */}
-                                <div className="px-6 sm:px-8 py-6 border-t border-slate-200 dark:border-white/[0.04] bg-slate-50/50 dark:bg-white/[0.01]">
-                                    <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600 mb-4">Governance Workflow</div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                                        {uc.workflow.map((step, sIdx) => (
-                                            <div key={sIdx} className="flex flex-col justify-between p-3 rounded-lg border border-slate-200/60 dark:border-white/[0.04] bg-white/80 dark:bg-white/[0.02]">
-                                                <div>
-                                                    <div className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 mb-1">0{sIdx + 1}</div>
-                                                    <div className="text-xs font-semibold text-slate-900 dark:text-white mb-1">{step.step}</div>
-                                                    <div className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{step.desc}</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Subtle Credential Updates Info Strip */}
-                                {uc.updateNote && (
-                                    <div className="px-6 sm:px-8 py-3 border-t border-slate-200 dark:border-white/[0.04] bg-slate-50/80 dark:bg-white/[0.01]">
-                                        <div className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-400">
-                                            <Info className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
-                                            <p className="leading-relaxed">
-                                                <span className="font-semibold text-slate-700 dark:text-slate-300">Credential Updates: </span>
-                                                {uc.updateNote}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Extensibility / Co-Innovation Note */}
-                                {uc.extensibilityNote && (
-                                    <div className="px-6 sm:px-8 py-3 border-t border-slate-200 dark:border-white/[0.04] bg-slate-50/80 dark:bg-white/[0.01]">
-                                        <div className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-400">
-                                            <Info className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                                            <p className="leading-relaxed">
-                                                <span className="font-semibold text-slate-700 dark:text-slate-300">
-                                                    {uc.extensibilityTitle || "Extensibility Note"}{" "}
-                                                </span>
-                                                {uc.extensibilityNote}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Outcome */}
-                                <div className="px-6 sm:px-8 py-5 border-t border-slate-200 dark:border-white/[0.04] bg-slate-100/30 dark:bg-white/[0.02]">
-                                    {uc.outcomeHeadline ? (
-                                        <div>
-                                            <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full ${uc.dotColor} shrink-0`} />
-                                                {uc.outcomeHeadline}
-                                            </h4>
-                                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 pl-4 leading-relaxed font-medium">
-                                                {uc.outcomeSub}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-start gap-2">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${uc.dotColor} mt-1.5 shrink-0`} />
-                                            <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">{uc.outcome}</p>
-                                        </div>
-                                    )}
-                                </div>
+                {/* Redesigned Use Cases Hero */}
+                <section className="py-14 sm:py-18 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+                        
+                        {/* Left Content Column */}
+                        <div className="lg:col-span-7 space-y-5 text-left">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                                <Workflow className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                    USE CASES
+                                </span>
                             </div>
-                        );
-                    })}
+
+                            <h1 className="text-2xl sm:text-3xl lg:text-[2.65rem] font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.25] max-w-2xl">
+                                <div>Real Credential Problems.</div>
+                                <div className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 dark:from-indigo-400 dark:via-purple-400 dark:to-cyan-400 mt-1">
+                                    Practical Ways CredSecure Solves Them.
+                                </div>
+                            </h1>
+
+                            <p className="text-base sm:text-lg text-slate-650 dark:text-slate-300 leading-relaxed max-w-xl">
+                                See how CredSecure helps organizations control credential access, reduce manual handling, automate credential delivery, and maintain visibility across real operational workflows.
+                            </p>
+
+                            {/* CTA Actions */}
+                            <div className="flex flex-wrap items-center gap-4 pt-2">
+                                <a href="#quick-discovery-navigator">
+                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2">
+                                        Explore Use Cases
+                                        <ArrowDown className="w-4 h-4" />
+                                    </Button>
+                                </a>
+
+                                <Link href="/request-demo">
+                                    <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors">
+                                        Request Demo
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Right Column: Where CredSecure Fits Visual */}
+                        <div className="lg:col-span-5">
+                            <UseCaseWorkflowVisual />
+                        </div>
+
+                    </div>
                 </section>
 
-                {/* Tier 2: Structured Cards */}
+                {/* Single-Open Accordion Use Cases Section (Navigator + Tier-1 Expandable Cards) */}
+                <UseCasesSection tier1UseCases={tier1UseCases} />
+
+                {/* Tier 2: Structured Cards (Standard 2x2 Grid) */}
                 <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
                     <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600 mb-6">Additional Use Cases</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
