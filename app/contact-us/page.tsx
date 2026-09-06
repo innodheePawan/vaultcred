@@ -51,7 +51,7 @@ export default async function ContactUsPage() {
                                     </div>
                                     <a
                                         href="mailto:customer-support@getcredsecure.com"
-                                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block break-all"
+                                        className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block whitespace-nowrap"
                                     >
                                         customer-support@getcredsecure.com
                                     </a>

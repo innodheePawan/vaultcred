@@ -104,13 +104,13 @@ export function LegalPageLayout({
 
                                         <div className="pt-3 border-t border-slate-200 dark:border-white/[0.06] flex items-start gap-2.5">
                                             <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                                            <div>
+                                            <div className="min-w-0">
                                                 <span className="font-semibold text-slate-900 dark:text-slate-200 block">
                                                     Contact Email
                                                 </span>
                                                 <a
                                                     href="mailto:customer-support@getcredsecure.com"
-                                                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium break-all"
+                                                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium text-[11px] sm:text-xs xl:text-[13px] whitespace-nowrap block"
                                                 >
                                                     customer-support@getcredsecure.com
                                                 </a>

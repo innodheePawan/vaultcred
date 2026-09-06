@@ -12,7 +12,7 @@ export function MarketingFooter({ applicationName, companyName }: MarketingFoote
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
                     {/* Brand Column */}
-                    <div className="space-y-4 lg:col-span-5">
+                    <div className="space-y-4 lg:col-span-4">
                         <div className="flex items-center">
                             <img
                                 src="/full-logo.png"
@@ -84,18 +84,18 @@ export function MarketingFooter({ applicationName, companyName }: MarketingFoote
                     </div>
 
                     {/* Contact Us Column */}
-                    <div className="space-y-3 lg:col-span-3">
+                    <div className="space-y-3 lg:col-span-4">
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Contact Us
                         </h4>
                         <ul className="space-y-3">
                             <li className="flex items-start gap-2.5">
                                 <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                                <div className="text-sm">
+                                <div className="text-sm min-w-0">
                                     <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">Email</span>
                                     <a
                                         href="mailto:customer-support@getcredsecure.com"
-                                        className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium break-all"
+                                        className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-xs sm:text-[13px] xl:text-sm whitespace-nowrap block"
                                     >
                                         customer-support@getcredsecure.com
                                     </a>

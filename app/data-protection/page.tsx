@@ -98,7 +98,7 @@ export default async function DataProtectionPage() {
                     <p>Bengaluru, Karnataka 560100, India</p>
                     <p className="pt-2">
                         Contact Email:{" "}
-                        <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium">
+                        <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
                             customer-support@getcredsecure.com
                         </a>
                     </p>

@@ -32,7 +32,7 @@ export default async function ResponsibleDisclosurePage() {
                     If you believe you have discovered a potential security vulnerability in the CredSecure public website (<code>getcredsecure.com</code>), please report it to us privately:
                 </p>
                 <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] text-xs font-mono space-y-1">
-                    <p className="font-semibold text-slate-900 dark:text-white">Security Contact Email: <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline">customer-support@getcredsecure.com</a></p>
+                    <p className="font-semibold text-slate-900 dark:text-white">Security Contact Email: <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline whitespace-nowrap">customer-support@getcredsecure.com</a></p>
                     <p className="text-slate-500 dark:text-slate-400">Subject Line: Security Vulnerability Report — CredSecure</p>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -99,7 +99,7 @@ export default async function ResponsibleDisclosurePage() {
                 </h2>
                 <p className="text-xs sm:text-sm">
                     Contact Email:{" "}
-                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium">
+                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
                         customer-support@getcredsecure.com
                     </a>  
                     <br />
