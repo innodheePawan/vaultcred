@@ -170,10 +170,10 @@ export default async function middleware(req: any) {
     const isApiV1 = path.startsWith('/api/v1');
 
     // NORMAL AUTH FLOW
-    const host = (req.headers.get('host') || req.nextUrl?.hostname || '').toLowerCase().split(':')[0].trim();
+    const rawHost = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl?.hostname || '';
+    const host = rawHost.toLowerCase().split(',')[0].split(':')[0].trim();
     const isProductionHost = (host === 'getcredsecure.com' || host === 'www.getcredsecure.com');
     const appEnv = (process.env.NEXT_PUBLIC_APP_ENV || process.env.APP_ENV || "").toLowerCase().trim();
-    const isExplicitProdEnv = appEnv === "production" || appEnv === "prod";
     const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
     const isUatBranch = awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging";
 
