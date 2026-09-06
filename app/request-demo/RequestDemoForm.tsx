@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { sendDemoRequestEmails } from "@/lib/email";
+import { MathCaptcha } from "@/components/shared/MathCaptcha";
 
 const ROLES = [
     "IT Security / CISO",
@@ -30,6 +31,9 @@ export function RequestDemoForm() {
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [captchaValid, setCaptchaValid] = useState(false);
+    const [captchaResetKey, setCaptchaResetKey] = useState(0);
+
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -38,8 +42,13 @@ export function RequestDemoForm() {
         useCase: "",
     });
 
+    const handleCaptchaValidate = useCallback((isValid: boolean) => {
+        setCaptchaValid(isValid);
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!captchaValid) return;
         setIsSubmitting(true);
         setError(null);
 
@@ -49,9 +58,11 @@ export function RequestDemoForm() {
                 setSubmitted(true);
             } else {
                 setError(res.error || "Failed to submit demo request.");
+                setCaptchaResetKey((prev) => prev + 1);
             }
         } catch (err: any) {
             setError(err.message || "An unexpected error occurred.");
+            setCaptchaResetKey((prev) => prev + 1);
         } finally {
             setIsSubmitting(false);
         }
@@ -139,6 +150,9 @@ export function RequestDemoForm() {
                 </select>
             </div>
 
+            {/* Math CAPTCHA Security Check */}
+            <MathCaptcha onValidate={handleCaptchaValidate} resetKey={captchaResetKey} />
+
             {error && (
                 <div className="text-xs text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-center font-medium">
                     {error}
@@ -148,8 +162,8 @@ export function RequestDemoForm() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 h-11 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+                    disabled={isSubmitting || !captchaValid}
+                    className="flex-1 h-11 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                     {isSubmitting ? (
                         <>
