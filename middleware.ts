@@ -170,22 +170,16 @@ export default async function middleware(req: any) {
     const isApiV1 = path.startsWith('/api/v1');
 
     // NORMAL AUTH FLOW
-    const host = (req.headers.get('host') || req.nextUrl?.hostname || '').toLowerCase();
-    const isProductionHost = (host.includes('getcredsecure.com') && !host.includes('uat'));
+    const host = (req.headers.get('host') || req.nextUrl?.hostname || '').toLowerCase().split(':')[0].trim();
+    const isProductionHost = (host === 'getcredsecure.com' || host === 'www.getcredsecure.com');
     const appEnv = (process.env.NEXT_PUBLIC_APP_ENV || process.env.APP_ENV || "").toLowerCase().trim();
-    const isProductionEnv = isProductionHost || appEnv === "production" || appEnv === "prod";
+    const isExplicitProdEnv = appEnv === "production" || appEnv === "prod";
+    const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
+    const isUatBranch = awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging";
 
-    const isUatEnv = !isProductionEnv && (
-        appEnv === "uat" ||
-        appEnv === "staging" ||
-        process.env.NEXT_PUBLIC_IS_UAT === "true" ||
-        process.env.IS_UAT === "true" ||
-        process.env.AWS_BRANCH === "uat" ||
-        process.env.AWS_BRANCH === "credsecure-uat" ||
-        (typeof process.env.NEXT_PUBLIC_SITE_URL === "string" &&
-            (process.env.NEXT_PUBLIC_SITE_URL.includes("amplifyapp.com") ||
-                (process.env.NEXT_PUBLIC_SITE_URL.includes("uat") && !process.env.NEXT_PUBLIC_SITE_URL.includes("getcredsecure.com"))))
-    );
+    // Strictly production only when host is getcredsecure.com, not on a UAT branch, and not configured as UAT
+    const isProduction = isProductionHost && !isUatBranch && appEnv !== "uat" && appEnv !== "staging";
+    const isUatEnv = !isProduction;
 
     const res = isApiV1 ? NextResponse.next() : await (authHandler as any)(req);
 

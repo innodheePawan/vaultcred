@@ -9,30 +9,29 @@ interface ConstructMetadataProps {
 
 export function isUatEnvironment(): boolean {
   const appEnv = (process.env.NEXT_PUBLIC_APP_ENV || process.env.APP_ENV || "").toLowerCase().trim();
-  if (appEnv === "production" || appEnv === "prod") {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").toLowerCase().trim();
+  const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
+  const isUatFlag = (process.env.NEXT_PUBLIC_IS_UAT || process.env.IS_UAT || "").toLowerCase().trim();
+
+  // Explicit production environment check
+  const isProdEnv = appEnv === "production" || appEnv === "prod";
+  const isProdUrl = (siteUrl.includes("getcredsecure.com") || siteUrl.includes("www.getcredsecure.com")) && !siteUrl.includes("uat");
+  const isUatBranch = awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging";
+
+  if (isProdEnv && isProdUrl && !isUatBranch && isUatFlag !== "true") {
     return false;
   }
 
-  if (appEnv === "uat" || appEnv === "staging") {
-    return true;
+  if (isProdUrl && !isUatBranch && isUatFlag !== "true" && appEnv !== "uat" && appEnv !== "staging") {
+    return false;
   }
 
-  const isUatFlag = (process.env.NEXT_PUBLIC_IS_UAT || process.env.IS_UAT || "").toLowerCase().trim();
-  if (isUatFlag === "true" || isUatFlag === "1") {
-    return true;
+  if (isProdEnv && !isUatBranch && isUatFlag !== "true" && !siteUrl.includes("amplifyapp.com") && !siteUrl.includes("uat")) {
+    return false;
   }
 
-  const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
-  if (awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging") {
-    return true;
-  }
-
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").toLowerCase().trim();
-  if (siteUrl.includes("amplifyapp.com") || (siteUrl.includes("uat") && !siteUrl.includes("getcredsecure.com"))) {
-    return true;
-  }
-
-  return false;
+  // All UAT, Amplify, Staging, Preview, and non-production deployments default to true (noindex)
+  return true;
 }
 
 export function constructMetadata({
