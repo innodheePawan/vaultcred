@@ -8,11 +8,13 @@ import { FeaturesSection, FeatureModuleData } from "@/components/marketing/Featu
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowDown, Layers } from "lucide-react";
+import { constructMetadata } from "@/lib/seo";
 
-export const metadata = {
-    title: "Features | CredSecure — Full Platform Capabilities",
-    description: "Explore the complete capability breakdown of CredSecure: credential vault, IAM, authentication, API gateway, audit compliance, vendor access, one-time secrets, branding, database management, and licensing.",
-};
+export const metadata = constructMetadata({
+    title: "Enterprise Credential Security Features",
+    description: "Complete capability breakdown of CredSecure AES-256-GCM encryption, role-based access control, controlled API access, audit traceability, and provisioning.",
+    path: "/features",
+});
 
 export default async function FeaturesPage() {
     const session = await auth();

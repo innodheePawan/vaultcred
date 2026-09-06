@@ -31,6 +31,9 @@ import {
     ChevronRight,
     Shield,
 } from "lucide-react";
+import { constructMetadata } from "@/lib/seo";
+
+export const metadata = constructMetadata({ path: "/" });
 
 export default async function LandingPage() {
     const session = await auth();

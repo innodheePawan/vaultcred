@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
@@ -15,6 +16,13 @@ import { getLicenseState } from "@/lib/license-enforcement";
 import { LicenseWarningBanner } from "@/components/layout/LicenseWarningBanner";
 import { redirect } from 'next/navigation';
 import ForceLogout from '@/components/auth/ForceLogout';
+
+export const metadata: Metadata = {
+    robots: {
+        index: false,
+        follow: false,
+    },
+};
 
 export default async function DashboardLayout({
     children,

@@ -18,11 +18,13 @@ import {
     FileCheck,
     LockKeyhole,
 } from "lucide-react";
+import { constructMetadata } from "@/lib/seo";
 
-export const metadata = {
-    title: "Security Architecture | CredSecure — Built for Enterprise Trust",
-    description: "Explore the security architecture behind CredSecure: AES-256-GCM encryption, controlled access, strong authentication, threat protection, and complete audit traceability.",
-};
+export const metadata = constructMetadata({
+    title: "Credential Security and Access Control",
+    description: "Security architecture of CredSecure: AES-256-GCM encryption, role-based access control, time-bound access, and audit trail traceability.",
+    path: "/security",
+});
 
 export default async function SecurityPage() {
     const session = await auth();

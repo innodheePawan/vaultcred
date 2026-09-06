@@ -4,11 +4,13 @@ import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { RequestDemoForm } from "./RequestDemoForm";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
+import { constructMetadata } from "@/lib/seo";
 
-export const metadata = {
-    title: "Request Demo | CredSecure",
-    description: "Schedule a demo of the CredSecure operational credential governance platform. See how enterprise teams govern credentials, trace access, and enforce operational security.",
-};
+export const metadata = constructMetadata({
+    title: "Request a Demo",
+    description: "Request a live demonstration of CredSecure operational credential governance platform for SAP and enterprise applications.",
+    path: "/request-demo",
+});
 
 export default async function RequestDemoPage() {
     const session = await auth();

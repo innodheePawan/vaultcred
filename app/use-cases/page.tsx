@@ -17,11 +17,13 @@ import {
     AlertTriangle,
     Workflow,
 } from "lucide-react";
+import { constructMetadata } from "@/lib/seo";
 
-export const metadata = {
-    title: "Use Cases | CredSecure — Real Credential Problems, Solved",
-    description: "Discover how CredSecure governs SAP integration credentials, production support access, vendor access custody, application credential provisioning, and BTP security material provisioning.",
-};
+export const metadata = constructMetadata({
+    title: "SAP and BTP Credential Use Cases",
+    description: "Enterprise use cases for SAP credential governance, production-support access, external vendor access, application credential provisioning, and BTP security-material provisioning.",
+    path: "/use-cases",
+});
 
 export default async function UseCasesPage() {
     const session = await auth();

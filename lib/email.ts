@@ -153,7 +153,7 @@ async function getFromAddress(): Promise<string> {
     if (fromEmail) {
         return `"${appName}" <${fromEmail}>`;
     }
-    return `"${appName}" <noreply@credsecure.local>`;
+    return `"${appName}" <no-reply@getcredsecure.com>`;
 }
 
 import { headers } from 'next/headers';
@@ -169,7 +169,7 @@ async function getBaseUrl(): Promise<string> {
 /**
  * Sends a generic email. Returns info about sent email.
  */
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, options?: { replyTo?: string }) {
     const { transporter, type } = await getTransporter();
     const from = await getFromAddress();
 
@@ -178,10 +178,10 @@ export async function sendEmail(to: string, subject: string, html: string) {
         to,
         subject,
         html,
+        replyTo: options?.replyTo || 'customer-support@getcredsecure.com',
     });
 
     // Email sent successfully
-
 
     return {
         messageId: info.messageId,
@@ -339,7 +339,7 @@ export async function sendDemoRequestEmails(data: {
                 role,
                 useCase,
             });
-            await sendEmail(adminEmail, `[New Lead] Demo Request - ${name} (${company})`, adminHtml);
+            await sendEmail(adminEmail, `[New Lead] Demo Request - ${name} (${company})`, adminHtml, { replyTo: email });
         }
 
         return { success: true };
@@ -370,7 +370,7 @@ export async function sendContactUsEmails(data: {
         const settings = await prisma.systemSettings.findFirst();
         const appName = settings?.applicationName || 'CredSecure';
         const logoUrl = settings?.logoUrl || null;
-        const adminEmail = settings?.smtpFromEmail || 'customer-support@innodhee.com';
+        const adminEmail = settings?.smtpFromEmail || 'customer-support@getcredsecure.com';
 
         // 1. Send confirmation email to user
         const confirmationHtml = getContactUsConfirmationEmailTemplate({
@@ -393,7 +393,7 @@ export async function sendContactUsEmails(data: {
                 subject,
                 message,
             });
-            await sendEmail(adminEmail, `[Contact Us] ${subject} - ${name}`, adminHtml);
+            await sendEmail(adminEmail, `[Contact Us] ${subject} - ${name}`, adminHtml, { replyTo: email });
         }
 
         return { success: true };

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ShareLayout({
+export default function EnvValueLayout({
   children,
 }: {
   children: React.ReactNode;

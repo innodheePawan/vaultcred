@@ -24,11 +24,13 @@ import {
     Shield,
     Layers,
 } from "lucide-react";
+import { constructMetadata } from "@/lib/seo";
 
-export const metadata = {
-    title: "Platform | CredSecure — Operational Credential Governance",
-    description: "Explore how CredSecure governs credential operations across six integrated domains: credential lifecycle, access governance, audit compliance, API security, threat protection, and operational infrastructure.",
-};
+export const metadata = constructMetadata({
+    title: "Credential Governance Platform",
+    description: "Enterprise credential governance platform capabilities overview across SAP, BTP Integration Suite, middleware, and access control.",
+    path: "/platform",
+});
 
 export default async function PlatformPage() {
     const session = await auth();

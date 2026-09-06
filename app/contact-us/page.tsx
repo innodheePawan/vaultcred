@@ -5,11 +5,13 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { ContactUsForm } from "./ContactUsForm";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { Mail, Phone, Linkedin, ExternalLink, ShieldCheck, Clock, MessageSquare, Building2 } from "lucide-react";
+import { constructMetadata } from "@/lib/seo";
 
-export const metadata = {
-    title: "Contact Us | CredSecure",
-    description: "Get in touch with the CredSecure team at Innodhee Services. Contact customer support, schedule enterprise consultations, or inquire about credential governance solution deployments.",
-};
+export const metadata = constructMetadata({
+    title: "Contact Us",
+    description: "Contact Innodhee Services for enterprise credential governance inquiries, support, and deployment details.",
+    path: "/contact-us",
+});
 
 export default async function ContactUsPage() {
     const session = await auth();
@@ -48,10 +50,10 @@ export default async function ContactUsPage() {
                                         <span className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Email Us</span>
                                     </div>
                                     <a
-                                        href="mailto:customer-support@innodhee.com"
+                                        href="mailto:customer-support@getcredsecure.com"
                                         className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block break-all"
                                     >
-                                        customer-support@innodhee.com
+                                        customer-support@getcredsecure.com
                                     </a>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400">Response within 2 business hours</p>
                                 </div>
