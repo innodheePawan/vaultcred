@@ -168,14 +168,24 @@ export default async function middleware(req: any) {
 
     // C. EXTERNAL API ROUTE GATEKEEPER
     const isApiV1 = path.startsWith('/api/v1');
-    if (isApiV1) {
-        // Bypass NextAuth session for external APIs since they use OAuth/JWT tokens
-        // Specific endpoints enforce mTLS (x-client-fingerprint) dynamically based on Client Security Mode
-        return NextResponse.next();
-    }
 
     // NORMAL AUTH FLOW
-    return (authHandler as any)(req);
+    const isUatEnv =
+        process.env.NEXT_PUBLIC_APP_ENV === "uat" ||
+        process.env.APP_ENV === "uat" ||
+        process.env.NEXT_PUBLIC_IS_UAT === "true" ||
+        process.env.IS_UAT === "true" ||
+        process.env.AWS_BRANCH === "uat" ||
+        process.env.AWS_BRANCH === "credsecure-uat" ||
+        (typeof process.env.NEXT_PUBLIC_SITE_URL === "string" &&
+            (process.env.NEXT_PUBLIC_SITE_URL.includes("amplifyapp.com") ||
+                process.env.NEXT_PUBLIC_SITE_URL.includes("uat")));
+
+    const res = isApiV1 ? NextResponse.next() : await (authHandler as any)(req);
+    if (isUatEnv && res && res.headers) {
+        res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    }
+    return res;
 }
 
 export const config = {

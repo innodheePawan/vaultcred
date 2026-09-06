@@ -21,6 +21,19 @@ export function constructMetadata({
   const metaDescription = description || defaultDescription;
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
+  const isUatEnv =
+    process.env.NEXT_PUBLIC_APP_ENV === "uat" ||
+    process.env.APP_ENV === "uat" ||
+    process.env.NEXT_PUBLIC_IS_UAT === "true" ||
+    process.env.IS_UAT === "true" ||
+    process.env.AWS_BRANCH === "uat" ||
+    process.env.AWS_BRANCH === "credsecure-uat" ||
+    (typeof process.env.NEXT_PUBLIC_SITE_URL === "string" &&
+      (process.env.NEXT_PUBLIC_SITE_URL.includes("amplifyapp.com") ||
+        process.env.NEXT_PUBLIC_SITE_URL.includes("uat")));
+
+  const shouldNoIndex = noIndex || isUatEnv;
+
   return {
     title: title || { absolute: defaultTitle },
     description: metaDescription,
@@ -48,7 +61,7 @@ export function constructMetadata({
       description: metaDescription,
       images: ["https://getcredsecure.com/og-image.png"],
     },
-    ...(noIndex && {
+    ...(shouldNoIndex && {
       robots: {
         index: false,
         follow: false,
