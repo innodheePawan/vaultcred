@@ -7,6 +7,34 @@ interface ConstructMetadataProps {
   noIndex?: boolean;
 }
 
+export function isUatEnvironment(): boolean {
+  const appEnv = (process.env.NEXT_PUBLIC_APP_ENV || process.env.APP_ENV || "").toLowerCase().trim();
+  if (appEnv === "production" || appEnv === "prod") {
+    return false;
+  }
+
+  if (appEnv === "uat" || appEnv === "staging") {
+    return true;
+  }
+
+  const isUatFlag = (process.env.NEXT_PUBLIC_IS_UAT || process.env.IS_UAT || "").toLowerCase().trim();
+  if (isUatFlag === "true" || isUatFlag === "1") {
+    return true;
+  }
+
+  const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
+  if (awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging") {
+    return true;
+  }
+
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").toLowerCase().trim();
+  if (siteUrl.includes("amplifyapp.com") || (siteUrl.includes("uat") && !siteUrl.includes("getcredsecure.com"))) {
+    return true;
+  }
+
+  return false;
+}
+
 export function constructMetadata({
   title,
   description,
@@ -21,18 +49,8 @@ export function constructMetadata({
   const metaDescription = description || defaultDescription;
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
-  const isUatEnv =
-    process.env.NEXT_PUBLIC_APP_ENV === "uat" ||
-    process.env.APP_ENV === "uat" ||
-    process.env.NEXT_PUBLIC_IS_UAT === "true" ||
-    process.env.IS_UAT === "true" ||
-    process.env.AWS_BRANCH === "uat" ||
-    process.env.AWS_BRANCH === "credsecure-uat" ||
-    (typeof process.env.NEXT_PUBLIC_SITE_URL === "string" &&
-      (process.env.NEXT_PUBLIC_SITE_URL.includes("amplifyapp.com") ||
-        process.env.NEXT_PUBLIC_SITE_URL.includes("uat")));
-
-  const shouldNoIndex = noIndex || isUatEnv;
+  const isUat = isUatEnvironment();
+  const shouldNoIndex = noIndex || isUat;
 
   return {
     title: title || { absolute: defaultTitle },
@@ -69,3 +87,4 @@ export function constructMetadata({
     }),
   };
 }
+

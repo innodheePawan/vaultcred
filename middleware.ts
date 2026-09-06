@@ -170,18 +170,27 @@ export default async function middleware(req: any) {
     const isApiV1 = path.startsWith('/api/v1');
 
     // NORMAL AUTH FLOW
-    const isUatEnv =
-        process.env.NEXT_PUBLIC_APP_ENV === "uat" ||
-        process.env.APP_ENV === "uat" ||
+    const host = (req.headers.get('host') || req.nextUrl?.hostname || '').toLowerCase();
+    const isProductionHost = (host.includes('getcredsecure.com') && !host.includes('uat'));
+    const appEnv = (process.env.NEXT_PUBLIC_APP_ENV || process.env.APP_ENV || "").toLowerCase().trim();
+    const isProductionEnv = isProductionHost || appEnv === "production" || appEnv === "prod";
+
+    const isUatEnv = !isProductionEnv && (
+        appEnv === "uat" ||
+        appEnv === "staging" ||
         process.env.NEXT_PUBLIC_IS_UAT === "true" ||
         process.env.IS_UAT === "true" ||
         process.env.AWS_BRANCH === "uat" ||
         process.env.AWS_BRANCH === "credsecure-uat" ||
         (typeof process.env.NEXT_PUBLIC_SITE_URL === "string" &&
             (process.env.NEXT_PUBLIC_SITE_URL.includes("amplifyapp.com") ||
-                process.env.NEXT_PUBLIC_SITE_URL.includes("uat")));
+                (process.env.NEXT_PUBLIC_SITE_URL.includes("uat") && !process.env.NEXT_PUBLIC_SITE_URL.includes("getcredsecure.com"))))
+    );
 
     const res = isApiV1 ? NextResponse.next() : await (authHandler as any)(req);
+
+    // Apply X-Robots-Tag ONLY in UAT environment.
+    // In Production, NEVER set global X-Robots-Tag: noindex header so public marketing/legal pages remain indexable.
     if (isUatEnv && res && res.headers) {
         res.headers.set("X-Robots-Tag", "noindex, nofollow");
     }
