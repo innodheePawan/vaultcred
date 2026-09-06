@@ -31,7 +31,7 @@ export function MathCaptcha({ onValidate, resetKey = 0 }: MathCaptchaProps) {
     }, [resetKey, generateCaptcha]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
+        const val = e.target.value.replace(/\D/g, '');
         setUserAnswer(val);
         const parsed = parseInt(val.trim(), 10);
         const valid = !isNaN(parsed) && parsed === num1 + num2;
@@ -78,12 +78,14 @@ export function MathCaptcha({ onValidate, resetKey = 0 }: MathCaptchaProps) {
 
                 <div className="relative flex-1">
                     <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         required
                         value={userAnswer}
                         onChange={handleChange}
                         placeholder="Your answer"
-                        className={`w-full h-9 px-3 rounded-lg bg-white dark:bg-slate-950 border text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none transition-colors ${
+                        className={`w-full h-9 px-3 rounded-lg bg-white dark:bg-slate-950 border text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                             userAnswer === ''
                                 ? 'border-slate-200 dark:border-white/[0.08] focus:border-blue-600 dark:focus:border-blue-500/40'
                                 : isValid
