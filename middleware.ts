@@ -172,14 +172,29 @@ export default async function middleware(req: any) {
     // NORMAL AUTH FLOW
     const rawHost = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl?.hostname || '';
     const host = rawHost.toLowerCase().split(',')[0].split(':')[0].trim();
-    const isProductionHost = (host === 'getcredsecure.com' || host === 'www.getcredsecure.com');
     const appEnv = (process.env.NEXT_PUBLIC_APP_ENV || process.env.APP_ENV || "").toLowerCase().trim();
     const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
-    const isUatBranch = awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging";
+    const isUatFlag = (process.env.NEXT_PUBLIC_IS_UAT || process.env.IS_UAT || "").toLowerCase().trim();
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").toLowerCase().trim();
 
-    // Strictly production only when host is getcredsecure.com, not on a UAT branch, and not configured as UAT
-    const isProduction = isProductionHost && !isUatBranch && appEnv !== "uat" && appEnv !== "staging";
-    const isUatEnv = !isProduction;
+    const isUatHost = (
+        host.includes('amplifyapp.com') ||
+        (host.includes('uat') && !host.includes('getcredsecure.com')) ||
+        host.startsWith('uat.') ||
+        host.startsWith('staging.')
+    );
+
+    const isUatEnv = (
+        isUatHost ||
+        appEnv === "uat" ||
+        appEnv === "staging" ||
+        isUatFlag === "true" ||
+        isUatFlag === "1" ||
+        awsBranch === "uat" ||
+        awsBranch === "credsecure-uat" ||
+        awsBranch === "staging" ||
+        (siteUrl.includes("amplifyapp.com") || (siteUrl.includes("uat") && !siteUrl.includes("getcredsecure.com")))
+    );
 
     const res = isApiV1 ? NextResponse.next() : await (authHandler as any)(req);
 

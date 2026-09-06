@@ -9,29 +9,27 @@ interface ConstructMetadataProps {
 
 export function isUatEnvironment(): boolean {
   const appEnv = (process.env.NEXT_PUBLIC_APP_ENV || process.env.APP_ENV || "").toLowerCase().trim();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").toLowerCase().trim();
-  const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
+  if (appEnv === "uat" || appEnv === "staging") {
+    return true;
+  }
+
   const isUatFlag = (process.env.NEXT_PUBLIC_IS_UAT || process.env.IS_UAT || "").toLowerCase().trim();
-
-  // Explicit production environment check
-  const isProdEnv = appEnv === "production" || appEnv === "prod";
-  const isProdUrl = (siteUrl.includes("getcredsecure.com") || siteUrl.includes("www.getcredsecure.com")) && !siteUrl.includes("uat");
-  const isUatBranch = awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging";
-
-  if (isProdEnv && isProdUrl && !isUatBranch && isUatFlag !== "true") {
-    return false;
+  if (isUatFlag === "true" || isUatFlag === "1") {
+    return true;
   }
 
-  if (isProdUrl && !isUatBranch && isUatFlag !== "true" && appEnv !== "uat" && appEnv !== "staging") {
-    return false;
+  const awsBranch = (process.env.AWS_BRANCH || "").toLowerCase().trim();
+  if (awsBranch === "uat" || awsBranch === "credsecure-uat" || awsBranch === "staging") {
+    return true;
   }
 
-  if (isProdEnv && !isUatBranch && isUatFlag !== "true" && !siteUrl.includes("amplifyapp.com") && !siteUrl.includes("uat")) {
-    return false;
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").toLowerCase().trim();
+  if (siteUrl.includes("amplifyapp.com") || (siteUrl.includes("uat") && !siteUrl.includes("getcredsecure.com"))) {
+    return true;
   }
 
-  // All UAT, Amplify, Staging, Preview, and non-production deployments default to true (noindex)
-  return true;
+  // By default in production and standard builds, return false so public pages remain 100% indexable
+  return false;
 }
 
 export function constructMetadata({
