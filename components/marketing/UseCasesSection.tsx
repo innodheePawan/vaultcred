@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { UseCaseNavigator } from "@/components/marketing/UseCaseNavigator";
 import { ExpandableUseCaseCard, Tier1UseCaseData } from "@/components/marketing/ExpandableUseCaseCard";
 
@@ -10,52 +10,123 @@ interface UseCasesSectionProps {
 
 export function UseCasesSection({ tier1UseCases }: UseCasesSectionProps) {
     const [activeUseCaseId, setActiveUseCaseId] = useState<string | null>(null);
+    const animFrameRef = useRef<number | null>(null);
 
-    const scrollToUseCase = (id: string, currentActiveId: string | null) => {
-        const target = document.getElementById(id);
-        if (!target) return;
-
-        const navbarOffset = 90;
-        let collapseHeightOffset = 0;
-
-        // If a previously open card is located ABOVE the target card in the DOM,
-        // subtract its content height from the target position so we scroll directly
-        // to the final settled position in one single smooth motion.
-        if (currentActiveId && currentActiveId !== id) {
-            const prevCard = document.getElementById(currentActiveId);
-            if (prevCard && (prevCard.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)) {
-                const contentEl = prevCard.querySelector('[data-collapsible-content]') as HTMLElement;
-                if (contentEl) {
-                    const innerContent = (contentEl.firstElementChild || contentEl) as HTMLElement;
-                    collapseHeightOffset = innerContent.offsetHeight || innerContent.scrollHeight;
-                }
-            }
+    const cancelScroll = () => {
+        if (animFrameRef.current !== null) {
+            cancelAnimationFrame(animFrameRef.current);
+            animFrameRef.current = null;
         }
-
-        const currentTargetTop = target.getBoundingClientRect().top + window.scrollY;
-        const finalTop = Math.max(0, currentTargetTop - collapseHeightOffset - navbarOffset);
-
-        window.scrollTo({
-            top: finalTop,
-            behavior: "smooth",
-        });
     };
 
-    const handleSelectUseCase = (id: string) => {
-        const prevId = activeUseCaseId;
-        setActiveUseCaseId(id);
-        if (id) {
-            scrollToUseCase(id, prevId);
+    const smoothScrollTo = (targetY: number, duration = 300, onComplete?: () => void) => {
+        cancelScroll();
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+
+        if (Math.abs(distance) < 5) {
+            window.scrollTo(0, targetY);
+            onComplete?.();
+            return;
+        }
+
+        let startTime: number | null = null;
+        const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+        const step = (currentTime: number) => {
+            if (startTime === null) startTime = currentTime;
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easedProgress = easeOutCubic(progress);
+
+            window.scrollTo(0, startY + distance * easedProgress);
+
+            if (progress < 1) {
+                animFrameRef.current = requestAnimationFrame(step);
+            } else {
+                animFrameRef.current = null;
+                onComplete?.();
+            }
+        };
+
+        animFrameRef.current = requestAnimationFrame(step);
+    };
+
+    const handleSelectUseCase = (targetId: string) => {
+        const navbarOffset = 90;
+        const useCaseIds = tier1UseCases.map((uc) => uc.id);
+
+        // Case 1: Clicking the already active card header or navigator card
+        if (activeUseCaseId === targetId) {
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+                const targetTop = targetEl.getBoundingClientRect().top + window.scrollY - navbarOffset;
+                smoothScrollTo(Math.max(0, targetTop));
+            }
+            return;
+        }
+
+        // Case 2: Opening a card when no card is currently open
+        if (activeUseCaseId === null) {
+            setActiveUseCaseId(targetId);
+            requestAnimationFrame(() => {
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) {
+                    const targetTop = targetEl.getBoundingClientRect().top + window.scrollY - navbarOffset;
+                    smoothScrollTo(Math.max(0, targetTop));
+                }
+            });
+            return;
+        }
+
+        // Case 3: Swapping between two open cards
+        const indexA = useCaseIds.indexOf(activeUseCaseId);
+        const indexB = useCaseIds.indexOf(targetId);
+
+        if (indexB < indexA) {
+            // Target Card B is ABOVE active Card A.
+            // Card A closing below Card B will NOT alter Card B's pageY position.
+            setActiveUseCaseId(targetId);
+            requestAnimationFrame(() => {
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) {
+                    const targetTop = targetEl.getBoundingClientRect().top + window.scrollY - navbarOffset;
+                    smoothScrollTo(Math.max(0, targetTop));
+                }
+            });
+        } else {
+            // Target Card B is BELOW active Card A.
+            // Measure Card A's height before closing it so we can keep Card B header static.
+            const activeEl = document.getElementById(activeUseCaseId);
+            const collapsible = activeEl?.querySelector("[data-collapsible-content]");
+            const H_A = collapsible ? (collapsible as HTMLElement).offsetHeight : 0;
+
+            const targetEl = document.getElementById(targetId);
+            if (!targetEl) {
+                setActiveUseCaseId(targetId);
+                return;
+            }
+
+            const currentTargetTop = targetEl.getBoundingClientRect().top + window.scrollY;
+            const targetScrollY = Math.max(0, currentTargetTop - navbarOffset);
+
+            // Smoothly glide camera down to Card B's header FIRST
+            smoothScrollTo(targetScrollY, 320, () => {
+                // When camera lands at Card B's header:
+                setActiveUseCaseId(targetId);
+                // Adjust scrollY by H_A instantly so Card B header stays frozen at exact same 90px top offset
+                const adjustedScrollY = Math.max(0, targetScrollY - H_A);
+                window.scrollTo(0, adjustedScrollY);
+            });
         }
     };
 
     const handleAccordionToggle = (id: string) => {
         if (activeUseCaseId === id) {
+            cancelScroll();
             setActiveUseCaseId(null);
         } else {
-            const prevId = activeUseCaseId;
-            setActiveUseCaseId(id);
-            scrollToUseCase(id, prevId);
+            handleSelectUseCase(id);
         }
     };
 
