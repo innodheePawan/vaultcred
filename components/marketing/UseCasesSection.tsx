@@ -46,12 +46,20 @@ export function UseCasesSection({ tier1UseCases }: UseCasesSectionProps) {
     useEffect(() => {
         if (!activeUseCaseId) return;
 
-        // Small timeout allows React render cycle to collapse previous card in the DOM before calculating top offset
-        const timer = setTimeout(() => {
+        // Immediate scroll attempt
+        const timer1 = setTimeout(() => {
             scrollToUseCase(activeUseCaseId);
         }, 50);
 
-        return () => clearTimeout(timer);
+        // Final scroll adjustment after 300ms CSS grid transition completes
+        const timer2 = setTimeout(() => {
+            scrollToUseCase(activeUseCaseId);
+        }, 320);
+
+        return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+        };
     }, [activeUseCaseId, scrollTrigger]);
 
     return (

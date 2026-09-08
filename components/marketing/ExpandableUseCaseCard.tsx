@@ -81,11 +81,11 @@ export function ExpandableUseCaseCard({ data, isOpen, onToggle }: ExpandableUseC
 
             {/* Collapsible Content */}
             <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    isOpen ? "max-h-[3000px] opacity-100" : "max-h-0 opacity-0"
+                className={`grid transition-all duration-300 ease-in-out ${
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                 }`}
             >
-                <div className="border-t border-slate-200/80 dark:border-white/[0.04]">
+                <div className="overflow-hidden border-t border-slate-200/80 dark:border-white/[0.04]">
                     
                     {/* Problem & Solution Body */}
                     <div className="px-6 sm:px-8 pt-6 pb-6 space-y-6">
