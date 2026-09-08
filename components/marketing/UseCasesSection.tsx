@@ -11,36 +11,53 @@ interface UseCasesSectionProps {
 export function UseCasesSection({ tier1UseCases }: UseCasesSectionProps) {
     const [activeUseCaseId, setActiveUseCaseId] = useState<string | null>(null);
 
+    const scrollToUseCase = (id: string, currentActiveId: string | null) => {
+        const target = document.getElementById(id);
+        if (!target) return;
+
+        const navbarOffset = 90;
+        let collapseHeightOffset = 0;
+
+        // If a previously open card is located ABOVE the target card in the DOM,
+        // subtract its content height from the target position so we scroll directly
+        // to the final settled position in one single smooth motion.
+        if (currentActiveId && currentActiveId !== id) {
+            const prevCard = document.getElementById(currentActiveId);
+            if (prevCard && (prevCard.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+                const contentEl = prevCard.querySelector('[data-collapsible-content]') as HTMLElement;
+                if (contentEl) {
+                    const innerContent = (contentEl.firstElementChild || contentEl) as HTMLElement;
+                    collapseHeightOffset = innerContent.offsetHeight || innerContent.scrollHeight;
+                }
+            }
+        }
+
+        const currentTargetTop = target.getBoundingClientRect().top + window.scrollY;
+        const finalTop = Math.max(0, currentTargetTop - collapseHeightOffset - navbarOffset);
+
+        window.scrollTo({
+            top: finalTop,
+            behavior: "smooth",
+        });
+    };
+
     const handleSelectUseCase = (id: string) => {
+        const prevId = activeUseCaseId;
         setActiveUseCaseId(id);
+        if (id) {
+            scrollToUseCase(id, prevId);
+        }
     };
 
     const handleAccordionToggle = (id: string) => {
         if (activeUseCaseId === id) {
             setActiveUseCaseId(null);
         } else {
+            const prevId = activeUseCaseId;
             setActiveUseCaseId(id);
+            scrollToUseCase(id, prevId);
         }
     };
-
-    useEffect(() => {
-        if (!activeUseCaseId) return;
-
-        // Perform smooth scroll after React updates DOM layout so target position is completely static
-        const timer = setTimeout(() => {
-            const target = document.getElementById(activeUseCaseId);
-            if (target) {
-                const navbarOffset = 90;
-                const targetTop = target.getBoundingClientRect().top + window.scrollY - navbarOffset;
-                window.scrollTo({
-                    top: Math.max(0, targetTop),
-                    behavior: "smooth",
-                });
-            }
-        }, 10);
-
-        return () => clearTimeout(timer);
-    }, [activeUseCaseId]);
 
     return (
         <div>
