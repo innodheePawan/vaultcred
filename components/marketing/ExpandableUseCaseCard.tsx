@@ -82,7 +82,7 @@ export function ExpandableUseCaseCard({ data, isOpen, onToggle }: ExpandableUseC
             {/* Collapsible Content */}
             <div
                 data-collapsible-content
-                className={`grid transition-all duration-300 ease-in-out ${
+                className={`grid transition-[opacity,grid-template-rows] duration-200 ease-out ${
                     isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                 }`}
             >
