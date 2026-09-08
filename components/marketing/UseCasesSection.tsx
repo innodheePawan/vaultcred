@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { UseCaseNavigator } from "@/components/marketing/UseCaseNavigator";
 import { ExpandableUseCaseCard, Tier1UseCaseData } from "@/components/marketing/ExpandableUseCaseCard";
 
@@ -11,48 +11,42 @@ interface UseCasesSectionProps {
 export function UseCasesSection({ tier1UseCases }: UseCasesSectionProps) {
     const [activeUseCaseId, setActiveUseCaseId] = useState<string | null>(null);
 
-    const scrollToUseCase = (id: string, currentActiveId: string | null) => {
+    const handleSelectUseCase = (id: string) => {
         const target = document.getElementById(id);
-        if (!target) return;
-
         const navbarOffset = 90;
-        let collapseHeightOffset = 0;
 
-        // If a previously open card is located ABOVE the target card in the DOM,
-        // subtract its content height from the target position so we scroll directly
-        // to the final settled position in one single smooth motion.
-        if (currentActiveId && currentActiveId !== id) {
-            const prevCard = document.getElementById(currentActiveId);
-            if (prevCard && (prevCard.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)) {
-                const contentEl = prevCard.querySelector('[data-collapsible-content]') as HTMLElement;
-                if (contentEl) {
-                    collapseHeightOffset = contentEl.offsetHeight || contentEl.scrollHeight;
+        if (target) {
+            let collapseHeightOffset = 0;
+
+            // If a previous card is open and located ABOVE the target card, account for its height collapse in advance
+            if (activeUseCaseId && activeUseCaseId !== id) {
+                const prevCard = document.getElementById(activeUseCaseId);
+                if (prevCard && (prevCard.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+                    collapseHeightOffset = prevCard.offsetHeight;
                 }
             }
+
+            const currentTargetTop = target.getBoundingClientRect().top + window.scrollY;
+            const finalTop = Math.max(0, currentTargetTop - collapseHeightOffset - navbarOffset);
+
+            // 1. Update state (collapses previous card & opens selected card)
+            setActiveUseCaseId(id);
+
+            // 2. Perform a single smooth scroll directly to the predicted final settled position
+            window.scrollTo({
+                top: finalTop,
+                behavior: "smooth",
+            });
+        } else {
+            setActiveUseCaseId(id);
         }
-
-        const currentTargetTop = target.getBoundingClientRect().top + window.scrollY;
-        const finalTop = Math.max(0, currentTargetTop - collapseHeightOffset - navbarOffset);
-
-        window.scrollTo({
-            top: finalTop,
-            behavior: "smooth",
-        });
-    };
-
-    const handleSelectUseCase = (id: string) => {
-        const prevId = activeUseCaseId;
-        setActiveUseCaseId(id);
-        scrollToUseCase(id, prevId);
     };
 
     const handleAccordionToggle = (id: string) => {
         if (activeUseCaseId === id) {
             setActiveUseCaseId(null);
         } else {
-            const prevId = activeUseCaseId;
             setActiveUseCaseId(id);
-            scrollToUseCase(id, prevId);
         }
     };
 
