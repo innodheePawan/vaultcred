@@ -2,8 +2,7 @@
 
 import React from "react";
 import { Server, KeyRound, Globe, FileCode, Layers, ChevronDown, Info } from "lucide-react";
-import { BeforeAfterEnvVisual } from "@/components/marketing/BeforeAfterEnvVisual";
-import { BeforeAfterBtpVisual } from "@/components/marketing/BeforeAfterBtpVisual";
+import { BeforeAfterUseCaseVisual, BeforeAfterUseCaseData } from "@/components/marketing/BeforeAfterUseCaseVisual";
 
 const iconMap: Record<string, React.ElementType> = {
     "sap-credential-governance": Server,
@@ -20,7 +19,10 @@ export interface Tier1UseCaseData {
     problem: string;
     pain: string[];
     solution: string;
+    beforeAfterData?: BeforeAfterUseCaseData;
     workflow: { step: string; desc: string }[];
+    governanceNoteTitle?: string;
+    governanceNote?: string;
     updateNote?: string;
     extensibilityTitle?: string;
     extensibilityNote?: string;
@@ -123,8 +125,7 @@ export function ExpandableUseCaseCard({ data, isOpen, onToggle }: ExpandableUseC
                         </div>
 
                         {/* Embedded Visual Diagram */}
-                        {data.visualType === "env" && <BeforeAfterEnvVisual />}
-                        {data.visualType === "btp" && <BeforeAfterBtpVisual />}
+                        {data.beforeAfterData && <BeforeAfterUseCaseVisual data={data.beforeAfterData} />}
                     </div>
 
                     {/* Governance Workflow */}
@@ -144,6 +145,21 @@ export function ExpandableUseCaseCard({ data, isOpen, onToggle }: ExpandableUseC
                             ))}
                         </div>
                     </div>
+
+                    {/* Governance Note */}
+                    {data.governanceNote && (
+                        <div className="px-6 sm:px-8 py-3 border-t border-slate-200 dark:border-white/[0.04] bg-slate-50/80 dark:bg-white/[0.01]">
+                            <div className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-400">
+                                <Info className="w-3.5 h-3.5 text-indigo-500 mt-0.5 shrink-0" />
+                                <p className="leading-relaxed">
+                                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                        {data.governanceNoteTitle || "Governance Note"}:{" "}
+                                    </span>
+                                    {data.governanceNote}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Credential Updates Note */}
                     {data.updateNote && (
