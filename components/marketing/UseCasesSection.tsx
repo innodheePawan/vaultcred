@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UseCaseNavigator } from "@/components/marketing/UseCaseNavigator";
 import { ExpandableUseCaseCard, Tier1UseCaseData } from "@/components/marketing/ExpandableUseCaseCard";
 
@@ -10,35 +10,27 @@ interface UseCasesSectionProps {
 
 export function UseCasesSection({ tier1UseCases }: UseCasesSectionProps) {
     const [activeUseCaseId, setActiveUseCaseId] = useState<string | null>(null);
+    const [scrollTrigger, setScrollTrigger] = useState<number>(0);
 
-    const handleSelectUseCase = (id: string) => {
-        const target = document.getElementById(id);
+    const scrollToUseCase = (id: string) => {
         const navbarOffset = 90;
-
+        const target = document.getElementById(id);
         if (target) {
-            let collapseHeightOffset = 0;
-
-            // If a previous card is open and located ABOVE the target card, account for its height collapse in advance
-            if (activeUseCaseId && activeUseCaseId !== id) {
-                const prevCard = document.getElementById(activeUseCaseId);
-                if (prevCard && (prevCard.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)) {
-                    collapseHeightOffset = prevCard.offsetHeight;
-                }
-            }
-
             const currentTargetTop = target.getBoundingClientRect().top + window.scrollY;
-            const finalTop = Math.max(0, currentTargetTop - collapseHeightOffset - navbarOffset);
-
-            // 1. Update state (collapses previous card & opens selected card)
-            setActiveUseCaseId(id);
-
-            // 2. Perform a single smooth scroll directly to the predicted final settled position
+            const finalTop = Math.max(0, currentTargetTop - navbarOffset);
             window.scrollTo({
                 top: finalTop,
                 behavior: "smooth",
             });
+        }
+    };
+
+    const handleSelectUseCase = (id: string) => {
+        if (activeUseCaseId === id) {
+            scrollToUseCase(id);
         } else {
             setActiveUseCaseId(id);
+            setScrollTrigger((prev) => prev + 1);
         }
     };
 
@@ -47,8 +39,20 @@ export function UseCasesSection({ tier1UseCases }: UseCasesSectionProps) {
             setActiveUseCaseId(null);
         } else {
             setActiveUseCaseId(id);
+            setScrollTrigger((prev) => prev + 1);
         }
     };
+
+    useEffect(() => {
+        if (!activeUseCaseId) return;
+
+        // Small timeout allows React render cycle to collapse previous card in the DOM before calculating top offset
+        const timer = setTimeout(() => {
+            scrollToUseCase(activeUseCaseId);
+        }, 50);
+
+        return () => clearTimeout(timer);
+    }, [activeUseCaseId, scrollTrigger]);
 
     return (
         <div>
