@@ -10,57 +10,51 @@ interface UseCasesSectionProps {
 
 export function UseCasesSection({ tier1UseCases }: UseCasesSectionProps) {
     const [activeUseCaseId, setActiveUseCaseId] = useState<string | null>(null);
-    const [scrollTrigger, setScrollTrigger] = useState<number>(0);
 
-    const scrollToUseCase = (id: string) => {
-        const navbarOffset = 90;
+    const scrollToUseCase = (id: string, currentActiveId: string | null) => {
         const target = document.getElementById(id);
-        if (target) {
-            const currentTargetTop = target.getBoundingClientRect().top + window.scrollY;
-            const finalTop = Math.max(0, currentTargetTop - navbarOffset);
-            window.scrollTo({
-                top: finalTop,
-                behavior: "smooth",
-            });
+        if (!target) return;
+
+        const navbarOffset = 90;
+        let collapseHeightOffset = 0;
+
+        // If a previously open card is located ABOVE the target card in the DOM,
+        // subtract its content height from the target position so we scroll directly
+        // to the final settled position in one single smooth motion.
+        if (currentActiveId && currentActiveId !== id) {
+            const prevCard = document.getElementById(currentActiveId);
+            if (prevCard && (prevCard.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+                const contentEl = prevCard.querySelector('[data-collapsible-content]') as HTMLElement;
+                if (contentEl) {
+                    collapseHeightOffset = contentEl.offsetHeight || contentEl.scrollHeight;
+                }
+            }
         }
+
+        const currentTargetTop = target.getBoundingClientRect().top + window.scrollY;
+        const finalTop = Math.max(0, currentTargetTop - collapseHeightOffset - navbarOffset);
+
+        window.scrollTo({
+            top: finalTop,
+            behavior: "smooth",
+        });
     };
 
     const handleSelectUseCase = (id: string) => {
-        if (activeUseCaseId === id) {
-            scrollToUseCase(id);
-        } else {
-            setActiveUseCaseId(id);
-            setScrollTrigger((prev) => prev + 1);
-        }
+        const prevId = activeUseCaseId;
+        setActiveUseCaseId(id);
+        scrollToUseCase(id, prevId);
     };
 
     const handleAccordionToggle = (id: string) => {
         if (activeUseCaseId === id) {
             setActiveUseCaseId(null);
         } else {
+            const prevId = activeUseCaseId;
             setActiveUseCaseId(id);
-            setScrollTrigger((prev) => prev + 1);
+            scrollToUseCase(id, prevId);
         }
     };
-
-    useEffect(() => {
-        if (!activeUseCaseId) return;
-
-        // Immediate scroll attempt
-        const timer1 = setTimeout(() => {
-            scrollToUseCase(activeUseCaseId);
-        }, 50);
-
-        // Final scroll adjustment after 300ms CSS grid transition completes
-        const timer2 = setTimeout(() => {
-            scrollToUseCase(activeUseCaseId);
-        }, 320);
-
-        return () => {
-            clearTimeout(timer1);
-            clearTimeout(timer2);
-        };
-    }, [activeUseCaseId, scrollTrigger]);
 
     return (
         <div>
