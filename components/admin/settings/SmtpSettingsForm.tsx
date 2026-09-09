@@ -98,7 +98,7 @@ export default function SmtpSettingsForm({ initialSettings, canEdit = true }: { 
                             placeholder="smtp.example.com"
                             required
                             disabled={!canEdit}
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-3.5 py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -115,7 +115,7 @@ export default function SmtpSettingsForm({ initialSettings, canEdit = true }: { 
                             defaultValue={initialSettings.smtpPort || '587'}
                             required
                             disabled={!canEdit}
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-3.5 py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -133,7 +133,7 @@ export default function SmtpSettingsForm({ initialSettings, canEdit = true }: { 
                             autoComplete="off"
                             required
                             disabled={!canEdit}
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-3.5 py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -151,7 +151,7 @@ export default function SmtpSettingsForm({ initialSettings, canEdit = true }: { 
                             autoComplete="new-password"
                             placeholder={initialSettings.smtpPass ? '******' : ''}
                             disabled={!canEdit}
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-3.5 py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -168,7 +168,7 @@ export default function SmtpSettingsForm({ initialSettings, canEdit = true }: { 
                             defaultValue={initialSettings.smtpFromEmail || ''}
                             placeholder="noreply@yourcompany.com"
                             disabled={!canEdit}
-                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-3.5 py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
@@ -221,7 +221,7 @@ export default function SmtpSettingsForm({ initialSettings, canEdit = true }: { 
                                 onChange={(e) => setTestEmail(e.target.value)}
                                 placeholder="you@example.com"
                                 disabled={!canEdit}
-                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-3.5 py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                         </div>
 

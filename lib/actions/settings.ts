@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { logAudit } from './audit';
-import { encrypt } from '@/lib/crypto';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { verifyConnection } from '@/lib/email';
 
 export async function getSystemSettings() {
@@ -73,11 +73,23 @@ export async function verifySmtpConfig(prevState: any, formData: FormData) {
     const portRaw = formData.get('smtpPort');
     const port = portRaw ? parseInt(portRaw as string) : 587;
     const user = formData.get('smtpUser') as string;
-    const pass = formData.get('smtpPass') as string; // Raw password from form
+    let pass = formData.get('smtpPass') as string; // Raw password from form
     const testEmailTo = formData.get('testEmailTo') as string | undefined;
     const fromEmail = formData.get('smtpFromEmail') as string | undefined;
 
     const secure = formData.get('smtpSecure') === 'true';
+
+    // If password input contains placeholder '******', fetch and decrypt existing saved password
+    if (pass === '******') {
+        const settings = await prisma.systemSettings.findFirst();
+        if (settings && (settings as any).smtpPass) {
+            try {
+                pass = decrypt((settings as any).smtpPass);
+            } catch {
+                pass = (settings as any).smtpPass;
+            }
+        }
+    }
 
     if (!host || !user || !pass) {
         return { success: false, message: 'Missing required fields' };
