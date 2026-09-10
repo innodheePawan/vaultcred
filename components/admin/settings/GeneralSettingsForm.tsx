@@ -69,7 +69,7 @@ export default function GeneralSettingsForm({ initialSettings, canEdit = true }:
                         defaultValue={initialSettings.applicationName}
                         required
                         disabled={!canEdit}
-                        className="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="block w-full pl-10 sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
@@ -93,7 +93,7 @@ export default function GeneralSettingsForm({ initialSettings, canEdit = true }:
                         defaultValue={initialSettings.companyName || 'My Company'}
                         required
                         disabled={!canEdit}
-                        className="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="block w-full pl-10 sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
