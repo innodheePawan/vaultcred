@@ -4,7 +4,7 @@ import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { ContactUsForm } from "./ContactUsForm";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
-import { Mail, Phone, Linkedin, ExternalLink, ShieldCheck, Clock, MessageSquare, Building2 } from "lucide-react";
+import { Mail, Phone, Linkedin, ExternalLink, ShieldCheck, Clock, MessageSquare, Building2, ArrowUpRight } from "lucide-react";
 import { constructMetadata } from "@/lib/seo";
 
 export const metadata = constructMetadata({
@@ -43,61 +43,111 @@ export default async function ContactUsPage() {
                             </div>
 
                             {/* Direct Contact Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                                <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] shadow-xs space-y-1.5">
-                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                        <Mail className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Email Us</span>
+                            <div className="space-y-3 pt-1">
+                                {/* Email Us - Featured Primary Channel */}
+                                <a
+                                    href="mailto:customer-support@getcredsecure.com"
+                                    className="group relative block p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] hover:bg-blue-50/40 dark:hover:bg-white/[0.04] hover:border-blue-500/40 dark:hover:border-blue-500/40 transition-all duration-200 shadow-xs hover:shadow-md"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-start gap-3.5 min-w-0">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                <Mail className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0 space-y-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                        Email Us
+                                                    </span>
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                        Response within 2 hours
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate">
+                                                    customer-support@getcredsecure.com
+                                                </p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    Direct channel for inquiries, enterprise architecture & security support
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-white/[0.05] flex items-center justify-center text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-colors shrink-0 mt-0.5">
+                                            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                        </div>
                                     </div>
-                                    <a
-                                        href="mailto:customer-support@getcredsecure.com"
-                                        className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block whitespace-nowrap"
-                                    >
-                                        customer-support@getcredsecure.com
-                                    </a>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Response within 2 business hours</p>
-                                </div>
+                                </a>
 
-                                <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] shadow-xs space-y-1.5">
-                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                        <Phone className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Call Us</span>
-                                    </div>
+                                {/* Secondary Contact Options: Call & LinkedIn */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <a
                                         href="tel:+917406663433"
-                                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block"
+                                        className="group block p-4 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] hover:bg-slate-50/80 dark:hover:bg-white/[0.04] hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 shadow-xs hover:shadow-md"
                                     >
-                                        +91-7406663433
+                                        <div className="flex items-start gap-3 min-w-0">
+                                            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                <Phone className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0 space-y-0.5">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                                                    Call Us
+                                                </span>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
+                                                    +91-7406663433
+                                                </p>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                    Mon &ndash; Fri, 9 AM &ndash; 7 PM IST
+                                                </p>
+                                            </div>
+                                        </div>
                                     </a>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Mon &ndash; Fri, 9 AM &ndash; 7 PM IST</p>
-                                </div>
 
-                                <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] shadow-xs space-y-1.5">
-                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                        <Linkedin className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">LinkedIn</span>
-                                    </div>
                                     <a
                                         href="https://www.linkedin.com/company/innodhee-services/?viewAsMember=true"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-1"
+                                        className="group block p-4 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] hover:bg-slate-50/80 dark:hover:bg-white/[0.04] hover:border-sky-500/40 dark:hover:border-sky-500/40 transition-all duration-200 shadow-xs hover:shadow-md"
                                     >
-                                        Innodhee Services
-                                        <ExternalLink className="w-3 h-3 text-slate-400" />
+                                        <div className="flex items-start gap-3 min-w-0">
+                                            <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                <Linkedin className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0 space-y-0.5">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                                                    LinkedIn
+                                                </span>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:hover:text-sky-400 transition-colors inline-flex items-center gap-1 truncate">
+                                                    Innodhee Services
+                                                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                                </p>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                    Official LinkedIn Page
+                                                </p>
+                                            </div>
+                                        </div>
                                     </a>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Official LinkedIn Page</p>
                                 </div>
 
-                                <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] shadow-xs space-y-1.5">
-                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                        <Building2 className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Company</span>
+                                {/* Operating Entity */}
+                                <div className="p-4 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] shadow-xs">
+                                    <div className="flex items-center gap-3.5 min-w-0">
+                                        <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                                            <Building2 className="w-4.5 h-4.5" />
+                                        </div>
+                                        <div className="min-w-0 space-y-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                    Operating Entity
+                                                </span>
+                                            </div>
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                                Innodhee Services Pvt Ltd
+                                            </p>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                Enterprise Security &middot; Credential Governance
+                                            </p>
+                                        </div>
                                     </div>
-                                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 block">
-                                        Innodhee Services Pvt Ltd
-                                    </span>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Enterprise Security Solutions</p>
                                 </div>
                             </div>
 

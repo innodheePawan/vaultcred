@@ -110,8 +110,8 @@ export default async function CookiePolicyPage() {
                 </h2>
                 <p>
                     Questions regarding website technologies may be sent to{" "}
-                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
-                        customer-support@getcredsecure.com
+                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium break-words">
+                        customer-support@<wbr />getcredsecure.com
                     </a>.
                 </p>
             </section>

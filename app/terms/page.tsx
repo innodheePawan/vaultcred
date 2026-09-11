@@ -132,8 +132,8 @@ export default async function TermsOfUsePage() {
                     <p>Bengaluru, Karnataka 560100, India</p>
                     <p className="pt-2">
                         Contact Email:{" "}
-                        <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
-                            customer-support@getcredsecure.com
+                        <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium break-words">
+                            customer-support@<wbr />getcredsecure.com
                         </a>
                     </p>
                     <p>Phone: +91-7406663433</p>

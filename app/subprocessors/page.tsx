@@ -88,8 +88,8 @@ export default async function SubprocessorsPage() {
                 </h2>
                 <p className="text-xs sm:text-sm">
                     Inquiries regarding subprocessor governance should be sent to{" "}
-                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
-                        customer-support@getcredsecure.com
+                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium break-words">
+                        customer-support@<wbr />getcredsecure.com
                     </a>.
                 </p>
             </section>

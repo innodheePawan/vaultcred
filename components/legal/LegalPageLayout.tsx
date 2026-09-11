@@ -33,7 +33,7 @@ export function LegalPageLayout({
             <main className="relative z-10 pt-20 pb-20">
                 {/* Header Banner */}
                 <section className="relative border-b border-slate-200 dark:border-white/[0.06] bg-slate-100/60 dark:bg-white/[0.015] py-12 md:py-16">
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="space-y-4">
                             <div className="flex flex-wrap items-center gap-3">
                                 <Link
@@ -73,8 +73,8 @@ export function LegalPageLayout({
                 </section>
 
                 {/* Main Content Area */}
-                <section className="pt-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <section className="pt-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
                         {/* Legal Body */}
                         <div className="lg:col-span-8 bg-white dark:bg-[#090d16] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-6 sm:p-10 shadow-xs space-y-8 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                             {children}
@@ -83,18 +83,20 @@ export function LegalPageLayout({
                         {/* Sidebar Information Card */}
                         <div className="lg:col-span-4 space-y-6">
                             <div className="sticky top-28 space-y-6">
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#090d16] shadow-xs space-y-4">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                                <div className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#090d16] shadow-xs space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
                                         Legal Entity Details
                                     </h3>
-                                    <div className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
-                                        <div className="flex items-start gap-2.5">
-                                            <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                                            <div>
-                                                <span className="font-semibold text-slate-900 dark:text-slate-200 block">
+                                    <div className="space-y-3.5 text-xs text-slate-600 dark:text-slate-400">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                                                <Building2 className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <span className="font-semibold text-slate-900 dark:text-slate-200 block text-xs">
                                                     Innodhee Services Pvt. Ltd.
                                                 </span>
-                                                <p className="mt-1 text-slate-500 leading-normal">
+                                                <p className="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
                                                     RI Elegance, Parappana Agrahara Main Rd,<br />
                                                     Sai Sree Layout, Parappana Agrahara,<br />
                                                     Bengaluru, Karnataka 560100, India
@@ -102,18 +104,24 @@ export function LegalPageLayout({
                                             </div>
                                         </div>
 
-                                        <div className="pt-3 border-t border-slate-200 dark:border-white/[0.06] flex items-start gap-2.5">
-                                            <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                                        <div className="pt-3 border-t border-slate-200 dark:border-white/[0.06] flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                                                <Mail className="w-4 h-4" />
+                                            </div>
                                             <div className="min-w-0">
-                                                <span className="font-semibold text-slate-900 dark:text-slate-200 block">
+                                                <span className="font-semibold text-slate-900 dark:text-slate-200 block text-xs">
                                                     Contact Email
                                                 </span>
                                                 <a
                                                     href="mailto:customer-support@getcredsecure.com"
-                                                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium text-[11px] sm:text-xs xl:text-[13px] whitespace-nowrap block"
+                                                    title="customer-support@getcredsecure.com"
+                                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-xs whitespace-nowrap block mt-0.5 transition-colors"
                                                 >
                                                     customer-support@getcredsecure.com
                                                 </a>
+                                                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">
+                                                    Enterprise &amp; compliance inquiries
+                                                </p>
                                             </div>
                                         </div>
                                     </div>

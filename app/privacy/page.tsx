@@ -142,8 +142,8 @@ export default async function PrivacyPolicyPage() {
                 </p>
                 <p>
                     Requests concerning website data managed by Innodhee may be submitted to{" "}
-                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
-                        customer-support@getcredsecure.com
+                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium break-words">
+                        customer-support@<wbr />getcredsecure.com
                     </a>.
                 </p>
             </section>
@@ -176,8 +176,8 @@ export default async function PrivacyPolicyPage() {
                     <p>Bengaluru, Karnataka 560100, India</p>
                     <p className="pt-2">
                         Contact Email:{" "}
-                        <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
-                            customer-support@getcredsecure.com
+                        <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium break-words">
+                            customer-support@<wbr />getcredsecure.com
                         </a>
                     </p>
                     <p>Phone: +91-7406663433</p>

@@ -85,8 +85,8 @@ export default async function DPAPage() {
                 </h2>
                 <p className="text-xs sm:text-sm">
                     To request a formal DPA execution schedule for a specialized enterprise engagement, please contact{" "}
-                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium whitespace-nowrap">
-                        customer-support@getcredsecure.com
+                    <a href="mailto:customer-support@getcredsecure.com" className="text-blue-600 dark:text-blue-400 underline font-medium break-words">
+                        customer-support@<wbr />getcredsecure.com
                     </a>.
                 </p>
             </section>
