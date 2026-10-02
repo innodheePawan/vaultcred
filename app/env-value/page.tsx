@@ -1,7 +1,20 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 
 export default function EnvValuePage() {
+    // ── SETUP_MODE GATE ──────────────────────────────────────────────────────
+    // This page is ONLY accessible when SETUP_MODE=true (server-side env var).
+    // It is unreachable in normal / production operation.
+    // The check intentionally uses only the server-side variable (SETUP_MODE),
+    // NOT the public client-side one, so it cannot be bypassed from the browser.
     const setupMode = process.env.SETUP_MODE;
+    const isSetupModeActive = String(setupMode).trim().toLowerCase() === 'true';
+
+    if (!isSetupModeActive) {
+        redirect('/');
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const publicSetupMode = process.env.NEXT_PUBLIC_SETUP_MODE;
     const dbUrl = process.env.DATABASE_URL;
 
@@ -18,7 +31,7 @@ export default function EnvValuePage() {
         }
     };
 
-    const isSetupModeTrue = String(setupMode).trim().toLowerCase() === "true";
+    const isSetupModeTrue = isSetupModeActive;
     const isPublicSetupModeTrue = String(publicSetupMode).trim().toLowerCase() === "true";
     const effectiveSetupMode = isSetupModeTrue || isPublicSetupModeTrue;
 
