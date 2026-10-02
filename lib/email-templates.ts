@@ -3,6 +3,20 @@
  * Uses inline styles for maximum email client compatibility.
  */
 
+/**
+ * Escapes user-controlled strings before embedding them in HTML.
+ * Prevents HTML injection / stored XSS in email bodies.
+ */
+function escapeHtml(value: string | null | undefined): string {
+    if (value == null) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
 interface InviteTemplateProps {
     appName: string;
     logoUrl: string | null;
@@ -19,10 +33,12 @@ interface PasswordResetTemplateProps {
 }
 
 function getLogoHtml(logoUrl: string | null, appName: string): string {
+    const safeName = escapeHtml(appName);
     if (logoUrl && !logoUrl.startsWith('data:')) {
-        return `<img src="${logoUrl}" alt="${appName}" style="max-height: 48px; max-width: 200px;" />`;
+        // logoUrl is admin-set (not user-supplied), but still escape the alt attribute value
+        return `<img src="${escapeHtml(logoUrl)}" alt="${safeName}" style="max-height: 48px; max-width: 200px;" />`;
     }
-    return `<h1 style="color: #4F46E5; margin: 0; font-size: 24px;">${appName}</h1>`;
+    return `<h1 style="color: #4F46E5; margin: 0; font-size: 24px;">${safeName}</h1>`;
 }
 
 function getBaseStyles(): string {
@@ -40,6 +56,10 @@ function getBaseStyles(): string {
 
 export function getInviteEmailTemplate(props: InviteTemplateProps): string {
     const { appName, logoUrl, inviterName, activationLink, email } = props;
+    // Escape all user-supplied values before embedding in HTML
+    const safeInviterName = escapeHtml(inviterName);
+    const safeEmail = escapeHtml(email);
+    const safeAppName = escapeHtml(appName);
 
     return `
 <!DOCTYPE html>
@@ -59,12 +79,12 @@ export function getInviteEmailTemplate(props: InviteTemplateProps): string {
             <h2 style="color: #111827; margin-top: 0;">You've been invited!</h2>
             
             <p style="color: #374151; line-height: 1.6;">
-                <strong>${inviterName}</strong> has invited you to join <strong>${appName}</strong>.
+                <strong>${safeInviterName}</strong> has invited you to join <strong>${safeAppName}</strong>.
             </p>
             
             <p style="color: #374151; line-height: 1.6;">
                 Click the button below to set up your account and get started.
-                Your email <strong>${email}</strong> has been pre-verified.
+                Your email <strong>${safeEmail}</strong> has been pre-verified.
             </p>
             
             <div style="text-align: center; padding: 24px 0;">
@@ -81,7 +101,7 @@ export function getInviteEmailTemplate(props: InviteTemplateProps): string {
             <div class="footer">
                 <p>This invitation expires in 72 hours.</p>
                 <p>If you didn't expect this invitation, you can safely ignore this email.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -92,6 +112,8 @@ export function getInviteEmailTemplate(props: InviteTemplateProps): string {
 
 export function getPasswordResetEmailTemplate(props: PasswordResetTemplateProps): string {
     const { appName, logoUrl, resetLink, email } = props;
+    const safeEmail = escapeHtml(email);
+    const safeAppName = escapeHtml(appName);
 
     return `
 <!DOCTYPE html>
@@ -112,7 +134,7 @@ export function getPasswordResetEmailTemplate(props: PasswordResetTemplateProps)
             
             <p style="color: #374151; line-height: 1.6;">
                 We received a request to reset the password for the account associated with
-                <strong>${email}</strong>.
+                <strong>${safeEmail}</strong>.
             </p>
             
             <p style="color: #374151; line-height: 1.6;">
@@ -140,7 +162,7 @@ export function getPasswordResetEmailTemplate(props: PasswordResetTemplateProps)
             
             <div class="footer">
                 <p>This link expires in 1 hour.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -158,6 +180,8 @@ interface TwoFactorReconfigureTemplateProps {
 
 export function getTwoFactorReconfigureEmailTemplate(props: TwoFactorReconfigureTemplateProps): string {
     const { appName, logoUrl, reconfigureLink, email } = props;
+    const safeEmail = escapeHtml(email);
+    const safeAppName = escapeHtml(appName);
 
     return `
 <!DOCTYPE html>
@@ -178,7 +202,7 @@ export function getTwoFactorReconfigureEmailTemplate(props: TwoFactorReconfigure
             
             <p style="color: #374151; line-height: 1.6;">
                 We received a request to reconfigure Two-Factor Authentication for your account associated with
-                <strong>${email}</strong>.
+                <strong>${safeEmail}</strong>.
             </p>
             
             <p style="color: #374151; line-height: 1.6;">
@@ -205,7 +229,7 @@ export function getTwoFactorReconfigureEmailTemplate(props: TwoFactorReconfigure
             
             <div class="footer">
                 <p>This link expires in 30 minutes.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -227,8 +251,13 @@ interface OneTimeSecretTemplateProps {
 
 export function getOneTimeSecretEmailTemplate(props: OneTimeSecretTemplateProps): string {
     const { appName, logoUrl, secretLink, email, senderName, message, expiresAt, viewLimit } = props;
+    // senderName comes from an authenticated user's display name — still escape it
+    const safeSenderName = escapeHtml(senderName);
+    // message is user-provided free text — must be escaped
+    const safeMessage = escapeHtml(message);
+    const safeAppName = escapeHtml(appName);
 
-    const senderDisplay = senderName ? `<strong>${senderName}</strong>` : 'A user';
+    const senderDisplay = safeSenderName ? `<strong>${safeSenderName}</strong>` : 'A user';
 
     return `
 <!DOCTYPE html>
@@ -251,9 +280,9 @@ export function getOneTimeSecretEmailTemplate(props: OneTimeSecretTemplateProps)
                 ${senderDisplay} has shared a secure One-Time Secret with you.
             </p>
 
-            ${message ? `
+            ${safeMessage ? `
             <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 16px 0; font-style: italic; color: #4B5563;">
-                "${message}"
+                &ldquo;${safeMessage}&rdquo;
             </div>
             ` : ''}
             
@@ -281,7 +310,7 @@ export function getOneTimeSecretEmailTemplate(props: OneTimeSecretTemplateProps)
             
             <div class="footer">
                 <p>This is an automated message. Please do not reply.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -299,6 +328,10 @@ interface DemoRequestConfirmationTemplateProps {
 
 export function getDemoRequestConfirmationEmailTemplate(props: DemoRequestConfirmationTemplateProps): string {
     const { appName, logoUrl, name, useCase } = props;
+    // Escape all user-supplied fields — this is the reported vulnerability vector
+    const safeName = escapeHtml(name);
+    const safeUseCase = escapeHtml(useCase);
+    const safeAppName = escapeHtml(appName);
 
     return `
 <!DOCTYPE html>
@@ -318,16 +351,16 @@ export function getDemoRequestConfirmationEmailTemplate(props: DemoRequestConfir
             <h2 style="color: #111827; margin-top: 0;">Demo Request Received</h2>
             
             <p style="color: #374151; line-height: 1.6;">
-                Hi <strong>${name}</strong>,
+                Hi <strong>${safeName}</strong>,
             </p>
             
             <p style="color: #374151; line-height: 1.6;">
-                Thank you for your interest in <strong>${appName}</strong>. We have received your request for a personalized product demo.
+                Thank you for your interest in <strong>${safeAppName}</strong>. We have received your request for a personalized product demo.
             </p>
             
             <div style="background-color: #F3F4F6; padding: 20px; border-radius: 8px; margin: 24px 0;">
                 <p style="margin: 0 0 8px 0; color: #4B5563; font-size: 14px;"><strong>Selected Use Case:</strong></p>
-                <p style="margin: 0; color: #111827; font-size: 16px; font-weight: 500;">${useCase}</p>
+                <p style="margin: 0; color: #111827; font-size: 16px; font-weight: 500;">${safeUseCase}</p>
             </div>
             
             <p style="color: #374151; line-height: 1.6;">
@@ -336,7 +369,7 @@ export function getDemoRequestConfirmationEmailTemplate(props: DemoRequestConfir
             
             <div class="footer">
                 <p>This is an automated confirmation of your request.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -357,6 +390,13 @@ interface DemoRequestAdminNotificationTemplateProps {
 
 export function getDemoRequestAdminNotificationEmailTemplate(props: DemoRequestAdminNotificationTemplateProps): string {
     const { appName, logoUrl, name, email, company, role, useCase } = props;
+    // Escape ALL user-supplied values — admin sees these in email; HTML injection here is the exact reported vulnerability
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeCompany = escapeHtml(company);
+    const safeRole = escapeHtml(role);
+    const safeUseCase = escapeHtml(useCase);
+    const safeAppName = escapeHtml(appName);
 
     return `
 <!DOCTYPE html>
@@ -382,35 +422,35 @@ export function getDemoRequestAdminNotificationEmailTemplate(props: DemoRequestA
             <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px; width: 120px;">Name</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${name}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safeName}</td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Email</td>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">
-                        <a href="mailto:${email}" style="color: #4F46E5; text-decoration: none;">${email}</a>
+                        <a href="mailto:${safeEmail}" style="color: #4F46E5; text-decoration: none;">${safeEmail}</a>
                     </td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Company</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${company}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safeCompany}</td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Role</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${role}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safeRole}</td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Use Case</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${useCase}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safeUseCase}</td>
                 </tr>
             </table>
             
             <div style="text-align: center; padding-top: 16px;">
-                <a href="mailto:${email}?subject=CredSecure Demo Inquiry" class="btn" style="color: #ffffff;">Reply to Lead</a>
+                <a href="mailto:${safeEmail}?subject=CredSecure Demo Inquiry" class="btn" style="color: #ffffff;">Reply to Lead</a>
             </div>
             
             <div class="footer">
-                <p>This is an automated notification from ${appName}.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>This is an automated notification from ${safeAppName}.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -428,6 +468,9 @@ interface ContactUsConfirmationTemplateProps {
 
 export function getContactUsConfirmationEmailTemplate(props: ContactUsConfirmationTemplateProps): string {
     const { appName, logoUrl, name, subject } = props;
+    const safeName = escapeHtml(name);
+    const safeSubject = escapeHtml(subject);
+    const safeAppName = escapeHtml(appName);
 
     return `
 <!DOCTYPE html>
@@ -447,11 +490,11 @@ export function getContactUsConfirmationEmailTemplate(props: ContactUsConfirmati
             <h2 style="color: #111827; margin-top: 0;">Message Received</h2>
             
             <p style="color: #374151; line-height: 1.6;">
-                Hi <strong>${name}</strong>,
+                Hi <strong>${safeName}</strong>,
             </p>
             
             <p style="color: #374151; line-height: 1.6;">
-                Thank you for reaching out to <strong>${appName}</strong>. We have received your message regarding "<strong>${subject}</strong>".
+                Thank you for reaching out to <strong>${safeAppName}</strong>. We have received your message regarding &ldquo;<strong>${safeSubject}</strong>&rdquo;.
             </p>
             
             <p style="color: #374151; line-height: 1.6;">
@@ -460,7 +503,7 @@ export function getContactUsConfirmationEmailTemplate(props: ContactUsConfirmati
             
             <div class="footer">
                 <p>This is an automated confirmation of your contact submission.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -482,6 +525,14 @@ interface ContactUsAdminNotificationTemplateProps {
 
 export function getContactUsAdminNotificationEmailTemplate(props: ContactUsAdminNotificationTemplateProps): string {
     const { appName, logoUrl, name, email, phone, company, subject, message } = props;
+    // Escape every user-supplied field before embedding in HTML
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safePhone = escapeHtml(phone);
+    const safeCompany = escapeHtml(company);
+    const safeSubject = escapeHtml(subject);
+    const safeMessage = escapeHtml(message);
+    const safeAppName = escapeHtml(appName);
 
     return `
 <!DOCTYPE html>
@@ -507,43 +558,43 @@ export function getContactUsAdminNotificationEmailTemplate(props: ContactUsAdmin
             <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px; width: 120px;">Name</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${name}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safeName}</td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Email</td>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">
-                        <a href="mailto:${email}" style="color: #4F46E5; text-decoration: none;">${email}</a>
+                        <a href="mailto:${safeEmail}" style="color: #4F46E5; text-decoration: none;">${safeEmail}</a>
                     </td>
                 </tr>
-                ${phone ? `
+                ${safePhone ? `
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Phone</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${phone}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safePhone}</td>
                 </tr>
                 ` : ''}
-                ${company ? `
+                ${safeCompany ? `
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Company</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${company}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safeCompany}</td>
                 </tr>
                 ` : ''}
                 <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 14px;">Topic</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${subject}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 14px; font-weight: 500;">${safeSubject}</td>
                 </tr>
             </table>
             
             <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 16px 0; color: #374151; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">
-                ${message}
+                ${safeMessage}
             </div>
             
             <div style="text-align: center; padding-top: 16px;">
-                <a href="mailto:${email}?subject=RE: ${encodeURIComponent(subject)}" class="btn" style="color: #ffffff;">Reply to Contact</a>
+                <a href="mailto:${safeEmail}?subject=RE: ${encodeURIComponent(subject)}" class="btn" style="color: #ffffff;">Reply to Contact</a>
             </div>
             
             <div class="footer">
-                <p>This is an automated notification from ${appName}.</p>
-                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                <p>This is an automated notification from ${safeAppName}.</p>
+                <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
             </div>
         </div>
     </div>
