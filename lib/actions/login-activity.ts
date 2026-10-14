@@ -8,6 +8,7 @@ import { getSafeUserContext, canAccess, canEdit, forbiddenError } from '@/lib/ia
 import { logForbiddenThrottled } from '@/lib/iam/authorize';
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/utils/logger';
+import { extractClientIp } from '@/lib/utils/ip';
 
 export type LoginOutcome = 'SUCCESS' | 'FAILURE' | 'BLOCKED' | 'LOGOUT';
 export type LoginCategory = 'AUTHENTICATION' | 'MFA' | 'ACCOUNT_STATUS';
@@ -30,7 +31,7 @@ export type LogActivityParams = {
 export async function logLoginActivity(params: LogActivityParams) {
     try {
         const headersList = await headers();
-        const ip = params.ipAddress || headersList.get('x-real-ip') || headersList.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const ip = params.ipAddress || extractClientIp(headersList);
         const ua = params.userAgent || headersList.get('user-agent') || 'unknown';
 
         // Derived Risk Level logic if not provided

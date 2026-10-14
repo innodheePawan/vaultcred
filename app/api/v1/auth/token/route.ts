@@ -4,13 +4,14 @@ import { decrypt } from "@/lib/crypto";
 import { generateApiJwt } from "@/lib/api-auth";
 import { checkGlobalApiAccess, STANDARD_404_HTML } from "@/lib/api-pipeline";
 import { rateLimitApi } from "@/lib/api-rate-limit";
+import { extractClientIp } from "@/lib/utils/ip";
 
 import crypto from 'crypto';
 
 export async function POST(req: Request) {
     const endpoint = new URL(req.url).pathname;
     const method = req.method;
-    const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "0.0.0.0";
+    const ipAddress = extractClientIp(req);
     const userAgent = req.headers.get("user-agent") || "";
     const requestId = crypto.randomUUID();
 
@@ -136,7 +137,9 @@ export async function POST(req: Request) {
             try {
                 const decryptedDbSecret = decrypt(client.clientSecretHash);
                 if (clientSecret === decryptedDbSecret) secretValid = true;
-            } catch (e) {}
+            } catch (e) {
+                console.error("[API Auth Token] Failed to decrypt client secret hash:", e);
+            }
         }
 
         if (!secretValid) {

@@ -1,13 +1,43 @@
 "use client";
 
 import { useState } from "react";
+import {
+    Vault,
+    ShieldCheck,
+    Lock,
+    Plug,
+    FileSearch,
+    Users,
+    Flame,
+    Palette,
+    Database,
+    BadgeCheck,
+    type LucideIcon,
+} from "lucide-react";
 import { FeatureNavigator } from "@/components/marketing/FeatureNavigator";
 import { ExpandableFeatureCard } from "@/components/marketing/ExpandableFeatureCard";
+import { GuessStageName } from "@/components/marketing/GuessStageBadge";
+
+const iconMap: Record<string, LucideIcon> = {
+    "credential-vault": Vault,
+    "identity-access-management": Users,
+    "authentication-security": Lock,
+    "api-gateway": Plug,
+    "audit-compliance": FileSearch,
+    "external-vendor-access": ShieldCheck,
+    "one-time-secret-sharing": Flame,
+    "custom-branding-whitelabeling": Palette,
+    "database-management": Database,
+    "licensing-system-governance": BadgeCheck,
+};
 
 export interface FeatureModuleData {
     id: string;
     title: string;
+    subtitle?: string;
     items: string[];
+    guessStages?: GuessStageName[];
+    guessEmphasis?: GuessStageName[];
 }
 
 interface FeaturesSectionProps {
@@ -70,7 +100,11 @@ export function FeaturesSection({ modules }: FeaturesSectionProps) {
                         <div key={mod.id} id={mod.id} className="scroll-mt-24">
                             <ExpandableFeatureCard
                                 title={mod.title}
+                                subtitle={mod.subtitle}
+                                icon={iconMap[mod.id]}
                                 items={mod.items}
+                                guessStages={mod.guessStages}
+                                guessEmphasis={mod.guessEmphasis}
                                 isOpen={activeFeatureId === mod.id}
                                 onToggle={() => handleAccordionToggle(mod.id)}
                             />

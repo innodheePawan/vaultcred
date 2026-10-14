@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { verifyApiJwt, validateApiHmacContext, ApiClientContext } from "@/lib/api-auth";
 import { decrypt } from "@/lib/crypto";
+import { extractClientIp } from "@/lib/utils/ip";
 
 export const STANDARD_404_HTML = `
 <!DOCTYPE html>
@@ -27,15 +28,19 @@ export const STANDARD_404_HTML = `
 `;
 
 export async function checkGlobalApiAccess(): Promise<boolean> {
-   const settingsRows: any[] = await prisma.$queryRawUnsafe(`SELECT allow_api_access FROM system_settings LIMIT 1`);
-   const globalRaw = settingsRows.length > 0 ? settingsRows[0].allow_api_access : 0;
-   return Number(globalRaw) === 1;
+   try {
+       const setting = await prisma.systemSettings.findFirst({ select: { allowApiAccess: true } });
+       return setting?.allowApiAccess ?? false;
+   } catch (error) {
+       console.error("[API Pipeline] Failed to query global API access setting:", error);
+       return false;
+   }
 }
 
 export async function validateExternalApiPipeline(req: Request, credentialId: string, action: string = "REVEAL_CREDENTIAL", endpointType: 'credential_reveal' | 'credential_file' = 'credential_reveal') {
    const endpoint = new URL(req.url).pathname;
    const method = req.method;
-   const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "0.0.0.0";
+   const ipAddress = extractClientIp(req);
    const userAgent = req.headers.get("user-agent") || "";
    const requestId = crypto.randomUUID();
 
@@ -57,7 +62,9 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
                    ipAddress, userAgent
                }
            });
-       } catch (e) { /* audit failure must never block the response */ }
+       } catch (e) {
+           console.error("[API Pipeline] Failed to persist API activity log:", e);
+       }
    };
 
     // 1. Global Config Check is now handled via rateLimitApi caching below.
@@ -70,17 +77,12 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
     }
     const token = authHeader.split(" ")[1];
 
+    // 2. Token Auth & Signature Verification
+    const clientContext = await verifyApiJwt(token);
+    const clientIdForRateLimit = clientContext?.clientId || ipAddress;
+
     // 2.5 Rate Limiting
     const { rateLimitApi } = await import('@/lib/api-rate-limit');
-    let clientIdForRateLimit = ipAddress;
-    try {
-        const payloadPart = token.split('.')[1];
-        if (payloadPart) {
-            const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf-8'));
-            if (payload.clientId) clientIdForRateLimit = payload.clientId;
-        }
-    } catch(e) {}
-
     const rateLimitResult = await rateLimitApi(clientIdForRateLimit, ipAddress, endpointType);
 
     if (rateLimitResult.disabled) {
@@ -112,7 +114,9 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
                     dbClientId = clientRecord.id;
                     dbClientName = clientRecord.name;
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error("[API Pipeline] Failed to fetch client record during rate limiting check:", e);
+            }
         }
         await logActivity({ credentialId, apiClientId: dbClientId, clientName: dbClientName, responseStatus: "FAILURE", httpStatusCode: 429, errorMessage: "Rate limit exceeded" });
         return { errorResponse: NextResponse.json({ 
@@ -122,26 +126,31 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
         }, { status: 429, headers }) };
     }
 
-    const clientContext = await verifyApiJwt(token);
     if (!clientContext) {
         await logActivity({ credentialId, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Unauthorized or expired token" });
         return { errorResponse: NextResponse.json({ error: "Unauthorized or expired token" }, { status: 401 }) };
     }
 
-    // 3. Client Check
-    const clientRows: any[] = await prisma.$queryRawUnsafe(
-        `SELECT api_client_id, client_id, client_name, security_mode, is_active, allow_file_download FROM api_clients WHERE client_id = ?`,
-        clientContext.clientId
-    );
-    if (clientRows.length === 0) {
+    // 3. Client Check via Prisma ORM
+    const clientRecord = await prisma.apiClient.findUnique({
+        where: { clientId: clientContext.clientId }
+    });
+    if (!clientRecord) {
         await logActivity({ credentialId, apiClientId: clientContext.clientId, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Client not found" });
         return { errorResponse: NextResponse.json({ error: "Client not found" }, { status: 401 }) };
     }
-    const clientRow = clientRows[0];
-    if (Number(clientRow.is_active) !== 1) {
-         await logActivity({ credentialId, apiClientId: clientRow.api_client_id, clientName: clientRow.client_name, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Client is disabled" });
+    if (!clientRecord.isActive) {
+         await logActivity({ credentialId, apiClientId: clientRecord.id, clientName: clientRecord.name, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Client is disabled" });
          return { errorResponse: NextResponse.json({ error: "Client is disabled" }, { status: 401 }) };
     }
+    const clientRow = {
+        api_client_id: clientRecord.id,
+        client_id: clientRecord.clientId,
+        client_name: clientRecord.name,
+        security_mode: clientRecord.securityMode,
+        is_active: clientRecord.isActive ? 1 : 0,
+        allow_file_download: clientRecord.allowFileDownload
+    };
 
     // 4. Security Mode validation
     const mode: string = clientRow.security_mode || "BASIC";
@@ -163,9 +172,10 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
              return { errorResponse: NextResponse.json({ error: "Missing HMAC signature headers required by Enterprise Mode" }, { status: 401 }) };
          }
 
-         const clientRecord = await prisma.apiClient.findUnique({ where: { clientId: clientContext.clientId } });
          let secretPlain = "";
-         try { secretPlain = decrypt(clientRecord!.clientSecretHash); } catch(e) {}
+         try { secretPlain = decrypt(clientRecord.clientSecretHash); } catch(e) {
+             console.error("[API Pipeline] Decryption of client secret failed for HMAC validation:", e);
+         }
          const reqUrlObject = new URL(req.url);
          const isValidSignature = validateApiHmacContext(reqUrlObject.pathname, signature, timestamp, secretPlain);
          if (!isValidSignature) {

@@ -603,4 +603,179 @@ export function getContactUsAdminNotificationEmailTemplate(props: ContactUsAdmin
     `.trim();
 }
 
+export interface ExpiryCredentialItem {
+    id: string;
+    name: string;
+    type: string;
+    category?: string | null;
+    environment?: string | null;
+    expiryDate: string;
+    daysRemaining: number;
+    actionUrl: string;
+}
+
+export interface ExpiryAlertDigestTemplateProps {
+    appName: string;
+    logoUrl: string | null;
+    recipientName: string;
+    recipientRole: string;
+    tier: number; // 1 = Info, 2 = Warning, 3 = Urgent
+    tierDays: number;
+    credentials: ExpiryCredentialItem[];
+    canEdit: boolean;
+    dashboardUrl: string;
+}
+
+export function getExpiryAlertDigestEmailTemplate(props: ExpiryAlertDigestTemplateProps): string {
+    const { appName, logoUrl, recipientName, recipientRole, tier, tierDays, credentials, canEdit, dashboardUrl } = props;
+
+    const safeAppName = escapeHtml(appName);
+    const safeRecipientName = escapeHtml(recipientName || 'Team Member');
+    const safeRole = escapeHtml(recipientRole);
+
+    // Visual theme selection based on tier
+    let bannerColor = '#2563EB'; // Blue (Info)
+    let bannerBg = '#EFF6FF';
+    let bannerBorder = '#BFDBFE';
+    let tierTitle = 'Informational Expiry Notice';
+    let tierBadgeText = `Tier 1: ${tierDays} Days Remaining`;
+
+    if (tier === 2) {
+        bannerColor = '#D97706'; // Amber (Warning)
+        bannerBg = '#FFFBEB';
+        bannerBorder = '#FDE68A';
+        tierTitle = 'Credential Expiry Warning';
+        tierBadgeText = `Tier 2: ${tierDays} Days Remaining`;
+    } else if (tier === 3) {
+        bannerColor = '#DC2626'; // Red (Urgent)
+        bannerBg = '#FEF2F2';
+        bannerBorder = '#FECACA';
+        tierTitle = 'Urgent Expiration Action Required';
+        tierBadgeText = `Tier 3: ${tierDays} Days Remaining`;
+    }
+
+    const tableRows = credentials.map((cred) => {
+        const safeCredName = escapeHtml(cred.name);
+        const safeCredType = escapeHtml(cred.type.replace(/_/g, ' '));
+        const scopeText = cred.category || cred.environment 
+            ? `${cred.category || 'Any'} / ${cred.environment || 'Any'}` 
+            : 'Personal Vault';
+        const safeScope = escapeHtml(scopeText);
+        const safeExpiryDate = escapeHtml(cred.expiryDate);
+
+        const ctaBtnText = canEdit ? 'Update Credential' : 'View in CredSecure';
+        const ctaBtnBg = canEdit ? bannerColor : '#4B5563';
+
+        return `
+            <tr style="border-bottom: 1px solid #E5E7EB;">
+                <td style="padding: 12px 10px; font-weight: 600; color: #111827; font-size: 14px;">
+                    ${safeCredName}
+                    <div style="font-size: 11px; font-weight: normal; color: #6B7280; margin-top: 2px;">
+                        ${safeCredType}
+                    </div>
+                </td>
+                <td style="padding: 12px 10px; color: #4B5563; font-size: 13px;">
+                    ${safeScope}
+                </td>
+                <td style="padding: 12px 10px; color: #111827; font-size: 13px; white-space: nowrap;">
+                    ${safeExpiryDate}
+                    <div style="font-size: 11px; color: ${bannerColor}; font-weight: 600;">
+                        ${cred.daysRemaining} days left
+                    </div>
+                </td>
+                <td style="padding: 12px 10px; text-align: right; white-space: nowrap;">
+                    <a href="${cred.actionUrl}" 
+                       style="display: inline-block; padding: 7px 14px; background-color: ${ctaBtnBg}; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                        ${ctaBtnText} &rarr;
+                    </a>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>${getBaseStyles()}</style>
+</head>
+<body>
+    <div class="container" style="max-width: 680px;">
+        <div class="card" style="padding: 32px;">
+            <div class="header" style="padding-bottom: 20px; margin-bottom: 20px;">
+                ${getLogoHtml(logoUrl, appName)}
+            </div>
+
+            <!-- Severity Header Banner -->
+            <div style="background-color: ${bannerBg}; border: 1px solid ${bannerBorder}; border-left: 6px solid ${bannerColor}; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: ${bannerColor};">
+                        ${tierBadgeText}
+                    </span>
+                    <span style="font-size: 12px; color: #6B7280;">
+                        Role: <strong>${safeRole}</strong>
+                    </span>
+                </div>
+                <h2 style="color: ${bannerColor}; margin: 4px 0 6px 0; font-size: 20px; font-weight: 700;">
+                    ${tierTitle}
+                </h2>
+                <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.5;">
+                    The credentials detailed below expire on the exact targeted lifecycle date. Please review and take appropriate lifecycle action to prevent unintended service interruptions.
+                </p>
+            </div>
+
+            <p style="color: #374151; font-size: 15px; margin-bottom: 16px;">
+                Hello <strong>${safeRecipientName}</strong>,
+            </p>
+
+            ${!canEdit ? `
+            <div style="background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px;">
+                <p style="color: #4B5563; font-size: 13px; margin: 0; line-height: 1.5;">
+                    ℹ️ <strong>Read-Only Notice:</strong> Credentials you rely on are expiring soon. Ensure the relevant owners update these credentials before the expiration date.
+                </p>
+            </div>
+            ` : ''}
+
+            <!-- Credentials Table -->
+            <div style="overflow-x: auto; margin: 20px 0;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background-color: #F9FAFB; border-bottom: 2px solid #E5E7EB;">
+                            <th style="padding: 10px; font-size: 12px; font-weight: 700; color: #4B5563; text-transform: uppercase;">Credential</th>
+                            <th style="padding: 10px; font-size: 12px; font-weight: 700; color: #4B5563; text-transform: uppercase;">Category / Env</th>
+                            <th style="padding: 10px; font-size: 12px; font-weight: 700; color: #4B5563; text-transform: uppercase;">Expiry Date</th>
+                            <th style="padding: 10px; font-size: 12px; font-weight: 700; color: #4B5563; text-transform: uppercase; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Global Portal Deep Link Button -->
+            <div style="text-align: center; padding: 24px 0 12px 0;">
+                <a href="${dashboardUrl}" class="btn" style="background-color: ${bannerColor};">
+                    Open ${safeAppName} Vault
+                </a>
+            </div>
+
+            <p class="muted" style="text-align: center; font-size: 12px; margin-top: 16px;">
+                This digest was automatically compiled based strictly on your assigned role permissions and category/environment scopes.
+            </p>
+
+            <div class="footer" style="padding-top: 20px; margin-top: 20px;">
+                <p style="margin: 4px 0;">Automated Credential Lifecycle & Expiry System &bull; ${safeAppName}</p>
+                <p style="margin: 4px 0;">&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+}
+
+
 

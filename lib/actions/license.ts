@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { invalidateLicenseCache, getLicenseState } from '@/lib/license-enforcement';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { extractClientIp } from '@/lib/utils/ip';
 
 const ACTIVATION_API_URL = 'https://main.d1vhnqcsa3xxv0.amplifyapp.com/api/activate';
 
@@ -90,7 +91,7 @@ export async function activateProduct(formData: FormData) {
 
         // Resolve domain from the actual request Host header
         const headersList = await headers();
-        const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || headersList.get('x-real-ip') || '127.0.0.1';
+        const ipAddress = extractClientIp(headersList);
         const currentDomain = await resolveCurrentDomain();
         const domain = currentDomain || 'localhost';
 

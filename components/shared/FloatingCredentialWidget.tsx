@@ -4,78 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy, RefreshCw, Check, KeyRound, Minus, ChevronUp, Sliders, Shield } from 'lucide-react';
 
-const UPPERCASE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const LOWERCASE_CHARS = 'abcdefghijklmnopqrstuvwxyz';
-const NUMBER_CHARS = '0123456789';
-const SPECIAL_CHARS = '!@#$%^*-_+=';
-
-function generateSecureCredential(
-    length: number,
-    uppercase: boolean,
-    lowercase: boolean,
-    numbers: boolean,
-    special: boolean
-): string {
-    let charPool = '';
-    const mandatoryChars: string[] = [];
-
-    const pickRandomChar = (charset: string) => {
-        const cryptoObj = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
-        if (cryptoObj) {
-            const randomValues = new Uint32Array(1);
-            cryptoObj.getRandomValues(randomValues);
-            return charset[randomValues[0] % charset.length];
-        }
-        return charset[Math.floor(Math.random() * charset.length)];
-    };
-
-    if (uppercase) {
-        charPool += UPPERCASE_CHARS;
-        mandatoryChars.push(pickRandomChar(UPPERCASE_CHARS));
-    }
-    if (lowercase) {
-        charPool += LOWERCASE_CHARS;
-        mandatoryChars.push(pickRandomChar(LOWERCASE_CHARS));
-    }
-    if (numbers) {
-        charPool += NUMBER_CHARS;
-        mandatoryChars.push(pickRandomChar(NUMBER_CHARS));
-    }
-    if (special) {
-        charPool += SPECIAL_CHARS;
-        mandatoryChars.push(pickRandomChar(SPECIAL_CHARS));
-    }
-
-    if (charPool.length === 0) return '';
-
-    let result = '';
-    // Add mandatory characters first to guarantee presence
-    for (const char of mandatoryChars) {
-        result += char;
-    }
-
-    // Fill remaining length
-    for (let i = result.length; i < length; i++) {
-        result += pickRandomChar(charPool);
-    }
-
-    // Shuffle the result securely
-    const resultArray = result.split('');
-    for (let i = resultArray.length - 1; i > 0; i--) {
-        const cryptoObj = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
-        let j = 0;
-        if (cryptoObj) {
-            const randomValues = new Uint32Array(1);
-            cryptoObj.getRandomValues(randomValues);
-            j = randomValues[0] % (i + 1);
-        } else {
-            j = Math.floor(Math.random() * (i + 1));
-        }
-        [resultArray[i], resultArray[j]] = [resultArray[j], resultArray[i]];
-    }
-
-    return resultArray.join('');
-}
+import { generateSecureCredential, SPECIAL_CHARS } from '@/lib/utils/password-generator';
 
 export function FloatingCredentialWidget() {
     const [isOpen, setIsOpen] = useState<boolean>(false);

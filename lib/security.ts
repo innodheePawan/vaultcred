@@ -51,7 +51,7 @@ export async function getSecurityState(email: string | null, ip: string): Promis
             }
         }
     } catch (e) {
-        // Error checking state
+        console.error(`[Security] Error checking IP security state for ${ip}:`, e);
     }
 
     // 2. Check User Security (if email provided)
@@ -80,7 +80,7 @@ export async function getSecurityState(email: string | null, ip: string): Promis
                 }
             }
         } catch (e) {
-            // Error checking user state
+            console.error(`[Security] Error checking user security state for ${email}:`, e);
         }
     }
 
@@ -138,7 +138,7 @@ export async function recordFailure(email: string | null, ip: string) {
                 WHERE ip_address = ${ip}`;
         }
     } catch (e) {
-        // Error recording IP failure
+        console.error(`[Security] Error recording IP failure for ${ip}:`, e);
     }
 
     // 2. Update User Security
@@ -173,7 +173,7 @@ export async function recordFailure(email: string | null, ip: string) {
                 });
             }
         } catch (e) {
-            // Error recording user failure
+            console.error(`[Security] Error recording user failure for ${email}:`, e);
         }
     }
 }
@@ -196,14 +196,14 @@ export async function recordSuccess(email: string | null, ip: string) {
                 }
             });
         } catch (e) {
-            // Error resetting user success
+            console.error(`[Security] Error resetting user success state for ${email}:`, e);
         }
     }
 
     try {
         await prisma.$executeRaw`UPDATE security_ip_blocks SET failed_attempts = 0, blocked_until = NULL WHERE ip_address = ${ip}`;
     } catch (e) {
-        // IP might not have entry
+        console.error(`[Security] Error resetting IP success state for ${ip}:`, e);
     }
 }
 

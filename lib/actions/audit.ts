@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { getSafeUserContext, canAccess, getScopeFilter, forbiddenError } from '@/lib/iam/permissions';
 import { logForbiddenThrottled } from '@/lib/iam/authorize';
+import { extractClientIp } from '@/lib/utils/ip';
 
 export type AuditLogParams = {
     page?: number;
@@ -54,8 +55,7 @@ export async function logAudit(data: {
 
         // Get IP Address safely (prevent basic X-Forwarded-For spoofing if Behind proper proxy)
         const headersList = await headers();
-        // x-real-ip is typically set directly by load balancers (Nginx/AWS) and is much harder to spoof
-        const ip = headersList.get('x-real-ip') || headersList.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const ip = extractClientIp(headersList);
 
         // Create Log
         await prisma.auditLog.create({
@@ -69,7 +69,7 @@ export async function logAudit(data: {
             }
         });
     } catch (error) {
-
+        console.error('[Audit Log Error]: Failed to create audit log entry:', error);
         // Do not throw, audit failure should not block main action
     }
 }
