@@ -21,7 +21,7 @@ export default async function CredentialDetailsPage(props: { params: Promise<{ i
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const ctx = session?.user?.id ? await getUserAccessContext(session.user.id) : null;
     const isOwner = credential.createdById === session?.user?.id;
-    const isAdmin = ctx?.role === 'ADMIN' || session?.user?.role === 'ADMIN';
+    const isAdmin = ctx?.role === 'ADMIN' || ctx?.role === 'SUPER_ADMIN' || session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
     const isExternal = ctx?.isExternal ?? false;
 
     let canEdit = false;

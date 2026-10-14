@@ -154,7 +154,11 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                         </TableHeader>
                         <TableBody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {/* Active Users */}
-                            {filteredUsers.map((user: any) => (
+                            {filteredUsers.map((user: any) => {
+                                const isUserSuperAdmin = user.role === 'SUPER_ADMIN' || user.userGroups?.some((ug: any) => ug.group?.name === 'Super Admin');
+                                const isUserScopedAdmin = !isUserSuperAdmin && (user.role === 'ADMIN' || user.role === 'SCOPED_ADMIN' || user.role === 'ADMINISTRATOR' || user.userGroups?.some((ug: any) => ug.group?.name === 'Scoped Admin'));
+
+                                return (
                                 <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -186,7 +190,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                                 {user.status}
                                             </span>
                                             {/* Quick Status Action */}
-                                            {(!user.role || user.role !== 'SUPER_ADMIN' || currentUserRole === 'SUPER_ADMIN') && (
+                                            {(!isUserSuperAdmin || currentUserRole === 'SUPER_ADMIN') && (
                                                 user.status === 'ACTIVE' ? (
                                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-red-600" onClick={() => setStatusUser(user)} title="Deactivate User">
                                                         <Ban className="h-3 w-3" />
@@ -202,15 +206,15 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                     <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         <div className="flex flex-col gap-1.5 items-start">
                                             <span className={`px-2 py-1 inline-flex text-xs leading-4 font-bold rounded-md border ${
-                                                user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' 
+                                                isUserSuperAdmin
                                                     ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-800'
-                                                    : user.role === 'SCOPED_ADMIN' || user.role === 'ADMINISTRATOR'
+                                                    : isUserScopedAdmin
                                                         ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800'
                                                         : user.role === 'AUDITOR'
                                                             ? 'bg-gray-200 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600'
                                                             : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800'
                                             }`}>
-                                                ROLE: {user.role?.replace('_', ' ') || 'USER'}
+                                                ROLE: {isUserSuperAdmin ? 'SUPER ADMIN' : (isUserScopedAdmin ? 'SCOPED ADMIN' : (user.role?.replace('_', ' ') || 'USER'))}
                                             </span>
                                             
                                             {user.isExternal && user.externalAccessType && (
@@ -220,7 +224,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                             )}
 
                                             {/* Scope Display */}
-                                            {user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? (
+                                            {isUserSuperAdmin ? (
                                                 <span className="text-[10px] text-gray-400 italic mt-0.5">Full System Access</span>
                                             ) : user.role === 'AUDITOR' ? (
                                                 <span className="text-[10px] text-gray-400 italic mt-0.5">Scope Not Applicable</span>
@@ -260,7 +264,7 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                     </TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex justify-end gap-2 items-center">
-                                            {(!user.role || user.role !== 'SUPER_ADMIN' || currentUserRole === 'SUPER_ADMIN') ? (
+                                            {(!isUserSuperAdmin || currentUserRole === 'SUPER_ADMIN') ? (
                                                 <>
                                                     <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)}>
                                                         <Edit className="w-4 h-4 text-gray-500 hover:text-indigo-600" />
@@ -280,7 +284,8 @@ export default function UserTable({ users, invites, groups, credentials, inviteU
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            );
+                            })}
 
                             {/* Pending Invites */}
                             {filteredInvites.map((invite: any) => (

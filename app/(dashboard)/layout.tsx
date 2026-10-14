@@ -94,7 +94,7 @@ export default async function DashboardLayout({
         }
 
         if (licenseInfo?.state === 'LOCKED') {
-            const isSuperUser = session?.user?.role === 'ADMIN';
+            const isSuperUser = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
             if (!isSuperUser) {
                 redirect('/activation');
             }

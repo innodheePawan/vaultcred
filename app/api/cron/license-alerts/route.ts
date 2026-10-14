@@ -107,7 +107,13 @@ export async function GET(request: Request) {
 
         // Fetch superusers
         const superUsers = await prisma.user.findMany({
-            where: { role: 'ADMIN', status: 'ACTIVE' },
+            where: {
+                OR: [
+                    { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+                    { userGroups: { some: { group: { name: 'Super Admin' } } } }
+                ],
+                status: 'ACTIVE'
+            },
             select: { email: true, name: true }
         });
 

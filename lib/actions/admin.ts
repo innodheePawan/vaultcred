@@ -66,8 +66,28 @@ export async function getUsersAndInvites(page = 1, limit = 10) {
         }
     });
 
+    // Self-healing migration: Ensure any user in the 'Super Admin' group has role 'SUPER_ADMIN'
+    for (const u of users) {
+        const belongsToSuperGroup = u.userGroups?.some((ug: any) => ug.group?.name === 'Super Admin');
+        if (belongsToSuperGroup && u.role !== 'SUPER_ADMIN') {
+            u.role = 'SUPER_ADMIN';
+            prisma.user.update({
+                where: { id: u.id },
+                data: { role: 'SUPER_ADMIN' }
+            }).catch(err => console.error(`[RBAC_HEAL] Failed to update user ${u.id} to SUPER_ADMIN:`, err));
+        }
+    }
+
     // System Admin = Full Global Admin
-    const isSystemAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || currentUser?.userGroups.some(ug => ug.group.name === 'Administrator' || ug.group.name === 'Super Admin') || false;
+    const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.userGroups.some(ug => ug.group.name === 'Super Admin') || false;
+    const isSystemAdmin = isSuperAdmin || currentUser?.role === 'ADMIN' || currentUser?.userGroups.some(ug => ug.group.name === 'Administrator') || false;
+
+    if (isSuperAdmin && currentUser?.role !== 'SUPER_ADMIN') {
+        prisma.user.update({
+            where: { id: currentUser!.id },
+            data: { role: 'SUPER_ADMIN' }
+        }).catch(() => {});
+    }
 
     // Can Invite = System Admin OR Scoped Admin
     const canInvite = isSystemAdmin || hasAdminAccess;
@@ -82,7 +102,7 @@ export async function getUsersAndInvites(page = 1, limit = 10) {
         invites, 
         isSystemAdmin, 
         canInvite,
-        currentUserRole: currentUser?.role
+        currentUserRole: isSuperAdmin ? 'SUPER_ADMIN' : currentUser?.role
     };
 }
 
@@ -304,13 +324,16 @@ export async function updateUser(userId: string, formData: FormData) {
     try {
         const existingUser = await prisma.user.findUnique({
             where: { id: userId },
-            select: { isExternal: true, role: true, status: true }
+            select: { isExternal: true, role: true, status: true, userGroups: { include: { group: true } } }
         });
 
         if (!existingUser) return { error: 'User not found' };
 
+        const isTargetSuper = existingUser.role === 'SUPER_ADMIN' || existingUser.userGroups?.some((ug: any) => ug.group?.name === 'Super Admin');
+        const isActorSuper = session.user.role === 'SUPER_ADMIN' || ctx.role === 'SUPER_ADMIN';
+
         // Role hierarchy validation: Only SUPER_ADMIN can edit SUPER_ADMIN
-        if (existingUser.role === 'SUPER_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+        if (isTargetSuper && !isActorSuper) {
             return { error: 'Unauthorized: Only Super Admins can manage Super Admin users.' };
         }
 
@@ -556,20 +579,25 @@ export async function deleteUser(userId: string) {
     }
 
     try {
-        // Safety check: Cannot delete the last remaining Super Admin
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { role: true, status: true }
+            select: { role: true, status: true, userGroups: { include: { group: true } } }
         });
 
-        if (user?.role === 'SUPER_ADMIN') {
-            if (session.user.role !== 'SUPER_ADMIN') {
+        const isTargetSuper = user?.role === 'SUPER_ADMIN' || user?.userGroups?.some((ug: any) => ug.group?.name === 'Super Admin');
+        const isActorSuper = session.user.role === 'SUPER_ADMIN' || ctx.role === 'SUPER_ADMIN';
+
+        if (isTargetSuper) {
+            if (!isActorSuper) {
                 return { error: 'Unauthorized: Only Super Admins can delete Super Admin users.' };
             }
 
             const activeAdminCount = await prisma.user.count({
                 where: {
-                    role: 'SUPER_ADMIN',
+                    OR: [
+                        { role: 'SUPER_ADMIN' },
+                        { userGroups: { some: { group: { name: 'Super Admin' } } } }
+                    ],
                     status: 'ACTIVE',
                     id: { not: userId }
                 }

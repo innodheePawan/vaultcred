@@ -22,32 +22,50 @@ async function main() {
     });
 
     if (existingUser) {
-        console.log('User already exists. Updating password and ensuring ADMIN role...');
+        console.log('User already exists. Updating password and ensuring SUPER_ADMIN role...');
         const hashedPassword = await hash(SETUP_ADMIN_PASSWORD!, 12);
 
-        await prisma.user.update({
+        const updated = await prisma.user.update({
             where: { email: SETUP_ADMIN_EMAIL },
             data: {
                 passwordHash: hashedPassword,
-                role: 'ADMIN',
+                role: 'SUPER_ADMIN',
                 status: 'ACTIVE',
-                name: 'Setup Administrator'
+                name: 'Super Administrator'
             }
         });
+
+        const superAdminGroup = await prisma.userGroup.findUnique({ where: { name: 'Super Admin' } });
+        if (superAdminGroup) {
+            await prisma.userGroupMapping.upsert({
+                where: { userId_groupId: { userId: updated.id, groupId: superAdminGroup.id } },
+                update: {},
+                create: { userId: updated.id, groupId: superAdminGroup.id, assignedBy: 'SYSTEM' }
+            });
+        }
         console.log('User updated successfully.');
     } else {
-        console.log('User not found. Creating new Setup Admin...');
+        console.log('User not found. Creating new Super Admin...');
         const hashedPassword = await hash(SETUP_ADMIN_PASSWORD!, 12);
 
-        await prisma.user.create({
+        const created = await prisma.user.create({
             data: {
                 email: SETUP_ADMIN_EMAIL,
                 passwordHash: hashedPassword,
-                name: 'Setup Administrator',
-                role: 'ADMIN',
+                name: 'Super Administrator',
+                role: 'SUPER_ADMIN',
                 status: 'ACTIVE'
             }
         });
+
+        const superAdminGroup = await prisma.userGroup.findUnique({ where: { name: 'Super Admin' } });
+        if (superAdminGroup) {
+            await prisma.userGroupMapping.upsert({
+                where: { userId_groupId: { userId: created.id, groupId: superAdminGroup.id } },
+                update: {},
+                create: { userId: created.id, groupId: superAdminGroup.id, assignedBy: 'SYSTEM' }
+            });
+        }
         console.log('User created successfully.');
     }
 }

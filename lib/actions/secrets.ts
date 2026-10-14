@@ -100,7 +100,7 @@ export async function getMySecrets(page = 1, limit = 10) {
 
     const { getUserAccessContext, canAccess } = await import('@/lib/iam/permissions');
     const accessContext = await getUserAccessContext(session.user.id, session.user);
-    const hasGlobalView = canAccess(accessContext, 'ONE_TIME_SECRETS', 'VIEW') || accessContext.role === 'ADMIN';
+    const hasGlobalView = canAccess(accessContext, 'ONE_TIME_SECRETS', 'VIEW') || accessContext.role === 'ADMIN' || accessContext.role === 'SUPER_ADMIN';
 
     const where = hasGlobalView ? {} : { createdById: session.user.id };
 
@@ -173,7 +173,7 @@ export async function revokeSecret(secretId: string) {
         if (!secret) return { success: false, error: { code: 'NOT_FOUND', message: 'Secret not found' } };
 
         // Only owner or Admin can revoke
-        const isAdmin = session.user.role === 'ADMIN';
+        const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN';
         if (secret.createdById !== session.user.id && !isAdmin) {
             return { success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
         }

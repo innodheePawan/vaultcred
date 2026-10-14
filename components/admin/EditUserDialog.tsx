@@ -53,9 +53,9 @@ export default function EditUserDialog({ user, groups, credentials, open, onOpen
     const initialCats = isExternal ? externalCats : (internalMapping?.scopedCategories ? internalMapping.scopedCategories.split(',') : []);
     const initialEnvs = isExternal ? externalEnvs : (internalMapping?.scopedEnvironments ? internalMapping.scopedEnvironments.split(',') : []);
 
-    const isSuper = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
+    const isSuper = user.role === 'SUPER_ADMIN' || user.userGroups?.some((ug: any) => ug.group?.name === 'Super Admin') || (user.role === 'ADMIN' && !user.userGroups?.some((ug: any) => ug.group?.name === 'Scoped Admin'));
     const [roleCategory, setRoleCategory] = useState<'SUPER_ADMIN' | 'SCOPED'>(isSuper ? 'SUPER_ADMIN' : 'SCOPED');
-    const [scopedRole, setScopedRole] = useState<string>(!isSuper && user.role ? user.role : 'USER');
+    const [scopedRole, setScopedRole] = useState<string>(!isSuper && user.role ? (user.role === 'SUPER_ADMIN' ? 'USER' : user.role) : 'USER');
 
     const [selectedCats, setSelectedCats] = useState<string[]>(initialCats);
     const [selectedEnvs, setSelectedEnvs] = useState<string[]>(initialEnvs);

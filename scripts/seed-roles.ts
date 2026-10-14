@@ -278,6 +278,13 @@ export async function seedRoles(prismaClient: PrismaClient = prisma) {
                 });
                 fixedCount++;
             }
+            if (user.role !== 'SUPER_ADMIN') {
+                await (prismaClient as any).user.update({
+                    where: { id: user.id },
+                    data: { role: 'SUPER_ADMIN' }
+                });
+                fixedCount++;
+            }
         }
         if (fixedCount > 0) {
             console.log(`\n  ✅ Migrated ${fixedCount} legacy admin profiles to 'Super Admin' role`);

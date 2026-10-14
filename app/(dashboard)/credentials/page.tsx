@@ -111,7 +111,7 @@ export default async function CredentialsPage(props: {
 
     if (isExternalViewOnly) {
         canCreate = false;
-    } else if (accessContext.role === 'ADMIN') {
+    } else if (accessContext.role === 'ADMIN' || accessContext.role === 'SUPER_ADMIN') {
         canCreate = true;
     } else {
         // Use new feature-based permission check
@@ -182,7 +182,7 @@ export default async function CredentialsPage(props: {
                                 </thead>
                                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {credentials.map((cred: any) => {
-                                        const hasReadPerm = accessContext.role === 'ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'UNMASK');
+                                        const hasReadPerm = accessContext.role === 'ADMIN' || accessContext.role === 'SUPER_ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'UNMASK');
                                         const canEditCred = session.user?.role === 'ADMIN' || session.user?.role === 'SUPER_ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'EDIT');
 
                                         return (
@@ -264,7 +264,7 @@ export default async function CredentialsPage(props: {
                         {/* Mobile Card List View */}
                         <div className="block md:hidden divide-y divide-gray-100 dark:divide-gray-700/50">
                             {credentials.map((cred: any) => {
-                                const hasReadPerm = accessContext.role === 'ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'UNMASK');
+                                const hasReadPerm = accessContext.role === 'ADMIN' || accessContext.role === 'SUPER_ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'UNMASK');
                                 const canEditCred = session.user?.role === 'ADMIN' || session.user?.role === 'SUPER_ADMIN' || cred.createdById === session.user?.id || canAccess(accessContext, 'FEATURE:CREDENTIALS', 'EDIT');
 
                                 return (

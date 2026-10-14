@@ -335,12 +335,12 @@ export async function seedSuperAdminAction(email: string, passwordRaw: string) {
         const hashedPassword = await hash(passwordRaw, 12);
         const user = await prisma.user.upsert({
             where: { email },
-            update: { passwordHash: hashedPassword, role: 'ADMIN', status: 'ACTIVE' },
+            update: { passwordHash: hashedPassword, role: 'SUPER_ADMIN', status: 'ACTIVE' },
             create: {
                 email,
                 passwordHash: hashedPassword,
                 name: 'Super Administrator',
-                role: 'ADMIN',
+                role: 'SUPER_ADMIN',
                 status: 'ACTIVE',
             },
         });
