@@ -25,6 +25,7 @@ const FEATURES = [
     { featureKey: 'FEATURE:SYNC_TARGETS',         module: 'SYNCHRONIZATION',  submodule: 'TARGETS',      description: 'Synchronization: manage external targets' },
     { featureKey: 'FEATURE:SYNC_HISTORY',         module: 'SYNCHRONIZATION',  submodule: 'HISTORY',      description: 'Synchronization: monitor sync history' },
     { featureKey: 'FEATURE:SYNC_HISTORY_RETRY',   module: 'SYNCHRONIZATION',  submodule: 'RETRY',        description: 'Synchronization: manual retry failed runs' },
+    { featureKey: 'FEATURE:GLOBAL_EXPIRY_ALERT',  module: 'SETTINGS',         submodule: 'EXPIRY_ALERT', description: 'Global Expiry Alert Policies & Setup' },
 ] as const;
 
 type FeatureKey = typeof FEATURES[number]['featureKey'];
@@ -32,7 +33,7 @@ type FeatureKey = typeof FEATURES[number]['featureKey'];
 const VALID_PERMISSIONS = new Set(['ALL', 'ALL_SCOPED', 'VIEW', 'VIEW_MASKED', 'NO_ACCESS']);
 
 // ─────────────────────────────────────────────
-// RBAC MATRIX — 5 roles × 14 features
+// RBAC MATRIX — 5 roles × 15 features
 // ─────────────────────────────────────────────
 
 const ROLES_MATRIX: {
@@ -62,6 +63,7 @@ const ROLES_MATRIX: {
             'FEATURE:SYNC_TARGETS':        'ALL',
             'FEATURE:SYNC_HISTORY':        'ALL',
             'FEATURE:SYNC_HISTORY_RETRY':  'ALL',
+            'FEATURE:GLOBAL_EXPIRY_ALERT': 'ALL',
         },
     },
     {
@@ -86,6 +88,7 @@ const ROLES_MATRIX: {
             'FEATURE:SYNC_TARGETS':        'ALL_SCOPED',
             'FEATURE:SYNC_HISTORY':        'ALL_SCOPED',
             'FEATURE:SYNC_HISTORY_RETRY':  'ALL_SCOPED',
+            'FEATURE:GLOBAL_EXPIRY_ALERT': 'VIEW',
         },
     },
     {
@@ -110,6 +113,7 @@ const ROLES_MATRIX: {
             'FEATURE:SYNC_TARGETS':        'ALL_SCOPED',
             'FEATURE:SYNC_HISTORY':        'ALL_SCOPED',
             'FEATURE:SYNC_HISTORY_RETRY':  'ALL_SCOPED',
+            'FEATURE:GLOBAL_EXPIRY_ALERT': 'NO_ACCESS',
         },
     },
     {
@@ -134,6 +138,7 @@ const ROLES_MATRIX: {
             'FEATURE:SYNC_TARGETS':        'VIEW_MASKED',
             'FEATURE:SYNC_HISTORY':        'NO_ACCESS',
             'FEATURE:SYNC_HISTORY_RETRY':  'NO_ACCESS',
+            'FEATURE:GLOBAL_EXPIRY_ALERT': 'NO_ACCESS',
         },
     },
     {
@@ -158,6 +163,7 @@ const ROLES_MATRIX: {
             'FEATURE:SYNC_TARGETS':        'VIEW',
             'FEATURE:SYNC_HISTORY':        'VIEW',
             'FEATURE:SYNC_HISTORY_RETRY':  'NO_ACCESS',
+            'FEATURE:GLOBAL_EXPIRY_ALERT': 'NO_ACCESS',
         },
     },
 ];

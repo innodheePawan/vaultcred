@@ -4,7 +4,15 @@ import LoginForm from '@/components/auth/LoginForm';
 import { getLicenseState } from '@/lib/license-enforcement';
 import Link from 'next/link';
 
-export default async function LoginPage() {
+export default async function LoginPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ error?: string }>;
+}) {
+    const resolvedParams = await searchParams;
+    const errorParam = resolvedParams?.error;
+    const isConfigError = errorParam === 'configuration';
+
     const settings = await getSystemSettings();
     const logoUrl = settings?.logoUrl;
     const applicationName = settings?.applicationName || 'CredSecure';
@@ -53,6 +61,27 @@ export default async function LoginPage() {
             </div>
 
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+                {/* ── Configuration Error Banner ── */}
+                {isConfigError && (
+                    <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4 mb-6">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                                <svg className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">System Configuration Error</p>
+                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+                                    The authentication secret is not configured. Sign-in is unavailable until
+                                    <strong> NEXTAUTH_SECRET</strong> is set in the environment and the application is redeployed.
+                                    Please contact your system administrator.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {licenseBlocked ? (
                     <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-6 text-center">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 mb-4">

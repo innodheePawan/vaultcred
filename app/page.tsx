@@ -8,6 +8,7 @@ import { ExpandableFeatureCard } from "@/components/marketing/ExpandableFeatureC
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { BeforeAfterHeroVisual } from "@/components/marketing/BeforeAfterHeroVisual";
 import { MarketingHero } from "@/components/marketing/MarketingHero";
+import { GuessModelVisual } from "@/components/marketing/GuessModelVisual";
 import {
     ArrowRight,
     ArrowDown,
@@ -167,6 +168,11 @@ export default async function LandingPage() {
                         </div>
                     </div>
                 </section>
+
+                {/* ═══════════════════════════════════════════════════════════
+                    SECTION 2.5 — THE CREDENTIAL OPERATIONS MODEL (GUESS)
+                ═══════════════════════════════════════════════════════════ */}
+                <GuessModelVisual showSectionHeader={true} />
 
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 3 — COMBINED ENVIRONMENT STRIP (Social Proof & Continuity)
@@ -373,6 +379,7 @@ export default async function LandingPage() {
                         </div>
                     </div>
                 </section>
+
 
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 6 — SECURITY ARCHITECTURE

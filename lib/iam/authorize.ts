@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractClientIp } from '@/lib/utils/ip';
 import {
     canAccess,
     FORBIDDEN_RESPONSE,
@@ -68,7 +69,7 @@ export function withAuthorize(featureKey: string, action: FeatureAction) {
         handler: (req: AuthorizedRequest, context?: any) => Promise<NextResponse>
     ) {
         return async function (req: NextRequest, context?: any): Promise<NextResponse> {
-            const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? undefined;
+            const ip = extractClientIp(req);
             const userAgent = req.headers.get('user-agent') ?? undefined;
             const requestId = req.headers.get('x-request-id') ?? crypto.randomUUID();
 
@@ -76,7 +77,8 @@ export function withAuthorize(featureKey: string, action: FeatureAction) {
             let session: any;
             try {
                 session = await auth();
-            } catch {
+            } catch (authError) {
+                console.error('[Authorize] Authentication session retrieval failed:', authError);
                 return NextResponse.json(UNAUTHORIZED_RESPONSE, { status: 401 });
             }
 
@@ -88,7 +90,8 @@ export function withAuthorize(featureKey: string, action: FeatureAction) {
             let ctx: UserAccessContext;
             try {
                 ctx = await getSafeUserContext(session.user.id);
-            } catch {
+            } catch (ctxError) {
+                console.error(`[Authorize] User context retrieval failed for user ${session.user.id}:`, ctxError);
                 return NextResponse.json(
                     { success: false, error: { code: 'INTERNAL_ERROR', message: 'Authorization failed', status: 500 } },
                     { status: 500 }

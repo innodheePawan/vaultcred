@@ -2,7 +2,7 @@
 
 import { DashboardStats } from '@/lib/actions/dashboard';
 import { CategoryPieChart, EnvironmentBarChart } from './Charts';
-import { Lock, Share2, AlertTriangle, Clock, TrendingUp, Shield, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Lock, Share2, AlertTriangle, Clock, TrendingUp, Shield, ArrowRight, Eye, EyeOff, Plus } from 'lucide-react';
 import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 
@@ -10,6 +10,7 @@ interface DashboardGridProps {
     stats: DashboardStats;
     userRole?: string;
     userName?: string;
+    canCreate?: boolean;
 }
 
 function AnimatedStat({ value, label, sub }: { value: number; label: string; sub?: string }) {
@@ -22,7 +23,7 @@ function AnimatedStat({ value, label, sub }: { value: number; label: string; sub
     );
 }
 
-export default function DashboardGrid({ stats, userRole, userName }: DashboardGridProps) {
+export default function DashboardGrid({ stats, userRole, userName, canCreate = true }: DashboardGridProps) {
     const [showPersonal, setShowPersonal] = useState(true);
 
     useEffect(() => {
@@ -59,7 +60,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
 
     return (
         <div className="space-y-4 h-full flex flex-col pb-2">
-            {/* Greeting + Toggle row */}
+            {/* Greeting + Action row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
@@ -69,7 +70,7 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                         Here&apos;s your credential vault overview
                     </p>
                 </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
                     <button
                         onClick={togglePersonal}
                         className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
@@ -77,6 +78,18 @@ export default function DashboardGrid({ stats, userRole, userName }: DashboardGr
                         {showPersonal ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         {showPersonal ? 'Hide Personal' : 'Show Personal'}
                     </button>
+
+                    {canCreate && (
+                        <Link
+                            href="/credentials/create"
+                            id="btn-create-new-credential"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow transition-all duration-200 active:scale-95 shrink-0"
+                        >
+                            {/* <Plus className="w-3.5 h-3.5" /> */}
+                            <span>New Credential</span>
+                        </Link>
+                    )}
+
                     <p className="text-xs text-gray-400 dark:text-gray-500 font-medium hidden sm:block">
                         {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>

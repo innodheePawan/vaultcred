@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { after } from 'next/server';
 import { triggerCredentialSync } from '@/lib/sync-engine';
 import { headers } from 'next/headers';
+import { extractClientIp } from '@/lib/utils/ip';
 
 // Zod schema for SAP BTP connection validation
 const ConnectionConfigSchema = z.object({
@@ -54,7 +55,7 @@ function maskSecret(value: string | null | undefined): string {
 async function getClientIp(): Promise<string> {
   try {
     const headersList = await headers();
-    return headersList.get('x-real-ip') || headersList.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+    return extractClientIp(headersList);
   } catch {
     return 'unknown';
   }
@@ -928,7 +929,7 @@ export async function retrySynchronizationAction(historyId: string) {
       await triggerCredentialSync(originalRecord.credentialId!, session.user.id, {
         executionType: 'MANUAL',
         parentHistoryId: originalRecord.id,
-        targetId: originalRecord.targetId,
+        targetId: originalRecord.targetId ?? undefined,
       });
     } catch (err) {
       console.error('Failed to trigger manual retry:', err);

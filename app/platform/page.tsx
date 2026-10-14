@@ -6,6 +6,7 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { PlatformHeroVisual } from "@/components/marketing/PlatformHeroVisual";
 import { MarketingHero } from "@/components/marketing/MarketingHero";
+import { GuessModelVisual } from "@/components/marketing/GuessModelVisual";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
@@ -68,10 +69,50 @@ export default async function PlatformPage() {
                     visual={<PlatformHeroVisual />}
                 />
 
-                {/* Governance Lifecycle Flow */}
-                <section className="scroll-mt-20 border-y border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]" id="governance-lifecycle">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-6 text-center">Operational Governance Lifecycle</div>
+                {/* 2. Credential Types Overview */}
+                <section className="scroll-mt-20 border-t border-slate-200 dark:border-white/[0.06] bg-slate-100/30 dark:bg-white/[0.01] py-12 px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-8">
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold mb-2">Platform Coverage</div>
+                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Supported Credential Types</h2>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                Centralized security and governance across six specialized credential categories.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                            {[
+                                { name: "Password", desc: "Database & system accounts", icon: KeyRound },
+                                { name: "API / OAuth", desc: "Client credentials & tokens", icon: Server },
+                                { name: "Keys & Certificates", desc: "SSL, SSH, TLS & PGP keys", icon: FileKey },
+                                { name: "Token", desc: "Bearer & JWT session tokens", icon: Shield },
+                                { name: "Encrypted File", desc: "ZIP, TAR & secret files", icon: FileLock },
+                                { name: "Secure Note", desc: "Recovery & operational notes", icon: FileText },
+                            ].map((type, idx) => (
+                                <div key={idx} className="p-3.5 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] text-center flex flex-col items-center justify-center space-y-1.5 shadow-2xs">
+                                    <type.icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white">{type.name}</div>
+                                    <div className="text-[9.5px] text-slate-500 font-mono leading-tight">{type.desc}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* 3. The Credential Operations Model – GUESS */}
+                <GuessModelVisual showSectionHeader={true} />
+
+                {/* 4. Existing Governance Lifecycle Flow */}
+                <section className="scroll-mt-20 border-y border-slate-200 dark:border-white/[0.06] bg-slate-100/60 dark:bg-[#060a13]" id="governance-lifecycle">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div className="text-center max-w-2xl mx-auto mb-8 space-y-1">
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold">Credential Governance Lifecycle</div>
+                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                How CredSecure Governs Credentials
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                                The formal governance lifecycle applied by CredSecure to enforce control, monitoring, and compliance.
+                            </p>
+                        </div>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-0">
                             {[
                                 { label: "Provision", desc: "Register & organize" },
@@ -82,15 +123,23 @@ export default async function PlatformPage() {
                                 { label: "Audit", desc: "Record every change" },
                             ].map((step, idx) => (
                                 <div key={idx} className="flex items-center">
-                                    <div className="text-center px-4 py-3 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] min-w-[120px]">
+                                    <div className="text-center px-4 py-3 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] min-w-[120px] shadow-2xs">
                                         <div className="text-xs font-semibold text-slate-900 dark:text-white">{step.label}</div>
-                                        <div className="text-[10px] text-slate-500 mt-0.5">{step.desc}</div>
+                                        <div className="text-[10px] text-slate-500 mt-0.5 font-mono">{step.desc}</div>
                                     </div>
                                     {idx < 5 && (
-                                        <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-600 mx-1 hidden sm:block shrink-0" />
+                                        <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-600 mx-1 hidden sm:block shrink-0" />
                                     )}
                                 </div>
                             ))}
+                        </div>
+
+                        {/* Visual Distinction Note */}
+                        <div className="mt-8 max-w-3xl mx-auto p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 text-center text-xs text-slate-600 dark:text-slate-300">
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono uppercase tracking-wider mr-2">Framework Relationship:</span>
+                            <span className="font-medium">
+                                <strong>GUESS</strong> answers <em>&quot;What happens to a credential operationally?&quot;</em> (Govern → Update → Exchange → Store → Secure), while the <strong>Governance Lifecycle</strong> answers <em>&quot;How does CredSecure govern the credential?&quot;</em> (Provision → Govern → Monitor → Enforce → Revoke → Audit). Both work together to provide complete credential authority.
+                            </span>
                         </div>
                     </div>
                 </section>

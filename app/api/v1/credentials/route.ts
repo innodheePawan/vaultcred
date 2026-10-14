@@ -4,13 +4,14 @@ import { verifyApiJwt, validateApiHmacContext } from "@/lib/api-auth";
 import { checkGlobalApiAccess, STANDARD_404_HTML } from "@/lib/api-pipeline";
 import { rateLimitApi } from "@/lib/api-rate-limit";
 import { decrypt } from "@/lib/crypto";
+import { extractClientIp } from "@/lib/utils/ip";
 
 import crypto from 'crypto';
 
 export async function GET(req: Request) {
     const endpoint = new URL(req.url).pathname;
     const method = req.method;
-    const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "0.0.0.0";
+    const ipAddress = extractClientIp(req);
     const userAgent = req.headers.get("user-agent") || "";
     const requestId = crypto.randomUUID();
 
@@ -23,7 +24,9 @@ export async function GET(req: Request) {
                     errorMessage: options.errorMessage, action: "LIST", ipAddress, userAgent
                 }
             });
-        } catch (e) {}
+        } catch (e) {
+            console.error("[API Credentials Route] Failed to persist activity log:", e);
+        }
     };
 
     try {
@@ -37,15 +40,9 @@ export async function GET(req: Request) {
 
         const token = authHeader.split(" ")[1];
         
-        // Lightweight Auth Context Extraction
-        let clientIdForRateLimit = ipAddress;
-        try {
-            const payloadPart = token.split('.')[1];
-            if (payloadPart) {
-                const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf-8'));
-                if (payload.clientId) clientIdForRateLimit = payload.clientId;
-            }
-        } catch(e) {}
+        // Cryptographic Auth Validation & Rate Limit Identifier Extraction
+        const clientContext = await verifyApiJwt(token);
+        const clientIdForRateLimit = clientContext?.clientId || ipAddress;
 
         // Apply Throttling and Security Checks
         const rateLimitResult = await rateLimitApi(clientIdForRateLimit, ipAddress, 'credentials');
@@ -89,9 +86,6 @@ export async function GET(req: Request) {
             }, { status: 429, headers });
         }
 
-        // Full Cryptographic Auth Validation
-        const clientContext = await verifyApiJwt(token);
-        
         if (!clientContext) {
             await logActivity({ responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Unauthorized or expired token" });
             return NextResponse.json({ error: "Unauthorized or expired token" }, { status: 401 });

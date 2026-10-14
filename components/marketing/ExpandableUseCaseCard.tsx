@@ -3,6 +3,7 @@
 import React from "react";
 import { Server, KeyRound, Globe, FileCode, Layers, ChevronDown, Info } from "lucide-react";
 import { BeforeAfterUseCaseVisual, BeforeAfterUseCaseData } from "@/components/marketing/BeforeAfterUseCaseVisual";
+import { GuessStageBadge, GuessStageName } from "@/components/marketing/GuessStageBadge";
 
 const iconMap: Record<string, React.ElementType> = {
     "sap-credential-governance": Server,
@@ -32,6 +33,8 @@ export interface Tier1UseCaseData {
     color: string;
     dotColor: string;
     visualType?: "env" | "btp";
+    guessStages?: (GuessStageName | "G" | "U" | "E" | "S")[];
+    guessEmphasis?: string[];
 }
 
 interface ExpandableUseCaseCardProps {
@@ -58,12 +61,17 @@ export function ExpandableUseCaseCard({ data, isOpen, onToggle }: ExpandableUseC
                         <IconComponent className="w-5 h-5 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
                     </div>
 
-                    <div className="min-w-0">
-                        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors truncate">
-                            {data.title}
-                        </h2>
+                    <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors truncate">
+                                {data.title}
+                            </h2>
+                            {data.guessStages && data.guessStages.length > 0 && (
+                                <GuessStageBadge stages={data.guessStages} emphasis={data.guessEmphasis} />
+                            )}
+                        </div>
                         {data.subtitle && (
-                            <p className="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400/90 truncate mt-0.5">
+                            <p className="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400/90 truncate">
                                 {data.subtitle}
                             </p>
                         )}

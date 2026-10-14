@@ -64,12 +64,12 @@ export async function rateLimitApi(
     // 1. Blocked IP Check (Fastest)
     const securityState = await getSecurityState(null, ipAddress);
     if (securityState.isIpPermanentBlocked || securityState.isIpBlocked) {
-        return { allowed: false, retryAfterMs: 0, remaining: 0, disabled: false, exposeHeaders: false, isIpBlocked: true };
+        return { allowed: false, retryAfterMs: 0, remaining: 0, limit: 0, disabled: false, exposeHeaders: false, isIpBlocked: true };
     }
 
     // 2. Global Access Check
     if (settings && !settings.allowApiAccess) {
-        return { allowed: false, retryAfterMs: 0, remaining: 0, disabled: true, exposeHeaders: false, isIpBlocked: false };
+        return { allowed: false, retryAfterMs: 0, remaining: 0, limit: 0, disabled: true, exposeHeaders: false, isIpBlocked: false };
     }
 
     // Determine specific limit

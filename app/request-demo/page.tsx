@@ -31,8 +31,8 @@ export default async function RequestDemoPage() {
                             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
                                 See Credential Governance in Action
                             </h1>
-                            <p className="text-base text-slate-605 dark:text-slate-400 leading-relaxed">
-                                Discover how enterprise teams use CredSecure to govern operational credentials, enforce time-bound access, and maintain complete audit traceability.
+                            <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+                                See how CredSecure governs, updates, exchanges, stores and secures credentials across your operational environment.
                             </p>
 
                             <div className="space-y-4 pt-4">
