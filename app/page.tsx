@@ -333,11 +333,11 @@ export default async function LandingPage() {
                                     <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-white/10 shrink-0" />
                                     <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-white/10 shrink-0" />
                                     <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-white/10 shrink-0" />
-                                    <div className="ml-3 sm:ml-4 flex items-baseline gap-2">
+                                    <div className="ml-3 sm:ml-4 flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
                                         <span className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">
                                             CredSecure Dashboard
                                         </span>
-                                        <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                                             Credential Governance Overview
                                         </span>
                                     </div>
@@ -353,9 +353,9 @@ export default async function LandingPage() {
                             {/* Summary Metrics Bar - 3 Illustrative summary cards */}
                             <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-white/[0.06] border-b border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-[#080c14]/60">
                                 {[
-                                    { value: "128", label: "Credentials", sub: "Active governed secrets", color: "text-slate-900 dark:text-white" },
-                                    { value: "06", label: "Expiring Soon", sub: "Alert threshold active", color: "text-amber-600 dark:text-amber-400" },
-                                    { value: "04", label: "Integrations", sub: "Supported connections", color: "text-indigo-600 dark:text-indigo-400" },
+                                    { value: "128", label: "Credentials", sub: "Illustrative governed count", color: "text-slate-900 dark:text-white" },
+                                    { value: "06", label: "Expiring Soon", sub: "Upcoming expiry threshold", color: "text-amber-600 dark:text-amber-400" },
+                                    { value: "04", label: "Integrations", sub: "Connected systems", color: "text-indigo-600 dark:text-indigo-400" },
                                 ].map((stat, idx) => (
                                     <div key={idx} className="p-3.5 sm:p-4 text-center">
                                         <div className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${stat.color}`}>{stat.value}</div>
