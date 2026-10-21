@@ -316,98 +316,133 @@ export default async function LandingPage() {
                 <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/[0.05]">
                     <div className="max-w-5xl mx-auto">
                         <div className="text-center max-w-2xl mx-auto mb-16">
-                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Live Product Preview</div>
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-indigo-600 dark:text-indigo-400 font-semibold mb-2">Live Product Preview</div>
                             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
                                 Operational Visibility in One Place
                             </h2>
                             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
-                                A centralized dashboard designed for enterprise support teams, landscape integration governance, and real-time compliance audits.
+                                Monitor credential health, track upcoming expirations, review access activity, and maintain visibility into supported system integrations—all from one centralized dashboard.
                             </p>
                         </div>
 
-                        {/* Sharp-edged, matte browser UI mockup */}
-                        <div className="border border-slate-200 dark:border-white/[0.08] rounded-lg bg-white dark:bg-[#0b0f19] shadow-2xl overflow-hidden font-sans text-slate-800 dark:text-slate-200">
+                        {/* Matte browser UI mockup */}
+                        <div className="border border-slate-200 dark:border-white/[0.08] rounded-xl bg-white dark:bg-[#0b0f19] shadow-2xl overflow-hidden font-sans text-slate-800 dark:text-slate-200">
                             {/* Browser Header Bar */}
-                            <div className="bg-slate-50 dark:bg-[#060a13] px-4 py-3 border-b border-slate-200 dark:border-white/[0.06] flex items-center justify-between">
+                            <div className="bg-slate-50 dark:bg-[#060a13] px-4 py-3 border-b border-slate-200 dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-2">
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
-                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
-                                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
-                                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest ml-2 sm:ml-4 font-semibold truncate">
-                                        <span className="hidden sm:inline">CredSecure </span>Dashboard <span className="hidden sm:inline">v1.4</span>
-                                    </span>
+                                    <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-white/10 shrink-0" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-white/10 shrink-0" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-white/10 shrink-0" />
+                                    <div className="ml-3 sm:ml-4 flex items-baseline gap-2">
+                                        <span className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">
+                                            CredSecure Dashboard
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                                            Credential Governance Overview
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                                    <span className="text-[9px] font-mono text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold">
-                                        <span className="hidden sm:inline">ALL GOVERNED </span>SYSTEMS OPERATIONAL
+                                    <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-semibold border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 rounded">
+                                        Status: Protected
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Dashboard Body Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-white/[0.06] bg-slate-50/50 dark:bg-[#080c14]/40">
+                            {/* Summary Metrics Bar - 3 Illustrative summary cards */}
+                            <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-white/[0.06] border-b border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-[#080c14]/60">
+                                {[
+                                    { value: "128", label: "Credentials", sub: "Active governed secrets", color: "text-slate-900 dark:text-white" },
+                                    { value: "06", label: "Expiring Soon", sub: "Alert threshold active", color: "text-amber-600 dark:text-amber-400" },
+                                    { value: "04", label: "Integrations", sub: "Supported connections", color: "text-indigo-600 dark:text-indigo-400" },
+                                ].map((stat, idx) => (
+                                    <div key={idx} className="p-3.5 sm:p-4 text-center">
+                                        <div className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${stat.color}`}>{stat.value}</div>
+                                        <div className="text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{stat.label}</div>
+                                        <div className="text-[9px] text-slate-500 font-mono hidden sm:block">{stat.sub}</div>
+                                    </div>
+                                ))}
+                            </div>
 
-                                {/* Col 1: Access Approvals */}
-                                <div className="p-5 space-y-4">
-                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-slate-200 dark:border-white/5 pb-2">Active Scoped Approvals</div>
-                                    <div className="space-y-2">
+                            {/* Dashboard Body Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-white/[0.06] bg-slate-50/30 dark:bg-[#080c14]/30">
+
+                                {/* Col 1: Credential Health & Expiry (5 cols) */}
+                                <div className="p-5 space-y-4 md:col-span-5">
+                                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/5 pb-2">
+                                        <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold">Credential Health & Expiry</div>
+                                        <span className="text-[8px] font-mono text-slate-400 uppercase">Sample Records</span>
+                                    </div>
+                                    <div className="space-y-2.5">
                                         {[
-                                            { id: "REQ-901", target: "Enterprise System Connectivity", status: "Approved", time: "2h remaining" },
-                                            { id: "REQ-884", target: "Vendor QA Api-Key Scopes", status: "Approved", time: "18m remaining" },
-                                            { id: "REQ-879", target: "Production Patch Deployment", status: "Terminated", time: "0m remaining" },
-                                        ].map((req, idx) => (
-                                            <div key={idx} className="p-3 rounded border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0b0f19] space-y-1.5">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold">{req.id}</span>
-                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono uppercase font-bold border ${req.status === "Approved"
-                                                        ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/5"
-                                                        : "text-slate-500 border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-white/[0.01]"
-                                                        }`}>{req.status}</span>
+                                            {
+                                                name: "ERP Integration API",
+                                                desc: "OAuth Client Credential",
+                                                status: "Active",
+                                                badgeStyle: "text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+                                                iconColor: "bg-emerald-500",
+                                            },
+                                            {
+                                                name: "Production TLS Certificate",
+                                                desc: "Expires in 21 days",
+                                                status: "Expiring Soon",
+                                                badgeStyle: "text-amber-600 dark:text-amber-400 border-amber-500/20 bg-amber-500/10",
+                                                iconColor: "bg-amber-500",
+                                            },
+                                            {
+                                                name: "Vendor Support Credential",
+                                                desc: "Restricted access",
+                                                status: "Restricted",
+                                                badgeStyle: "text-indigo-600 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10",
+                                                iconColor: "bg-indigo-500",
+                                            },
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="p-3 rounded-lg border border-slate-200 dark:border-white/5 bg-white dark:bg-[#0b0f19] space-y-1.5 transition-colors">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${item.iconColor} shrink-0`} />
+                                                        <span className="text-[11px] font-semibold text-slate-900 dark:text-white truncate">{item.name}</span>
+                                                    </div>
+                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono uppercase font-bold border shrink-0 ${item.badgeStyle}`}>
+                                                        {item.status}
+                                                    </span>
                                                 </div>
-                                                <div className="text-[10px] text-slate-700 dark:text-slate-300 font-medium">{req.target}</div>
-                                                <div className="text-[8.5px] text-slate-500 font-mono uppercase tracking-wide">Revocation: {req.time}</div>
+                                                <div className="text-[10px] text-slate-500 font-mono pl-3.5">
+                                                    {item.desc}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Col 2: Real-time Audit Timeline */}
-                                <div className="p-5 space-y-4 md:col-span-2">
-                                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold border-b border-slate-200 dark:border-white/5 pb-2">Governed Access Audit Stream</div>
-                                    <div className="space-y-1.5 font-mono text-[10px] text-slate-400 leading-relaxed">
-                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[16:01:18]</span>
-                                            <span className="text-indigo-600 dark:text-indigo-400">[SYSTEM]</span>
-                                            <span className="text-slate-700 dark:text-slate-300">Credential expiry alert triggered for Enterprise Environment Certificate (30 days remaining).</span>
-                                        </div>
-                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:58:04]</span>
-                                            <span className="text-slate-600 dark:text-slate-400">[USER-84]</span>
-                                            <span className="text-slate-700 dark:text-slate-300">Requested time-bound decryption of System Integration Connection credential (REQ-901).</span>
-                                        </div>
-                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:54:12]</span>
-                                            <span className="text-emerald-600 dark:text-emerald-500">[COMPLIANCE]</span>
-                                            <span className="text-slate-700 dark:text-slate-300">Validated 2FA TOTP handshake for administrative security settings sync.</span>
-                                        </div>
-                                        <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
-                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:40:00]</span>
-                                            <span className="text-rose-600 dark:text-rose-400">[SECURITY]</span>
-                                            <span className="text-slate-700 dark:text-slate-300">Enforced automatic session termination on REQ-879 (Support window expired).</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:32:45]</span>
-                                            <span className="text-indigo-600 dark:text-indigo-400">[SYSTEM]</span>
-                                            <span className="text-slate-700 dark:text-slate-300">Computed zero-trust route permissions check. Target approved: Enterprise Integration Platform.</span>
-                                        </div>
+                                {/* Col 2: Recent Governance Activity (7 cols) */}
+                                <div className="p-5 space-y-4 md:col-span-7">
+                                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/5 pb-2">
+                                        <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold">Recent Governance Activity</div>
+                                        <span className="text-[8px] font-mono text-slate-400 uppercase">Audit Stream</span>
+                                    </div>
+                                    <div className="space-y-2 font-mono text-[10px] leading-relaxed">
+                                        {[
+                                            { time: "16:01", tag: "SYSTEM", tagColor: "text-indigo-600 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10", text: "Expiry alert generated for Production TLS Certificate." },
+                                            { time: "15:58", tag: "USER", tagColor: "text-slate-600 dark:text-slate-300 border-slate-400/20 bg-slate-400/10", text: "Credential record updated; change captured in audit history." },
+                                            { time: "15:54", tag: "ACCESS", tagColor: "text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10", text: "Authorized application retrieved permitted credential through API." },
+                                            { time: "15:40", tag: "VENDOR", tagColor: "text-amber-600 dark:text-amber-400 border-amber-500/20 bg-amber-500/10", text: "Vendor access validity period expired." },
+                                            { time: "15:32", tag: "SYNC", tagColor: "text-cyan-600 dark:text-cyan-400 border-cyan-500/20 bg-cyan-500/10", text: "Credential synchronization completed for configured integration." },
+                                        ].map((ev, idx) => (
+                                            <div key={idx} className="flex items-start gap-2 pb-1.5 border-b border-slate-100 dark:border-white/[0.03] last:border-b-0">
+                                                <span className="text-slate-400 dark:text-slate-500 shrink-0">[{ev.time}]</span>
+                                                <span className={`text-[8px] font-bold px-1 rounded border shrink-0 ${ev.tagColor}`}>[{ev.tag}]</span>
+                                                <span className="text-slate-700 dark:text-slate-300">{ev.text}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Dashboard Footer Info */}
                             <div className="bg-slate-50 dark:bg-[#060a13] px-4 py-2.5 border-t border-slate-200 dark:border-white/[0.06] text-center text-[9px] font-mono text-slate-500 tracking-wider uppercase">
-                                CRITICAL CREDENTIAL ACTIONS ARE SIGNED CRYPTOGRAPHICALLY AND NEVER STORED IN PLAIN TEXT
+                                ILLUSTRATIVE GOVERNANCE PREVIEW • COUNTS, RECORDS, AND TIMESTAMPS SHOWN FOR DEMONSTRATION PURPOSES
                             </div>
                         </div>
                     </div>
@@ -425,7 +460,7 @@ export default async function LandingPage() {
                                 Designed for High-Trust Operational Environments
                             </h2>
                             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
-                                Cryptographic and architectural constraints built to guarantee credential safety after storage.
+                                Cryptographic and architectural constraints designed to protect credentials after storage.
                             </p>
                         </div>
 
