@@ -378,13 +378,13 @@ export default async function SecurityPage() {
                                     },
                                     { 
                                         tier: "Mutual TLS Client Verification", 
-                                        desc: "Guarantees strict cryptographic identity validation by requiring mutual TLS certificate verification (mTLS) for all incoming API requests, preventing man-in-the-middle exploits.", 
+                                        desc: "Enforces cryptographic identity validation by requiring mutual TLS certificate verification (mTLS) for all incoming API requests, helping mitigate man-in-the-middle risks.", 
                                         color: "border-t-indigo-500/40",
                                         meta: "mTLS CRYPTOGRAPHIC CERT • MitM SAFEGUARD"
                                     },
                                     { 
                                         tier: "HMAC Request Signature Integrity", 
-                                        desc: "Guarantees absolute tamper-evident request delivery. Validates HMAC signatures with unique keys and strict time-windows to eliminate replay attacks and request alteration.", 
+                                        desc: "Provides tamper-evident request verification by validating HMAC signatures with unique keys and strict time-windows, which helps reduce unauthorized use, request alteration, and replay risks when correctly configured.", 
                                         color: "border-t-purple-500/40",
                                         meta: "HMAC HASH SIGNATURE • ANTI-REPLAY WINDOW"
                                     },

@@ -284,7 +284,7 @@ export default async function IntegrationsPage() {
                                     notes: "Security material provisioning to BTP Integration Suite is a supported, implemented integration."
                                 },
                                 {
-                                    system: "Any Application via REST API",
+                                    system: "Applications supporting CredSecure REST APIs",
                                     icon: Code2,
                                     availability: "Available via API",
                                     availColor: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/50",
@@ -364,7 +364,7 @@ export default async function IntegrationsPage() {
                                     icon: Lock,
                                     title: "OAuth with mTLS",
                                     stack: "OAuth 2.0 + Mutual TLS",
-                                    desc: "Combines OAuth 2.0 bearer authorization with TLS certificate verification (x-client-verify). Ensures requests originate strictly from authorized client hardware or instances, preventing token theft and replay.",
+                                    desc: "Combines OAuth 2.0 bearer authorization with TLS certificate verification (x-client-verify). Ensures requests originate strictly from authorized client hardware or instances, which helps reduce unauthorized use and replay risks when correctly configured.",
                                     badge: "Secure Tier",
                                     badgeColor: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/50",
                                     accentBorder: "border-l-indigo-500/50",
@@ -373,7 +373,7 @@ export default async function IntegrationsPage() {
                                     icon: Shield,
                                     title: "OAuth + mTLS + HMAC",
                                     stack: "Complete Layered Defense",
-                                    desc: "The highest protection level: OAuth 2.0 authentication and mTLS certificate verification are layered with HMAC-SHA256 request payload and timestamp signing. Guarantees end-to-end request integrity and eliminates replay attacks.",
+                                    desc: "The highest protection level: OAuth 2.0 authentication and mTLS certificate verification are layered with HMAC-SHA256 request payload and timestamp signing, which strengthens request integrity and helps reduce unauthorized use and replay risks when correctly configured.",
                                     badge: "Enterprise Tier",
                                     badgeColor: "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/50",
                                     accentBorder: "border-l-purple-500/50",
