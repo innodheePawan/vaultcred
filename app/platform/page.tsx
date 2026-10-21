@@ -43,6 +43,36 @@ export default async function PlatformPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
             />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebPage",
+                        "@id": "https://getcredsecure.com/platform#webpage",
+                        "url": "https://getcredsecure.com/platform",
+                        "name": "Credential Governance Platform | CredSecure",
+                        "description": "Enterprise credential governance platform capabilities overview across SAP, BTP Integration Suite, middleware, and access control.",
+                        "breadcrumb": {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "name": "Home",
+                                    "item": "https://getcredsecure.com"
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "name": "Platform",
+                                    "item": "https://getcredsecure.com/platform"
+                                }
+                            ]
+                        }
+                    })
+                }}
+            />
 
             <main className="relative z-10 pt-16">
 

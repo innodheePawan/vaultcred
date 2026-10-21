@@ -19,10 +19,11 @@ import {
     Workflow,
 } from "lucide-react";
 import { constructMetadata } from "@/lib/seo";
+import { SmoothScrollAnchor } from "@/components/marketing/SmoothScrollAnchor";
 
 export const metadata = constructMetadata({
-    title: "SAP and BTP Credential Use Cases",
-    description: "Enterprise use cases for SAP credential governance, production-support access, external vendor access, application credential provisioning, and BTP security-material provisioning.",
+    title: "Enterprise Credential Management & Integration Use Cases",
+    description: "See how CredSecure helps organizations control credential access, reduce manual handling, connect applications through APIs, and maintain visibility across real operational workflows.",
     path: "/use-cases",
 });
 
@@ -311,6 +312,36 @@ export default async function UseCasesPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
             />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebPage",
+                        "@id": "https://getcredsecure.com/use-cases#webpage",
+                        "url": "https://getcredsecure.com/use-cases",
+                        "name": "Enterprise Credential Management & Integration Use Cases | CredSecure",
+                        "description": "See how CredSecure helps organizations control credential access, reduce manual handling, connect applications through APIs, and maintain visibility across real operational workflows.",
+                        "breadcrumb": {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "name": "Home",
+                                    "item": "https://getcredsecure.com"
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "name": "Use Cases",
+                                    "item": "https://getcredsecure.com/use-cases"
+                                }
+                            ]
+                        }
+                    })
+                }}
+            />
 
             <main className="relative z-10 pt-16">
 
@@ -340,12 +371,12 @@ export default async function UseCasesPage() {
 
                             {/* CTA Actions */}
                             <div className="flex flex-wrap items-center gap-4 pt-2">
-                                <a href="#quick-discovery-navigator">
-                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2">
+                                <SmoothScrollAnchor href="#quick-discovery-navigator">
+                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2 cursor-pointer">
                                         Explore Use Cases
                                         <ArrowDown className="w-4 h-4" />
                                     </Button>
-                                </a>
+                                </SmoothScrollAnchor>
 
                                 <Link href="/request-demo">
                                     <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors">

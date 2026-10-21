@@ -31,6 +31,7 @@ import {
     Workflow,
     ChevronRight,
     Shield,
+    Sliders,
 } from "lucide-react";
 import { constructMetadata } from "@/lib/seo";
 
@@ -59,27 +60,27 @@ export default async function LandingPage() {
                         label: "CREDENTIAL GOVERNANCE",
                     }}
                     title={{
-                        line1: "Your Business Credentials Are Everywhere.",
-                        gradientLine: "Bring Them Under Control.",
+                        line1: "Manage Credentials. Connect Systems.",
+                        gradientLine: "Stay in Control.",
                     }}
                     description={
                         <>
                             <p className="text-base sm:text-lg text-slate-650 dark:text-slate-300 leading-relaxed max-w-xl">
-                                Passwords, API keys, certificates and application credentials often end up scattered across spreadsheets, shared files, emails, developer systems and different applications.
+                                CredSecure helps businesses securely manage credentials, control access and connect applications and systems through APIs and supported integrations.
                             </p>
                             <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-200 leading-relaxed max-w-xl">
-                                CredSecure brings them into one secure, controlled place — giving you visibility into what exists, who can access it, when it expires, where it&apos;s used, and what changed.
+                                Reduce manual credential sharing, improve visibility and simplify how credentials are managed across your organization.
                             </p>
                         </>
                     }
                     primaryCta={{
-                        label: "See How It Works",
-                        href: "#how-it-works",
+                        label: "Request a Demo",
+                        href: "/request-demo",
                         icon: <ArrowRight className="w-4 h-4" />,
                     }}
                     secondaryCta={{
-                        label: "Request Demo",
-                        href: "/request-demo",
+                        label: "Explore Integrations",
+                        href: "/integrations",
                     }}
                     visual={
                         <div className="opacity-95 hover:opacity-100 transition-opacity duration-200">
@@ -87,51 +88,74 @@ export default async function LandingPage() {
                                 {/* Ambient Background Glow */}
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-                                {/* CREDSECURE Logo + Credential Vault Badge Header (Center Aligned) */}
+                                {/* Header */}
                                 <div className="relative z-10 flex flex-col items-center justify-center border-b border-slate-100 dark:border-white/[0.06] pb-3 space-y-1.5">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <img src="/shield-logo.png" alt="CredSecure Shield Logo" className="h-6 w-6 object-contain" />
-                                        <span className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white font-mono uppercase">
+                                    <div className="flex items-center justify-center gap-2.5">
+                                        <img src="/shield-logo.png" alt="CredSecure Shield Logo" className="h-7 w-7 object-contain" />
+                                        <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white font-mono uppercase">
                                             CRED<span className="text-indigo-600 dark:text-indigo-400 font-extrabold">SECURE</span>
                                         </span>
                                     </div>
                                     <span className="text-[9.5px] font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-0.5 rounded-full font-bold uppercase tracking-wider border border-indigo-200 dark:border-indigo-800/50 shadow-2xs">
-                                        CREDENTIAL VAULT
+                                        Credential Governance Platform
                                     </span>
                                 </div>
 
-                                {/* Scannable 2-Column Grid */}
-                                <div className="relative z-10 grid grid-cols-2 gap-2.5 py-2">
-                                    {[
-                                        { label: "Passwords", icon: "🔐", sub: "User Credentials" },
-                                        { label: "API Keys", icon: "🔑", sub: "Service Tokens" },
-                                        { label: "Certificates", icon: "📄", sub: "mTLS & SSL" },
-                                        { label: "OAuth", icon: "🔗", sub: "Client Credentials" },
-                                        { label: "Secure Files", icon: "🗂", sub: "Keys & Notes" },
-                                        { label: "Security Keys", icon: "🔑", sub: "SSH & Envs" },
-                                    ].map((item, idx) => (
-                                        <div key={idx} className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] flex items-center gap-2.5">
-                                            <span className="text-base select-none">{item.icon}</span>
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.label}</div>
-                                                <div className="text-[9px] text-slate-500 font-mono">{item.sub}</div>
-                                            </div>
+                                {/* Central Connection Diagram */}
+                                <div className="relative z-10 flex flex-col items-center gap-2 py-3">
+                                    {/* Top: Teams & Admins */}
+                                    <div className="flex gap-2 justify-center">
+                                        <div className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] text-[10px] font-mono text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <span>👤</span> Teams &amp; Admins
                                         </div>
-                                    ))}
-                                </div>
-
-                                {/* Down Arrow Indicator */}
-                                <div className="relative z-10 flex justify-center -my-1">
-                                    <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                        <ArrowDown className="w-3.5 h-3.5 animate-pulse" />
+                                        <div className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] text-[10px] font-mono text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <span>🏢</span> Applications
+                                        </div>
+                                    </div>
+                                    {/* Down arrows */}
+                                    <div className="flex gap-6">
+                                        <ArrowDown className="w-3.5 h-3.5 text-indigo-400 opacity-60" />
+                                        <ArrowDown className="w-3.5 h-3.5 text-indigo-400 opacity-60" />
+                                    </div>
+                                    {/* Center: CredSecure Hub with Logo */}
+                                    <div className="px-5 py-2.5 rounded-xl border-2 border-indigo-500/40 dark:border-indigo-400/40 bg-indigo-50/90 dark:bg-indigo-950/40 text-center shadow-md flex flex-col items-center justify-center gap-1">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <img src="/shield-logo.png" alt="CredSecure Logo" className="h-5 w-5 object-contain" />
+                                            <span className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                                                CRED<span className="text-indigo-600 dark:text-indigo-400">SECURE</span>
+                                            </span>
+                                        </div>
+                                        <div className="text-[9px] text-indigo-600 dark:text-indigo-400 font-mono font-medium">Centralized governance &amp; control</div>
+                                    </div>
+                                    {/* Down arrow */}
+                                    <ArrowDown className="w-3.5 h-3.5 text-indigo-400 opacity-60" />
+                                    {/* Bottom: Connected Systems */}
+                                    <div className="flex gap-2 justify-center">
+                                        <div className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] text-[10px] font-mono text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <span>🔗</span> API Integrations
+                                        </div>
+                                        <div className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] text-[10px] font-mono text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <span>⚙️</span> Connected Systems
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Bottom Strip */}
-                                <div className="relative z-10 p-3 rounded-xl border border-indigo-500/20 dark:border-indigo-400/20 bg-indigo-500/5 dark:bg-indigo-500/10 text-center">
-                                    <span className="text-xs font-extrabold font-mono tracking-widest text-indigo-700 dark:text-indigo-300 uppercase">
-                                        SECURE • CONTROL • TRACK
-                                    </span>
+                                {/* Bottom Strip: Manage • Connect • Control with icons */}
+                                <div className="relative z-10 p-2.5 rounded-xl border border-indigo-500/20 dark:border-indigo-400/20 bg-indigo-500/5 dark:bg-indigo-500/10 flex items-center justify-around gap-2">
+                                    <div className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold tracking-wider text-indigo-700 dark:text-indigo-300 uppercase">
+                                        <Sliders className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                        <span>Manage</span>
+                                    </div>
+                                    <span className="text-indigo-300 dark:text-indigo-700 font-bold">•</span>
+                                    <div className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold tracking-wider text-indigo-700 dark:text-indigo-300 uppercase">
+                                        <Network className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                        <span>Connect</span>
+                                    </div>
+                                    <span className="text-indigo-300 dark:text-indigo-700 font-bold">•</span>
+                                    <div className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold tracking-wider text-indigo-700 dark:text-indigo-300 uppercase">
+                                        <Lock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                        <span>Control</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -144,27 +168,36 @@ export default async function LandingPage() {
                 <BeforeAfterHeroVisual />
 
                 {/* ═══════════════════════════════════════════════════════════
-                    SECTION 2 — ONE PLATFORM. COMPLETE CREDENTIAL CONTROL.
+                    SECTION 2 — ONE PLATFORM. MULTIPLE WAYS TO CONNECT.
                 ═══════════════════════════════════════════════════════════ */}
-                <section className="border-y border-slate-200 dark:border-white/[0.05] bg-slate-100/80 dark:bg-[#060a13] py-6">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
-                        <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
-                            One Platform. Complete Credential Control.
-                        </h2>
-                        <div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 font-sans">
-                            <span>Secure Storage</span>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Controlled Access</span>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Expiry Alerts</span>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Ownership</span>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Audit History</span>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Application Access</span>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Credential Provisioning</span>
+                <section className="border-y border-slate-200 dark:border-white/[0.05] bg-slate-100/80 dark:bg-[#060a13] py-10">
+                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center mb-8">
+                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-wide">
+                                One Platform. Multiple Ways to Connect.
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-lg mx-auto">
+                                CredSecure sits at the center of your credential operations, connecting people, applications and systems.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="p-5 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] text-center space-y-2">
+                                <div className="text-2xl">👤</div>
+                                <div className="text-sm font-semibold text-slate-900 dark:text-white">Teams &amp; Administrators</div>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Manage credentials and control who can access them, with full audit visibility.</p>
+                            </div>
+                            <div className="p-5 rounded-xl border-2 border-indigo-500/25 dark:border-indigo-400/25 bg-indigo-50/60 dark:bg-indigo-950/20 text-center space-y-2">
+                                <div className="h-8 flex items-center justify-center">
+                                    <img src="/shield-logo.png" alt="CredSecure Logo" className="h-7 w-7 object-contain" />
+                                </div>
+                                <div className="text-sm font-bold text-indigo-700 dark:text-indigo-300">CredSecure</div>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Centralized credential management, access control and activity tracking.</p>
+                            </div>
+                            <div className="p-5 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] text-center space-y-2">
+                                <div className="text-2xl">🔗</div>
+                                <div className="text-sm font-semibold text-slate-900 dark:text-white">Applications &amp; Systems</div>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Retrieve authorized credentials through APIs or receive them through supported integrations.</p>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -346,7 +379,7 @@ export default async function LandingPage() {
                                         <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
                                             <span className="text-slate-500 dark:text-slate-600 shrink-0">[16:01:18]</span>
                                             <span className="text-indigo-600 dark:text-indigo-400">[SYSTEM]</span>
-                                            <span className="text-slate-700 dark:text-slate-300">Enforcing deterministic check-sum rotation on Enterprise Environment Certificatess.</span>
+                                            <span className="text-slate-700 dark:text-slate-300">Credential expiry alert triggered for Enterprise Environment Certificate (30 days remaining).</span>
                                         </div>
                                         <div className="flex items-start gap-2 border-b border-slate-200 dark:border-white/[0.02] pb-1.5">
                                             <span className="text-slate-500 dark:text-slate-600 shrink-0">[15:58:04]</span>
@@ -436,13 +469,12 @@ export default async function LandingPage() {
 
                         <div className="max-w-3xl mx-auto space-y-2">
                             {/* Replace hardcoded border, bg, and text in use cases list */}
-                            {[{ title: "Enterprise Integration Credential Governance", desc: "Govern middleware tokens, RFC connections, and system-to-system credentials across SAP landscapes.", tier: 1 },
-                                { title: "Production maintenance access with automatic revocation", desc: "Time-bound engineer access for support workflows with automatic, hard revocation and audit trails.", tier: 1 },
-                                { title: "Third-party vendor access governance with zero standing privileges", desc: "Controlled external support access with scoped visibility, strict timers, and automatic termination.", tier: 1 },
-                                { title: "Automated service account lifecycle governance", desc: "Centralized ownership attribution, rotation scheduling, and key validity tracking.", tier: 2 },
-                                { title: "API Client Scope Security", desc: "External API exposure governed with client credentials, mTLS validation, and rates controls.", tier: 2 },
-                                { title: "Compliance Audits & Attestation", desc: "Instant evidence extraction and login differential mapping for regulatory review.", tier: 2 },
-                                { title: "Incident Response Playbooks", desc: "Emergency break-glass workflows with instant tracing, isolation, and automated termination.", tier: 2 },
+                            {[{ title: "Enterprise Integration Credential Governance", desc: "Govern middleware tokens, RFC connections, and system-to-system credentials across SAP and other integration landscapes.", tier: 1 },
+                                { title: "Production access with time-bound controls", desc: "Give engineers controlled access to production credentials for authorized support activities, with access expiry and audit trail.", tier: 1 },
+                                { title: "Third-party vendor credential access", desc: "Provide controlled external access scoped by credential category, environment and permitted period — with centralized audit traceability.", tier: 1 },
+                                { title: "Application credential provisioning", desc: "Allow applications to retrieve their authorized credential configuration directly through the CredSecure API at startup or deployment.", tier: 2 },
+                                { title: "API Client Scope Security", desc: "External API access governed with client credentials, mTLS validation and configurable rate controls.", tier: 2 },
+                                { title: "Audit & Compliance Visibility", desc: "Review credential access and change history through centralized, structured audit records.", tier: 2 },
                             ].map((uc, idx) => (
                                 <div key={idx} className={`flex items-center justify-between px-5 py-3 rounded-lg border transition-all duration-150 ${uc.tier === 1
                                     ? "border-indigo-500/15 bg-indigo-500/[0.02] hover:border-indigo-500/30"
@@ -558,40 +590,7 @@ export default async function LandingPage() {
                     </div>
                 </section>
 
-                {/* ═══════════════════════════════════════════════════════════
-                    SECTION 10.5 — DESIGNED FOR OPERATIONAL CONTINUITY
-                ═══════════════════════════════════════════════════════════ */}
-                <section className="py-24 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-white/[0.05] bg-slate-100/50 dark:bg-[#05080f]">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="text-center max-w-2xl mx-auto mb-16">
-                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Operational Dependability</div>
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
-                                Designed for Operational Continuity
-                            </h2>
-                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                                Enterprise-grade reliability guarantees that keep support, integration, and security pipelines unbroken.
-                            </p>
-                        </div>
 
-                        <div className="space-y-4 font-mono">
-                            {[
-                                { title: "Runtime Validation", desc: "Scopes, signatures, and environment policies are evaluated in real time at every execution point with sub-millisecond overhead." },
-                                { title: "Scoped Access Enforcements", desc: "Decoupled permission layers allow independent fail-safe checks. Even during partial failures, core access bounds remain locked." },
-                                { title: "Audit Trail Preservation", desc: "State change events are streamed asynchronously to write-ahead compliance pipelines, preventing database load spikes from dropping audit logs." },
-                                { title: "High-Availability Architecture", desc: "Stateless verification routing guarantees active requests failover seamlessly without breaking continuous integration connections." },
-                                { title: "Integration-Safe Credential Delivery", desc: "Connectors operate with self-healing backoff schedules and cryptographic checksum validations for resilient Integration & Middleware Operations." },
-                            ].map((item, idx) => (
-                                <div key={idx} className="flex items-start gap-4 p-4 rounded border border-slate-200 dark:border-white/[0.04] bg-white/80 dark:bg-white/[0.01]">
-                                    <div className="text-indigo-600 dark:text-indigo-400 font-bold text-xs shrink-0 select-none">[{idx + 1}]</div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide uppercase">{item.title}</h3>
-                                        <p className="text-[11px] text-slate-600 dark:text-slate-505 leading-relaxed">{item.desc}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
 
                 {/* ═══════════════════════════════════════════════════════════
                     SECTION 11 — FINAL CTA

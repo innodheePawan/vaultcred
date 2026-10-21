@@ -166,7 +166,7 @@ export function FloatingCredentialWidget() {
                     className="flex items-center gap-2 h-9 px-3.5 rounded-lg bg-white dark:bg-[#090d16] hover:bg-slate-50 dark:hover:bg-[#0f172a] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-md transition-all font-sans text-xs font-medium cursor-pointer"
                 >
                     <KeyRound className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                    <span>Credential Utility</span>
+                    <span>Password Generator</span>
                 </button>
             </div>
         );
@@ -192,8 +192,8 @@ export function FloatingCredentialWidget() {
                     <div className="flex items-center gap-2">
                         <KeyRound className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                         <div>
-                            <h3 className="text-[11px] font-bold text-slate-900 dark:text-white tracking-wider uppercase">Credential Utility</h3>
-                            <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wide">Generate Scoped Secret Payload</p>
+                            <h3 className="text-[11px] font-bold text-slate-900 dark:text-white tracking-wider uppercase">Password Generator</h3>
+                            <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wide">Secure credential generator</p>
                         </div>
                     </div>
                     <button

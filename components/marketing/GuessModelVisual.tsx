@@ -30,9 +30,9 @@ const guessStages: GuessStage[] = [
     {
         letter: "G",
         title: "Govern",
-        tagline: "Define ownership, access policies & scope",
-        description: "Centralized governance ensuring every credential has an assigned owner, clear classification, and granular RBAC policies.",
-        keyActions: ["Role & group scoping", "Owner attribution", "Access policy enforcement"],
+        tagline: "Decide who can access credentials and how they are managed",
+        description: "Centralized governance ensuring every credential has an assigned owner, clear classification, and defined access controls. Know who is responsible and who is permitted.",
+        keyActions: ["Role & group access control", "Owner attribution", "Access policy enforcement"],
         accentColor: "text-indigo-600 dark:text-indigo-400",
         bgLight: "bg-indigo-500/10 dark:bg-indigo-500/15",
         borderLight: "border-indigo-500/40 dark:border-indigo-500/50",
@@ -44,9 +44,9 @@ const guessStages: GuessStage[] = [
     {
         letter: "U",
         title: "Update",
-        tagline: "Maintain active values & version history",
-        description: "Seamless credential rotation and version tracking with automatic zero-downtime propagation across applications.",
-        keyActions: ["Version tracking", "Rotation scheduling", "Drift prevention"],
+        tagline: "Keep credential information current and maintain change history",
+        description: "Manage credential updates and maintain version history in one place. Track what changed, when it changed, and keep credentials current across your operations.",
+        keyActions: ["Version tracking", "Change history", "Lifecycle visibility"],
         accentColor: "text-blue-600 dark:text-blue-400",
         bgLight: "bg-blue-500/10 dark:bg-blue-500/15",
         borderLight: "border-blue-500/40 dark:border-blue-500/50",
@@ -58,9 +58,9 @@ const guessStages: GuessStage[] = [
     {
         letter: "E",
         title: "Exchange",
-        tagline: "Secure delivery to users & systems",
-        description: "Time-bound, encrypted sharing channels for team members, external partners, and automated API workloads.",
-        keyActions: ["Ephemeral secret sharing", "OAuth 2.0 & mTLS API", "Vendor time-boxing"],
+        tagline: "Share or deliver credentials securely through authorized methods",
+        description: "Share credentials with authorized team members, deliver them to applications through APIs, or provision them to connected systems — all through controlled, traceable channels.",
+        keyActions: ["API credential delivery", "Vendor access control", "System provisioning"],
         accentColor: "text-cyan-600 dark:text-cyan-400",
         bgLight: "bg-cyan-500/10 dark:bg-cyan-500/15",
         borderLight: "border-cyan-500/40 dark:border-cyan-500/50",
@@ -72,9 +72,9 @@ const guessStages: GuessStage[] = [
     {
         letter: "S",
         title: "Store",
-        tagline: "Encrypted, structured vault storage",
-        description: "AES-256-GCM encrypted payload storage with decoupled metadata layers and multi-region database resilience.",
-        keyActions: ["AES-256-GCM payload encryption", "Decoupled architecture", "6 credential types"],
+        tagline: "Keep credentials protected in one managed location",
+        description: "Credentials are stored securely in one place, encrypted at rest. Metadata and encrypted payloads are architecturally separated for defense-in-depth. No plaintext at rest.",
+        keyActions: ["Encrypted credential storage", "Decoupled architecture", "Multiple credential types"],
         accentColor: "text-violet-600 dark:text-violet-400",
         bgLight: "bg-violet-500/10 dark:bg-violet-500/15",
         borderLight: "border-violet-500/40 dark:border-violet-500/50",
@@ -86,9 +86,9 @@ const guessStages: GuessStage[] = [
     {
         letter: "S",
         title: "Secure",
-        tagline: "Protection with 2FA, threat controls & audit",
-        description: "Continuous security enforcement through mandatory 2FA, session invalidation, rate limiting, and SIEM-ready audit logs.",
-        keyActions: ["Mandatory TOTP 2FA", "Differential audit logs", "Adaptive CAPTCHA"],
+        tagline: "Protect credentials with access controls and security measures",
+        description: "Continuous security through mandatory two-factor authentication, session controls, configurable rate limiting, and a complete audit trail of all credential activity.",
+        keyActions: ["Mandatory 2FA", "Full audit trail", "Session & rate controls"],
         accentColor: "text-emerald-600 dark:text-emerald-400",
         bgLight: "bg-emerald-500/10 dark:bg-emerald-500/15",
         borderLight: "border-emerald-500/40 dark:border-emerald-500/50",
@@ -160,8 +160,8 @@ export function GuessModelVisual({ showSectionHeader = true }: GuessModelVisualP
                     </span>
                 </div>
 
-                {/* Sliding Expandable Pillar Columns (Accordion Track) */}
-                <div className="flex flex-col md:flex-row gap-3 min-h-[350px] w-full">
+                {/* Sliding Expandable Pillar Columns (Accordion Track) - Fixed desktop height to eliminate vertical bottom expansion */}
+                <div className="flex flex-col md:flex-row gap-3 md:h-[390px] w-full items-stretch">
                     {guessStages.map((stage, idx) => {
                         const isActive = activeIndex === idx;
                         const Icon = stage.icon;
@@ -181,8 +181,8 @@ export function GuessModelVisual({ showSectionHeader = true }: GuessModelVisualP
                                         handleSelectStage(idx);
                                     }
                                 }}
-                                className={`relative rounded-2xl border transition-all duration-500 cursor-pointer overflow-hidden p-5 sm:p-6 flex flex-col justify-between select-none ${isActive
-                                    ? `md:flex-[3.2] ${stage.borderLight} bg-white dark:bg-[#0b101d] shadow-xl ${stage.glowColor} ring-1 ring-black/[0.04] dark:ring-white/10`
+                                className={`relative rounded-2xl border transition-[flex-grow,flex-shrink,border-color,background-color,box-shadow] duration-500 ease-out cursor-pointer overflow-hidden p-5 sm:p-6 flex flex-col justify-between select-none h-full ${isActive
+                                    ? `md:flex-[3.5] ${stage.borderLight} bg-white dark:bg-[#0b101d] shadow-xl ${stage.glowColor} ring-1 ring-black/[0.04] dark:ring-white/10`
                                     : "md:flex-1 border-slate-200/70 dark:border-white/[0.06] bg-white/70 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.12] hover:bg-white dark:hover:bg-white/[0.04] opacity-80 hover:opacity-100"
                                     }`}
                             >
@@ -229,34 +229,37 @@ export function GuessModelVisual({ showSectionHeader = true }: GuessModelVisualP
                                         </div>
                                     </div>
 
-                                    {/* Expanded Content Area (Active State) */}
+                                    {/* Expanded Content Area (Active State) with smooth left-to-right slide */}
                                     {isActive ? (
-                                        <div className="mt-5 sm:mt-6 space-y-4 animate-fadeIn">
+                                        <div
+                                            key={`stage-content-${idx}`}
+                                            className="mt-5 sm:mt-6 space-y-4 animate-slide-right-smooth"
+                                        >
                                             <div>
                                                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5 leading-snug">
                                                     {stage.tagline}
                                                 </h3>
-                                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
+                                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
                                                     {stage.description}
                                                 </p>
                                             </div>
 
-                                            {/* Key Capabilities Pills Grid */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+                                            {/* Key Capabilities Pills Grid - displaying complete text without truncation */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
                                                 {stage.keyActions.map((action, i) => (
                                                     <div
                                                         key={i}
-                                                        className="p-2.5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/80 dark:bg-white/[0.03] text-[11px] font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 shadow-2xs"
+                                                        className="p-2.5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/80 dark:bg-white/[0.03] text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 shadow-2xs min-w-0"
                                                     >
                                                         <span className={`w-1.5 h-1.5 rounded-full ${stage.bgLight} shrink-0`} />
-                                                        <span className="truncate">{action}</span>
+                                                        <span className="whitespace-normal break-words leading-snug">{action}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     ) : (
                                         /* Collapsed Preview in Inactive State */
-                                        <div className="my-6 hidden md:block">
+                                        <div className="my-auto hidden md:block">
                                             <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tracking-wider line-clamp-2">
                                                 {stage.tagline}
                                             </div>
@@ -267,54 +270,16 @@ export function GuessModelVisual({ showSectionHeader = true }: GuessModelVisualP
                                         </div>
                                     )}
 
-                                    {/* Pillar Footer Bar - Stage 0* removed */}
-                                    <div className="mt-4 flex items-center justify-end text-[11px] text-slate-400 dark:text-slate-500 pt-3 border-t border-slate-200/70 dark:border-white/[0.06]">
-                                        {isActive ? (
-                                            <span
-                                                className={`font-mono font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full ${stage.bgLight} ${stage.accentColor} flex items-center gap-1.5`}
-                                            >
-                                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                                                Active Stage
-                                            </span>
-                                        ) : (
-                                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 md:hidden">
-                                                Tap to view
-                                            </span>
-                                        )}
-                                    </div>
+                                    {/* Pillar Footer Bar - Active Stage badge removed */}
+                                    {!isActive && (
+                                        <div className="mt-4 flex items-center justify-end text-[10px] font-mono text-slate-400 dark:text-slate-500 md:hidden pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
+                                            Tap to view
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
                     })}
-                </div>
-
-                {/* Framework Relationship Context Note (Operational Focus) - Center-aligned, high contrast */}
-                <div className="mt-8 p-6 sm:p-7 rounded-2xl border border-indigo-200/80 dark:border-indigo-500/30 bg-gradient-to-r from-indigo-50/70 via-white to-indigo-50/70 dark:from-indigo-950/30 dark:via-[#0b101d] dark:to-indigo-950/30 text-center shadow-md space-y-3">
-                    <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-semibold max-w-4xl mx-auto flex items-center justify-center gap-2 flex-wrap sm:flex-nowrap">
-                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-indigo-600 text-white dark:bg-indigo-500 font-mono text-[11px] font-bold uppercase tracking-wider shadow-2xs">
-                            Operational Focus
-                        </span>
-                        <span>
-                            GUESS operationalizes credentials, complementing CredSecure&apos;s Governance Lifecycle:
-                        </span>
-                    </div>
-
-                    {/* Next line: Lifecycle steps center aligned */}
-                    <div className="pt-1.5 flex items-center justify-center">
-                        <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-5 sm:px-7 py-2.5 rounded-xl bg-white dark:bg-[#070b14] border border-indigo-200 dark:border-indigo-800/80 shadow-xs font-mono text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 tracking-wide text-center">
-                            <span>Provision</span>
-                            <span className="text-slate-300 dark:text-slate-600 font-normal">→</span>
-                            <span>Govern</span>
-                            <span className="text-slate-300 dark:text-slate-600 font-normal">→</span>
-                            <span>Monitor</span>
-                            <span className="text-slate-300 dark:text-slate-600 font-normal">→</span>
-                            <span>Enforce</span>
-                            <span className="text-slate-300 dark:text-slate-600 font-normal">→</span>
-                            <span>Revoke</span>
-                            <span className="text-slate-300 dark:text-slate-600 font-normal">→</span>
-                            <span>Audit</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>

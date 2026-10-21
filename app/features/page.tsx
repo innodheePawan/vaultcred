@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { constructMetadata } from "@/lib/seo";
 import type { GuessStageName } from "@/components/marketing/GuessStageBadge";
+import { SmoothScrollAnchor } from "@/components/marketing/SmoothScrollAnchor";
 
 export const metadata = constructMetadata({
     title: "Enterprise Credential Security Features",
@@ -213,6 +214,36 @@ export default async function FeaturesPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
             />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebPage",
+                        "@id": "https://getcredsecure.com/features#webpage",
+                        "url": "https://getcredsecure.com/features",
+                        "name": "Enterprise Credential Security Features | CredSecure",
+                        "description": "Complete capability breakdown of CredSecure AES-256-GCM encryption, role-based access control, controlled API access, audit traceability, and provisioning.",
+                        "breadcrumb": {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "name": "Home",
+                                    "item": "https://getcredsecure.com"
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "name": "Features",
+                                    "item": "https://getcredsecure.com/features"
+                                }
+                            ]
+                        }
+                    })
+                }}
+            />
 
             <main className="relative z-10 pt-16">
 
@@ -242,12 +273,12 @@ export default async function FeaturesPage() {
 
                             {/* CTA Actions */}
                             <div className="flex flex-wrap items-center gap-4 pt-2">
-                                <a href="#quick-feature-navigator">
-                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2">
+                                <SmoothScrollAnchor href="#quick-feature-navigator">
+                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2 cursor-pointer">
                                         Explore Capabilities
                                         <ArrowDown className="w-4 h-4" />
                                     </Button>
-                                </a>
+                                </SmoothScrollAnchor>
 
                                 <Link href="/request-demo">
                                     <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors">
