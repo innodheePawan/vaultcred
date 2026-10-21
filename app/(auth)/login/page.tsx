@@ -1,8 +1,18 @@
 
+import type { Metadata } from 'next';
 import { getSystemSettings } from '@/lib/actions/settings';
 import LoginForm from '@/components/auth/LoginForm';
 import { getLicenseState } from '@/lib/license-enforcement';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+    title: 'Sign In',
+    description: 'Sign in to your CredSecure operational credential governance portal.',
+    robots: {
+        index: false,
+        follow: true,
+    },
+};
 
 export default async function LoginPage({
     searchParams,
