@@ -144,7 +144,7 @@ export function MarketingFooter({ applicationName, companyName }: MarketingFoote
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-start gap-4">
                         {/* Copyright */}
                         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium pt-0.5">
-                            &copy; {new Date().getFullYear()} {companyName || "Innodhee Services Pvt. Ltd."}. All rights reserved.
+                            &copy; {new Date().getFullYear()} {companyName || "Innodhee Services Pvt. Ltd."} All rights reserved.
                         </p>
 
                         {/* Tagline & Aligned Legal Links (Starting at exact pixel of Credential Governance) */}

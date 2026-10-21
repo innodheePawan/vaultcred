@@ -288,7 +288,7 @@ export default async function IntegrationsPage() {
                                     icon: Code2,
                                     availability: "Available via API",
                                     availColor: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/50",
-                                    notes: "Any application can retrieve authorized credentials via the REST API using OAuth 2.0, with progressive tiers adding mTLS and HMAC request signing."
+                                    notes: "Applications integrated with CredSecure can retrieve authorized credentials via the REST API using OAuth 2.0, with progressive tiers adding mTLS and HMAC request signing."
                                 },
                                 {
                                     system: "CI/CD Pipelines",
