@@ -112,7 +112,7 @@ export default async function FeaturesPage() {
         {
             id: "audit-compliance",
             title: "Audit & Compliance",
-            subtitle: "Immutable, differential audit logs with SIEM-ready output for every state change.",
+            subtitle: "Immutable, differential audit logs with structured JSON output for every state change.",
             guessStages: ["Govern", "Secure"] as GuessStageName[],
             guessEmphasis: ["Govern", "Secure"] as GuessStageName[],
             items: [
@@ -122,7 +122,7 @@ export default async function FeaturesPage() {
                 "Login activity logging with outcome, category, reason code, and risk classification",
                 "Risk level derivation: Blocked → High, MFA failure → Medium, Standard failure → Low",
                 "Login log archival to cold storage with batch traceability",
-                "SIEM-ready structured JSON log output (Splunk, Datadog, CloudWatch compatible)",
+                "Structured JSON log output formatted for security monitoring ingestion (Splunk, Datadog, CloudWatch compatible)",
                 "Configurable personal credential audit policy",
                 "Audit throttling for repeated forbidden-access attempts to prevent log flooding",
             ],
@@ -136,8 +136,8 @@ export default async function FeaturesPage() {
             items: [
                 "External user flag with vendor organization identification",
                 "Access type control: API or Portal modes",
-                "Time-bound access windows with automatic session termination on expiry",
-                "Credential-level scoping — vendors see only explicitly shared credential IDs",
+                "Time-bound access windows with automatic session termination on expiry within CredSecure",
+                "Credential-level scoping — vendors see only explicitly shared credential IDs without altering credentials in connected systems",
                 "Category and environment scoping for external users",
                 "Route-level restrictions blocking admin, settings, and internal features",
                 "External invite flow with pre-configured scope and vendor metadata",

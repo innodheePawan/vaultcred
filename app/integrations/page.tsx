@@ -340,12 +340,12 @@ export default async function IntegrationsPage() {
                 <section className="py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/[0.05] bg-slate-100/50 dark:bg-[#05080f]">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center mb-10">
-                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-semibold mb-2">Developer Details</div>
+                            <div className="text-[9px] font-mono uppercase tracking-widest text-indigo-600 dark:text-indigo-400 font-semibold mb-2">Defense in Depth</div>
                             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
-                                API Security & Authentication
+                                Layered Security Tiers: Standard, Secure, and Enterprise
                             </h2>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
-                                CredSecure API access is designed to be secure and auditable. Applications connect using one of three supported authentication methods.
+                            <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
+                                CredSecure API access is governed by progressive, layered security tiers. Machine-to-machine integrations authenticate via OAuth 2.0, with higher tiers adding mutual TLS verification and cryptographic HMAC request signing.
                             </p>
                         </div>
 
@@ -353,35 +353,44 @@ export default async function IntegrationsPage() {
                             {[
                                 {
                                     icon: Key,
-                                    title: "OAuth 2.0 Client Credentials",
-                                    desc: "Applications use a client ID and secret to authenticate and receive a scoped access token. The most common approach for machine-to-machine integrations.",
-                                    badge: "Standard",
-                                    badgeColor: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/50",
+                                    title: "OAuth 2.0 Alone",
+                                    stack: "OAuth 2.0 Client Credentials",
+                                    desc: "Applications authenticate with encrypted client credentials to obtain short-lived, scoped JWT access tokens. Establishes machine identity and RBAC context for standard machine-to-machine integrations.",
+                                    badge: "Standard Tier",
+                                    badgeColor: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/50",
+                                    accentBorder: "border-l-blue-500/50",
                                 },
                                 {
                                     icon: Lock,
-                                    title: "Mutual TLS (mTLS)",
-                                    desc: "Applications present a client certificate for mutual authentication. Recommended for high-security environments where certificate-based identity verification is required.",
-                                    badge: "Secure",
-                                    badgeColor: "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800/50",
+                                    title: "OAuth with mTLS",
+                                    stack: "OAuth 2.0 + Mutual TLS",
+                                    desc: "Combines OAuth 2.0 bearer authorization with TLS certificate verification (x-client-verify). Ensures requests originate strictly from authorized client hardware or instances, preventing token theft and replay.",
+                                    badge: "Secure Tier",
+                                    badgeColor: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/50",
+                                    accentBorder: "border-l-indigo-500/50",
                                 },
                                 {
                                     icon: Shield,
-                                    title: "HMAC Signature",
-                                    desc: "Requests are signed using a shared secret and timestamp window. Provides request integrity verification and replay protection for sensitive API operations.",
-                                    badge: "Enterprise",
-                                    badgeColor: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50",
+                                    title: "OAuth + mTLS + HMAC",
+                                    stack: "Complete Layered Defense",
+                                    desc: "The highest protection level: OAuth 2.0 authentication and mTLS certificate verification are layered with HMAC-SHA256 request payload and timestamp signing. Guarantees end-to-end request integrity and eliminates replay attacks.",
+                                    badge: "Enterprise Tier",
+                                    badgeColor: "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/50",
+                                    accentBorder: "border-l-purple-500/50",
                                 },
                             ].map((item, idx) => {
                                 const ItemIcon = item.icon;
                                 return (
-                                    <div key={idx} className="p-6 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02]">
-                                        <div className="flex items-start justify-between gap-2 mb-3">
-                                            <ItemIcon className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" strokeWidth={1.5} />
-                                            <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeColor}`}>{item.badge}</span>
+                                    <div key={idx} className={`p-6 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] border-l-2 ${item.accentBorder} flex flex-col justify-between`}>
+                                        <div>
+                                            <div className="flex items-start justify-between gap-2 mb-3">
+                                                <ItemIcon className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" strokeWidth={1.5} />
+                                                <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeColor}`}>{item.badge}</span>
+                                            </div>
+                                            <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wide mb-1">{item.title}</h3>
+                                            <div className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400/90 mb-2.5 font-medium">{item.stack}</div>
+                                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">{item.desc}</p>
                                         </div>
-                                        <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wide mb-2">{item.title}</h3>
-                                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">{item.desc}</p>
                                     </div>
                                 );
                             })}
@@ -389,21 +398,30 @@ export default async function IntegrationsPage() {
 
                         {/* Example workflow */}
                         <div className="p-6 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0b0f19]">
-                            <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold mb-3">Example: Application Credential Retrieval</div>
-                            <div className="font-mono text-xs text-slate-700 dark:text-slate-300 space-y-2">
-                                <div className="text-slate-500 dark:text-slate-500"># Application startup: retrieve authorized .env configuration</div>
-                                <div>
-                                    <span className="text-indigo-600 dark:text-indigo-400">POST</span>
-                                    <span className="text-slate-500"> /oauth/token</span>
-                                    <span className="text-slate-400">  # Authenticate with client credentials</span>
+                            <div className="flex items-center justify-between mb-3 border-b border-slate-200 dark:border-white/[0.04] pb-3">
+                                <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500 font-bold">API Retrieval Pipeline: Tiered Enforcement</div>
+                                <span className="text-[9px] font-mono text-purple-600 dark:text-purple-400 font-medium">Enterprise Tier Active</span>
+                            </div>
+                            <div className="font-mono text-xs text-slate-700 dark:text-slate-300 space-y-2.5">
+                                <div className="text-slate-500 dark:text-slate-500"># Step 1: Obtain scoped JWT token using client credentials</div>
+                                <div className="pl-2 border-l border-slate-200 dark:border-white/[0.08]">
+                                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold">POST</span>
+                                    <span className="text-slate-700 dark:text-slate-300"> /oauth/token</span>
+                                    <span className="text-slate-500 block text-[11px] mt-0.5">{`Payload: { "client_id": "app_client_...", "client_secret": "..." }`}</span>
                                 </div>
-                                <div>
-                                    <span className="text-emerald-600 dark:text-emerald-400">GET</span>
-                                    <span className="text-slate-500"> /api/v1/credentials/retrieve</span>
-                                    <span className="text-slate-400">  # Retrieve authorized configuration</span>
+                                <div className="text-slate-500 dark:text-slate-500 pt-1"># Step 2: Layered retrieval with mTLS verification + HMAC request signing</div>
+                                <div className="pl-2 border-l border-slate-200 dark:border-white/[0.08] space-y-0.5">
+                                    <div>
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">GET</span>
+                                        <span className="text-slate-700 dark:text-slate-300"> /api/v1/credentials/retrieve?id=cred_8f29c</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500">Authorization: Bearer &lt;jwt_access_token&gt; <span className="text-slate-400"># Scoped OAuth bearer token</span></div>
+                                    <div className="text-[11px] text-slate-500">X-Client-Verify: SUCCESS <span className="text-slate-400"># Mutual TLS certificate validated</span></div>
+                                    <div className="text-[11px] text-slate-500">X-Api-Signature: &lt;hmac_sha256_hex&gt; <span className="text-slate-400"># Signed path + timestamp with client secret</span></div>
+                                    <div className="text-[11px] text-slate-500">X-Api-Timestamp: 1729505400 <span className="text-slate-400"># Sliding window replay protection</span></div>
                                 </div>
-                                <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] text-slate-500 dark:text-slate-500">
-                                    # Every retrieval is identity-validated and logged in the audit trail
+                                <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] text-[11px] text-slate-500 dark:text-slate-400">
+                                    ✓ Every retrieval undergoes identity attestation, scope filtering, rate limit evaluation, and differential audit logging.
                                 </div>
                             </div>
                         </div>

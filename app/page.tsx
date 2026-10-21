@@ -280,9 +280,9 @@ export default async function LandingPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {[
-                                { title: "Credential Governance", desc: "Lifecycle control for application, database, API, and infrastructure credentials across environments.", icon: Database, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Ownership Tracking • Expiry Triggers • Rotation Scopes" },
-                                { title: "Access Governance", desc: "Scoped permissions, temporary access, and approval-driven workflows with time-bound enforcement.", icon: Fingerprint, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Time-Bound Revocation • Scoped RBAC • Multi-Tier Approval" },
-                                { title: "Audit & Compliance", desc: "Immutable audit visibility across operational actions, access events, and credential lifecycle changes.", icon: FileSearch, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Immutable Event Trail • SIEM Export • Access Attestation" },
+                                { title: "Credential Governance", desc: "Lifecycle control for application, database, API, and infrastructure credentials across environments.", icon: Database, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Ownership Tracking • Expiry Triggers • Version Tracking" },
+                                { title: "Access Governance", desc: "Scoped permissions, role-based controls, and time-limited vendor access. Vendor access windows expire within CredSecure and do not revoke credentials in connected systems.", icon: Fingerprint, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Time-Limited Vendor Access • Scoped RBAC • Masked Views" },
+                                { title: "Audit & Compliance", desc: "Immutable audit visibility across operational actions, access events, and credential lifecycle changes.", icon: FileSearch, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Immutable Event Trail • Differential Auditing • Access Attestation" },
                                 { title: "API Security", desc: "OAuth, mTLS, HMAC validation, and scoped API exposure controls with configurable rate governance.", icon: Server, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Cryptographic Handshake • Rate Throttling • Scope Restriction" },
                                 { title: "Threat Protection", desc: "Adaptive abuse prevention, IP escalation controls, and runtime enforcement across authentication flows.", icon: AlertTriangle, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "IP Block Lists • Throttling Escalation • Challenge Prompts" },
                                 { title: "Operational Infrastructure", desc: "Licensing integrity, schema governance, deployment monitoring, and system health observability.", icon: Activity, accent: "border-l-indigo-500/30 hover:border-l-indigo-400", meta: "Cryptographic Signature • Health Checks • Deployment Logs" },
@@ -553,7 +553,7 @@ export default async function LandingPage() {
                                     "Immutable, tamper-evident audit logs for all operations",
                                     "Differential auditing with structured change tracking",
                                     "Login activity logging with risk classification",
-                                    "SIEM-ready structured JSON log output",
+                                    "Structured JSON audit log output",
                                     "Configurable log archival with batch traceability",
                                 ]}
                             />
@@ -574,8 +574,8 @@ export default async function LandingPage() {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-slate-200/60 dark:bg-white/[0.06] rounded-lg overflow-hidden">
                             {[
-                                { label: "Time-Bound Access", val: "100%", desc: "Mandatory Revocation" },
-                                { label: "Immutable Audit Visibility", val: "Complete", desc: "SIEM & Audits ready" },
+                                { label: "Vendor Access Windows", val: "100%", desc: "Time-limited enforcement" },
+                                { label: "Immutable Audit Visibility", val: "Complete", desc: "Structured audit ready" },
                                 { label: "Runtime Payload Isolation", val: "Always-On", desc: "No plaintext persistence" },
                                 { label: "Access Scopes Computed", val: "Per-Request", desc: "Zero trust evaluation" },
                                 { label: "External Support Enforced", val: "Controlled", desc: "Time & Space Scoped" },
