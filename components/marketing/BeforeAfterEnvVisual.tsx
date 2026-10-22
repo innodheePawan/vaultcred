@@ -73,7 +73,7 @@ export function BeforeAfterEnvVisual() {
                         {/* Workflow Nodes */}
                         <div className="flex flex-wrap items-center gap-2 mb-6 text-xs font-mono bg-white/70 dark:bg-slate-950/60 p-3 rounded-lg border border-emerald-200/40 dark:border-emerald-900/30">
                             <div className="px-2.5 py-1 rounded bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-                                <Key className="w-3.5 h-3.5 text-emerald-500" />
+                                <img src="/shield-logo.png" alt="CredSecure Logo" className="w-3.5 h-3.5 object-contain" />
                                 <span>CredSecure</span>
                             </div>
                             <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />

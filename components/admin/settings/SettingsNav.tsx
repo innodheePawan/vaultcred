@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building, Mail, ShieldCheck, Database, Key, RefreshCw } from 'lucide-react';
+import { Building, Mail, ShieldCheck, Database, Key, RefreshCw, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
     { name: 'General', href: '/settings/configuration', icon: Building },
     { name: 'Email (SMTP)', href: '/settings/email', icon: Mail },
+    { name: 'Alert Setup', href: '/settings/alert-setup', icon: Bell },
     { name: 'Security', href: '/settings/security', icon: ShieldCheck },
     { name: 'Database', href: '/settings/database', icon: Database },
 ];

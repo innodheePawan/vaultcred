@@ -1,8 +1,33 @@
 import { SignJWT, jwtVerify } from "jose";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.API_JWT_SECRET || process.env.MASTER_KEY || "default_api_secret_key_change_me_in_prod";
+// ── API JWT SECRET VALIDATION ────────────────────────────────────────────────
+// Must NOT throw at module load \u2014 Edge Runtime crash would affect all routes.
+// Logs prominently and uses a random per-boot secret so every API token
+// verification fails with 401 (safe degraded state) instead of 500.
+function resolveApiJwtSecret(): string {
+  const secret = process.env.API_JWT_SECRET || process.env.MASTER_KEY;
+  if (secret) return secret;
+
+  const isSetupMode =
+    String(process.env.SETUP_MODE || '').trim().toLowerCase() === 'true';
+
+  if (isSetupMode) {
+    return 'credsecure-setup-mode-api-placeholder-not-for-production-use';
+  }
+
+  console.error(
+    '\n🔴 [CredSecure] CRITICAL: API_JWT_SECRET or MASTER_KEY is not configured.\n' +
+    '   All API token generation and verification will fail (401 Unauthorized).\n' +
+    '   Set API_JWT_SECRET in AWS Amplify (or your local .env) and redeploy.\n'
+  );
+  return `credsecure-misconfigured-api-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+const JWT_SECRET = resolveApiJwtSecret();
 const secretKey = new TextEncoder().encode(JWT_SECRET);
+
 
 export interface ApiClientContext {
   clientId: string;

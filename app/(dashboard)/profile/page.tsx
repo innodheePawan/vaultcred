@@ -18,6 +18,14 @@ export default async function ProfilePage() {
         redirect('/login');
     }
 
+    // Fetch user group mappings to determine administrative persona
+    const userGroups = await prisma.userGroupMapping.findMany({
+        where: { userId: user.id },
+        include: { group: true },
+    });
+    const groupNames = userGroups.map((g) => g.group.name);
+    const isAdminOrScopedAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || groupNames.includes('Super Admin') || groupNames.includes('Scoped Admin');
+
     // Fetch enterprise mandatory 2FA setting
     const settings = await prisma.systemSettings.findFirst({
         select: { twoFactorMandatory: true },
@@ -39,8 +47,10 @@ export default async function ProfilePage() {
                     role: user.role,
                     image: (user as any).profileImage,
                     twoFactorEnabled: (user as any).twoFactorEnabled ?? false,
+                    muteExpiryAlerts: (user as any).muteExpiryAlerts ?? false,
                 }}
                 twoFactorMandatory={(settings as any)?.twoFactorMandatory ?? false}
+                isAdminOrScopedAdmin={isAdminOrScopedAdmin}
             />
         </div>
     );

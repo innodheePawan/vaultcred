@@ -3,7 +3,18 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/crypto';
-import { getInviteEmailTemplate, getPasswordResetEmailTemplate, getTwoFactorReconfigureEmailTemplate, getOneTimeSecretEmailTemplate, getDemoRequestConfirmationEmailTemplate, getDemoRequestAdminNotificationEmailTemplate, getContactUsConfirmationEmailTemplate, getContactUsAdminNotificationEmailTemplate } from '@/lib/email-templates';
+import { 
+    getInviteEmailTemplate, 
+    getPasswordResetEmailTemplate, 
+    getTwoFactorReconfigureEmailTemplate, 
+    getOneTimeSecretEmailTemplate, 
+    getDemoRequestConfirmationEmailTemplate, 
+    getDemoRequestAdminNotificationEmailTemplate, 
+    getContactUsConfirmationEmailTemplate, 
+    getContactUsAdminNotificationEmailTemplate,
+    getExpiryAlertDigestEmailTemplate,
+    type ExpiryCredentialItem
+} from '@/lib/email-templates';
 
 /**
  * Sends an invite activation email.
@@ -401,6 +412,48 @@ export async function sendContactUsEmails(data: {
         console.error('Error sending contact us emails:', error);
         return { success: false, error: error.message || 'Failed to send message.' };
     }
+}
+
+/**
+ * Sends a consolidated, role-personalized Expiry Alert Digest email.
+ */
+export async function sendExpiryAlertDigestEmail(params: {
+    recipientEmail: string;
+    recipientName: string;
+    recipientRole: string;
+    tier: number;
+    tierDays: number;
+    credentials: ExpiryCredentialItem[];
+    canEdit: boolean;
+}) {
+    const { recipientEmail, recipientName, recipientRole, tier, tierDays, credentials, canEdit } = params;
+    const baseUrl = await getBaseUrl();
+    const settings = await prisma.systemSettings.findFirst();
+    const appName = settings?.applicationName || 'CredSecure';
+    const logoUrl = settings?.logoUrl || null;
+    const dashboardUrl = `${baseUrl}/credentials`;
+
+    // Severity indicator in email subject (BRD Section 7)
+    let subjectPrefix = '[INFO]';
+    if (tier === 2) subjectPrefix = '[WARNING]';
+    if (tier === 3) subjectPrefix = '[URGENT]';
+
+    const countLabel = credentials.length === 1 ? '1 Credential' : `${credentials.length} Credentials`;
+    const subject = `${subjectPrefix} ${countLabel} Expiring in ${tierDays} Days - ${appName}`;
+
+    const html = getExpiryAlertDigestEmailTemplate({
+        appName,
+        logoUrl,
+        recipientName,
+        recipientRole,
+        tier,
+        tierDays,
+        credentials,
+        canEdit,
+        dashboardUrl,
+    });
+
+    return sendEmail(recipientEmail, subject, html);
 }
 
 

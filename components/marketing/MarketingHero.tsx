@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LucideIcon } from "lucide-react";
+import { SmoothScrollAnchor } from "@/components/marketing/SmoothScrollAnchor";
 
 export type MarketingHeroProps = {
     eyebrow: {
@@ -75,19 +76,36 @@ export function MarketingHero({
 
                     {/* CTA Actions */}
                     <div className="flex flex-wrap items-center gap-4 pt-2">
-                        <Link href={primaryCta.href}>
-                            <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2 cursor-pointer">
-                                {primaryCta.label}
-                                {primaryCta.icon || <ArrowRight className="w-4 h-4" />}
-                            </Button>
-                        </Link>
-
-                        {secondaryCta && (
-                            <Link href={secondaryCta.href}>
-                                <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer">
-                                    {secondaryCta.label}
+                        {primaryCta.href.startsWith("#") ? (
+                            <SmoothScrollAnchor href={primaryCta.href}>
+                                <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2 cursor-pointer">
+                                    {primaryCta.label}
+                                    {primaryCta.icon || <ArrowRight className="w-4 h-4" />}
+                                </Button>
+                            </SmoothScrollAnchor>
+                        ) : (
+                            <Link href={primaryCta.href}>
+                                <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2 cursor-pointer">
+                                    {primaryCta.label}
+                                    {primaryCta.icon || <ArrowRight className="w-4 h-4" />}
                                 </Button>
                             </Link>
+                        )}
+
+                        {secondaryCta && (
+                            secondaryCta.href.startsWith("#") ? (
+                                <SmoothScrollAnchor href={secondaryCta.href}>
+                                    <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer">
+                                        {secondaryCta.label}
+                                    </Button>
+                                </SmoothScrollAnchor>
+                            ) : (
+                                <Link href={secondaryCta.href}>
+                                    <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer">
+                                        {secondaryCta.label}
+                                    </Button>
+                                </Link>
+                            )
                         )}
                     </div>
                 </div>

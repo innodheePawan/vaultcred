@@ -818,6 +818,15 @@ export async function updateCredential(id: string, prevState: any, formData: For
                 }
             });
 
+            // If expiry date changed, reset existing expiry notifications for this credential
+            const newExpiryMs = rawData.expiryDate ? new Date(rawData.expiryDate as string).getTime() : null;
+            const oldExpiryMs = oldUnsanitized.expiryDate ? new Date(oldUnsanitized.expiryDate).getTime() : null;
+            if (newExpiryMs !== oldExpiryMs) {
+                await tx.expiryNotification.deleteMany({
+                    where: { credentialId: id },
+                });
+            }
+
             // Type Specific Updates
             if (type === 'PASSWORD') {
                 const updateData: any = {

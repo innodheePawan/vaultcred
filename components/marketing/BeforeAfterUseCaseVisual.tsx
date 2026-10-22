@@ -86,11 +86,14 @@ export function BeforeAfterUseCaseVisual({ data }: BeforeAfterUseCaseVisualProps
                         <div className="flex flex-wrap items-center gap-2 mb-6 text-xs font-mono bg-white/70 dark:bg-slate-950/60 p-3 rounded-lg border border-emerald-200/40 dark:border-emerald-900/30">
                             {data.governed.flow.map((node, index) => (
                                 <div key={index} className="flex items-center gap-2">
-                                    <div className={`px-2.5 py-1 rounded text-xs ${
+                                    <div className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 ${
                                         index === data.governed.flow.length - 1
                                             ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                                             : "bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-200"
                                     }`}>
+                                        {node.toLowerCase().includes("credsecure") && (
+                                            <img src="/shield-logo.png" alt="CredSecure Logo" className="w-3.5 h-3.5 object-contain shrink-0" />
+                                        )}
                                         <span>{node}</span>
                                     </div>
                                     {index < data.governed.flow.length - 1 && (

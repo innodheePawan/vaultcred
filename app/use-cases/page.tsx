@@ -7,6 +7,7 @@ import { FloatingCredentialWidget } from "@/components/shared/FloatingCredential
 import { UseCaseWorkflowVisual } from "@/components/marketing/UseCaseWorkflowVisual";
 import { UseCasesSection } from "@/components/marketing/UseCasesSection";
 import { Tier1UseCaseData } from "@/components/marketing/ExpandableUseCaseCard";
+import { GuessStageBadge, GuessStageName } from "@/components/marketing/GuessStageBadge";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
@@ -18,10 +19,11 @@ import {
     Workflow,
 } from "lucide-react";
 import { constructMetadata } from "@/lib/seo";
+import { SmoothScrollAnchor } from "@/components/marketing/SmoothScrollAnchor";
 
 export const metadata = constructMetadata({
-    title: "SAP and BTP Credential Use Cases",
-    description: "Enterprise use cases for SAP credential governance, production-support access, external vendor access, application credential provisioning, and BTP security-material provisioning.",
+    title: "Enterprise Credential Management & Integration Use Cases",
+    description: "See how CredSecure helps organizations control credential access, reduce manual handling, connect applications through APIs, and maintain visibility across real operational workflows.",
     path: "/use-cases",
 });
 
@@ -34,6 +36,8 @@ export default async function UseCasesPage() {
             id: "sap-credential-governance",
             title: "SAP Credential Governance",
             subtitle: "Bring SAP integration credentials under centralized operational control.",
+            guessStages: ["Govern", "Update", "Exchange", "Store", "Secure"],
+            guessEmphasis: ["Govern", "Update", "Exchange", "Secure"],
             problem: "SAP landscapes depend on integration credentials, service accounts, API keys, certificates and system connections across multiple applications and environments. When these credentials are managed independently by different teams or stored across spreadsheets, shared locations and system-specific repositories, organizations lose visibility into ownership, access, expiry and change history.",
             pain: [
                 "Scattered Credential Management: SAP credentials may be stored across multiple teams, systems and operational repositories.",
@@ -78,6 +82,8 @@ export default async function UseCasesPage() {
             id: "production-access",
             title: "Production Access",
             subtitle: "Give production credential access without giving away permanent control.",
+            guessStages: ["Govern", "Exchange", "Secure"],
+            guessEmphasis: ["Govern", "Exchange", "Secure"],
             problem: "Engineers and support teams may need temporary access to production credentials during maintenance, troubleshooting or incident response. When credentials are broadly shared or access remains available beyond the required activity, organizations create unnecessary standing access and lose clear accountability.",
             pain: [
                 "Standing Production Access: Users may retain credential access after the operational requirement has ended.",
@@ -125,6 +131,8 @@ export default async function UseCasesPage() {
             id: "external-vendor-access",
             title: "External Vendor Access",
             subtitle: "Give third parties access only to the credentials they are authorized to use.",
+            guessStages: ["Govern", "Exchange", "Secure"],
+            guessEmphasis: ["Govern", "Exchange", "Secure"],
             problem: "Vendors and external partners frequently need access to specific credentials during implementation, support or integration activities. Traditional approaches may require credentials to be shared directly or give vendors broader and longer-lasting access than the engagement actually requires.",
             pain: [
                 "Direct Credential Sharing: Sensitive credential values may be sent to vendors through email, chat or other agreed channels.",
@@ -170,6 +178,8 @@ export default async function UseCasesPage() {
             id: "application-credential-provisioning",
             title: "Application Credential Provisioning",
             subtitle: "Deploy applications without manually distributing .env or credential files.",
+            guessStages: ["Govern", "Update", "Exchange", "Store"],
+            guessEmphasis: ["Govern", "Update", "Exchange", "Store"],
             problem: "Applications commonly depend on .env files and credential configurations during deployment. Manually sharing these files with developers or deployment teams increases credential exposure and creates unmanaged copies outside centralized governance.",
             pain: [
                 "Manual Credential Sharing: Developers or administrators require access to sensitive files simply to configure and deploy an application",
@@ -214,6 +224,8 @@ export default async function UseCasesPage() {
             id: "btp-security-material-provisioning",
             title: "BTP Security Material Provisioning",
             subtitle: "From third-party credential onboarding to BTP Integration Suite — without internal credential handling.",
+            guessStages: ["Govern", "Update", "Exchange", "Store"],
+            guessEmphasis: ["Govern", "Update", "Exchange", "Store"],
             problem: "Enterprise integrations frequently depend on credentials, OAuth configurations, secure notes, keys and other supported security material provided by third parties. Traditionally, internal teams must receive these credentials and manually recreate the required security material in BTP Integration Suite. This introduces unnecessary credential handling, additional exposure and operational dependency between vendors and internal teams.",
             pain: [
                 "Third-Party Credential Sharing: Vendors may need to communicate sensitive credentials to internal teams through an agreed exchange mechanism",
@@ -263,24 +275,32 @@ export default async function UseCasesPage() {
         {
             icon: Users,
             title: "Automated Service Account Lifecycle Governance",
+            stages: ["Govern", "Update", "Exchange", "Store"] as GuessStageName[],
+            emphasis: ["Govern", "Update", "Exchange", "Store"],
             desc: "Establishes systematic ownership, cryptographic rotation bounds, and access visibility for system-to-system interfaces across cloud and physical environments.",
             outcomes: ["Sovereign ownership mapping for all active system accounts", "Automated rotation constraints with early expiry alerts", "Environment-isolated access policies with zero-trust RBAC"],
         },
         {
             icon: Server,
             title: "Federated API Security & Boundary Protection",
+            stages: ["Govern", "Exchange", "Secure"] as GuessStageName[],
+            emphasis: ["Govern", "Exchange", "Secure"],
             desc: "Governs external API consumer integrations utilizing high-trust certificate verification, request rate regulation, and request-level signature audits.",
             outcomes: ["Three-tier API security enforcement (Standard, Secure, Enterprise)", "Boundary-level endpoint rate limitation", "Systematic environment and tenant scope auditing"],
         },
         {
             icon: FileSearch,
             title: "Immutable Forensic Audit Preservation",
+            stages: ["Govern", "Store", "Secure"] as GuessStageName[],
+            emphasis: ["Govern", "Store", "Secure"],
             desc: "Facilitates real-time compliance audits and post-incident forensic reviews through deterministic change tracking and tamper-proof event ledgers.",
             outcomes: ["Immutable write-once operational audit trails", "Differential payload audit histories", "Activity reporting mapped to administrative custody indices"],
         },
         {
             icon: AlertTriangle,
             title: "Emergency Custody & Break-Glass Governance",
+            stages: ["Govern", "Exchange", "Secure"] as GuessStageName[],
+            emphasis: ["Govern", "Exchange", "Secure"],
             desc: "Authorizes emergency access paths with automated revocation boundaries, continuous administrative notifications, and post-event audit generation.",
             outcomes: ["Monitored break-glass emergency workflows", "Proactive administrative session revocation triggers", "Consolidated post-event compliance logs"],
         },
@@ -291,6 +311,36 @@ export default async function UseCasesPage() {
             <MarketingNavbar
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebPage",
+                        "@id": "https://getcredsecure.com/use-cases#webpage",
+                        "url": "https://getcredsecure.com/use-cases",
+                        "name": "Enterprise Credential Management & Integration Use Cases | CredSecure",
+                        "description": "See how CredSecure helps organizations control credential access, reduce manual handling, connect applications through APIs, and maintain visibility across real operational workflows.",
+                        "breadcrumb": {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "name": "Home",
+                                    "item": "https://getcredsecure.com"
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "name": "Use Cases",
+                                    "item": "https://getcredsecure.com/use-cases"
+                                }
+                            ]
+                        }
+                    })
+                }}
             />
 
             <main className="relative z-10 pt-16">
@@ -321,12 +371,12 @@ export default async function UseCasesPage() {
 
                             {/* CTA Actions */}
                             <div className="flex flex-wrap items-center gap-4 pt-2">
-                                <a href="#quick-discovery-navigator">
-                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2">
+                                <SmoothScrollAnchor href="#quick-discovery-navigator">
+                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2 cursor-pointer">
                                         Explore Use Cases
                                         <ArrowDown className="w-4 h-4" />
                                     </Button>
-                                </a>
+                                </SmoothScrollAnchor>
 
                                 <Link href="/request-demo">
                                     <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors">
@@ -354,13 +404,18 @@ export default async function UseCasesPage() {
                         {tier2UseCases.map((uc, idx) => {
                             const CardIcon = uc.icon;
                             return (
-                                <div key={idx} className="p-5 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.1] transition-colors">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <CardIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" strokeWidth={1.5} />
-                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{uc.title}</h3>
+                                <div key={idx} className="p-5 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.1] transition-colors flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-start justify-between gap-2 mb-3">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <CardIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" strokeWidth={1.5} />
+                                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">{uc.title}</h3>
+                                            </div>
+                                            <GuessStageBadge stages={uc.stages} emphasis={uc.emphasis} compact={true} />
+                                        </div>
+                                        <p className="text-xs text-slate-600 dark:text-slate-500 leading-relaxed mb-4">{uc.desc}</p>
                                     </div>
-                                    <p className="text-xs text-slate-600 dark:text-slate-500 leading-relaxed mb-4">{uc.desc}</p>
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
                                         {uc.outcomes.map((o, oIdx) => (
                                             <div key={oIdx} className="flex items-start gap-2">
                                                 <div className="w-1 h-1 rounded-full bg-indigo-500/50 mt-1.5 shrink-0" />

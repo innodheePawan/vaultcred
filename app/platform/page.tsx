@@ -6,6 +6,7 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { PlatformHeroVisual } from "@/components/marketing/PlatformHeroVisual";
 import { MarketingHero } from "@/components/marketing/MarketingHero";
+import { GuessModelVisual } from "@/components/marketing/GuessModelVisual";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight,
@@ -42,6 +43,36 @@ export default async function PlatformPage() {
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
             />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebPage",
+                        "@id": "https://getcredsecure.com/platform#webpage",
+                        "url": "https://getcredsecure.com/platform",
+                        "name": "Credential Governance Platform | CredSecure",
+                        "description": "Enterprise credential governance platform capabilities overview across SAP, BTP Integration Suite, middleware, and access control.",
+                        "breadcrumb": {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "name": "Home",
+                                    "item": "https://getcredsecure.com"
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "name": "Platform",
+                                    "item": "https://getcredsecure.com/platform"
+                                }
+                            ]
+                        }
+                    })
+                }}
+            />
 
             <main className="relative z-10 pt-16">
 
@@ -58,7 +89,7 @@ export default async function PlatformPage() {
                     description="See how CredSecure brings credential security, access control, lifecycle management and audit together in one governed platform."
                     primaryCta={{
                         label: "Explore Capabilities",
-                        href: "#governance-lifecycle",
+                        href: "#guess-model",
                         icon: <ArrowRight className="w-4 h-4" />,
                     }}
                     secondaryCta={{
@@ -68,34 +99,39 @@ export default async function PlatformPage() {
                     visual={<PlatformHeroVisual />}
                 />
 
-                {/* Governance Lifecycle Flow */}
-                <section className="scroll-mt-20 border-y border-slate-200 dark:border-white/[0.06] bg-slate-100/50 dark:bg-white/[0.01]" id="governance-lifecycle">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-6 text-center">Operational Governance Lifecycle</div>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-0">
+                {/* 2. Credential Types Overview */}
+                <section className="scroll-mt-20 border-t border-slate-200 dark:border-white/[0.06] bg-slate-100/30 dark:bg-white/[0.01] py-12 px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center max-w-2xl mx-auto mb-8">
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold mb-2">Platform Coverage</div>
+                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Supported Credential Types</h2>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                Centralized security and governance across six specialized credential categories.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                             {[
-                                { label: "Provision", desc: "Register & organize" },
-                                { label: "Govern", desc: "Control access" },
-                                { label: "Monitor", desc: "Track activity" },
-                                { label: "Enforce", desc: "Apply policies" },
-                                { label: "Revoke", desc: "Expire access" },
-                                { label: "Audit", desc: "Record every change" },
-                            ].map((step, idx) => (
-                                <div key={idx} className="flex items-center">
-                                    <div className="text-center px-4 py-3 rounded-lg border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02] min-w-[120px]">
-                                        <div className="text-xs font-semibold text-slate-900 dark:text-white">{step.label}</div>
-                                        <div className="text-[10px] text-slate-500 mt-0.5">{step.desc}</div>
-                                    </div>
-                                    {idx < 5 && (
-                                        <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-600 mx-1 hidden sm:block shrink-0" />
-                                    )}
+                                { name: "Password", desc: "Database & system accounts", icon: KeyRound },
+                                { name: "API / OAuth", desc: "Client credentials & tokens", icon: Server },
+                                { name: "Keys & Certificates", desc: "SSL, SSH, TLS & PGP keys", icon: FileKey },
+                                { name: "Token", desc: "Bearer & JWT session tokens", icon: Shield },
+                                { name: "Encrypted File", desc: "ZIP, TAR & secret files", icon: FileLock },
+                                { name: "Secure Note", desc: "Recovery & operational notes", icon: FileText },
+                            ].map((type, idx) => (
+                                <div key={idx} className="p-3.5 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] text-center flex flex-col items-center justify-center space-y-1.5 shadow-2xs">
+                                    <type.icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white">{type.name}</div>
+                                    <div className="text-[9.5px] text-slate-500 font-mono leading-tight">{type.desc}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* 6 Governance Domain Deep-Dives */}
+                {/* 3. The Credential Operations Model – GUESS */}
+                <GuessModelVisual showSectionHeader={true} />
+
+                {/* 4. Governance Domain Deep-Dives */}
                 <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16">
 
                     {/* Domain 1: Credential Governance */}
@@ -165,7 +201,7 @@ export default async function PlatformPage() {
                                     "Access group policies with per-feature permission assignments",
                                     "Highest-wins aggregation across multiple group memberships",
                                     "Sensitive field masking for restricted visibility roles",
-                                    "External vendor isolation with time-bound credential-level scoping",
+                                    "External vendor isolation with time-limited credential-level scoping (access expires within CredSecure without revoking credentials in connected systems)",
                                     "Session-embedded RBAC context for sub-millisecond authorization",
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
@@ -213,7 +249,7 @@ export default async function PlatformPage() {
                                     "Automatic sensitive data sanitization in audit records",
                                     "Login activity logging with risk classification and geo-tracking",
                                     "Configurable log archival with batch traceability",
-                                    "SIEM-ready structured JSON output for security monitoring integration",
+                                    "Structured JSON audit logging for security monitoring & ingestion",
                                     "Configurable personal credential audit policy",
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">
@@ -366,7 +402,7 @@ export default async function PlatformPage() {
                                     "Cryptographically verified licensing with grace period management",
                                     "User limit enforcement against license parameters",
                                     "Health endpoints for load balancer and monitoring integration",
-                                    "Structured JSON logging for SIEM ingestion",
+                                    "Structured JSON audit logging for enterprise observability",
                                     "Dynamic base URL detection for reverse proxy compatibility",
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-start gap-2.5">

@@ -12,11 +12,12 @@ export default async function SettingsLayout({
     const session = await auth();
     if (!session?.user) redirect('/login');
 
-    // Guard: only roles with VIEW+ on SETTINGS or SYNC features can access
+    // Guard: only roles with VIEW+ on SETTINGS, SYNC, or GLOBAL_EXPIRY_ALERT features can access
     const ctx = await getSafeUserContext(session.user.id);
     const canViewSettings = canAccess(ctx, 'FEATURE:SETTINGS', 'VIEW') ||
                            canAccess(ctx, 'FEATURE:SYNC_TARGETS', 'VIEW') ||
-                           canAccess(ctx, 'FEATURE:SYNC_HISTORY', 'VIEW');
+                           canAccess(ctx, 'FEATURE:SYNC_HISTORY', 'VIEW') ||
+                           canAccess(ctx, 'FEATURE:GLOBAL_EXPIRY_ALERT', 'VIEW');
 
     if (!canViewSettings) {
         return (

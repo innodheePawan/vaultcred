@@ -1,5 +1,40 @@
 import type { NextAuthConfig } from "next-auth"
 
+// ── AUTH SECRET VALIDATION ───────────────────────────────────────────────────
+// Evaluated at module load (Edge Runtime). We MUST NOT throw here — a throw
+// during module initialisation crashes the middleware worker, returning 500s
+// for every request. Instead we log prominently, use a random per-boot secret
+// (so no stored session tokens will validate), and export a flag that the
+// middleware function reads to redirect protected routes to /login gracefully.
+const _rawAuthSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+const _isSetupMode =
+    String(process.env.SETUP_MODE || '').trim().toLowerCase() === 'true';
+
+/**
+ * True when the app is running without a configured auth secret in a
+ * non-setup environment. Middleware reads this to show a config error
+ * on the login page instead of crashing.
+ */
+export const AUTH_SECRET_MISCONFIGURED: boolean = !_rawAuthSecret && !_isSetupMode;
+
+function resolveAuthSecret(): string {
+    if (_rawAuthSecret) return _rawAuthSecret;
+    if (_isSetupMode) {
+        // During setup, NextAuth is not used for real sessions — placeholder is safe.
+        return 'credsecure-setup-mode-placeholder-not-for-production-use';
+    }
+    // Missing secret in production: log loudly but do NOT throw.
+    // Returning a random secret means all requests will fail auth checks
+    // (no stored tokens will validate) and middleware will redirect to /login.
+    console.error(
+        '\n🔴 [CredSecure] CRITICAL: NEXTAUTH_SECRET or AUTH_SECRET is not configured.\n' +
+        '   The application is running in a DEGRADED state — no sessions can be authenticated.\n' +
+        '   Set NEXTAUTH_SECRET in AWS Amplify (or your local .env) and redeploy.\n'
+    );
+    return `credsecure-misconfigured-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const authConfig = {
     pages: {
         signIn: '/login',
@@ -17,7 +52,7 @@ export const authConfig = {
 
             // SAFEGUARD: If SETUP_MODE is active, refuse authorization for all protected pages
             // This forces the middleware to handle the redirection to /setup.
-            const rawSetupMode = process.env.SETUP_MODE || process.env.NEXT_PUBLIC_SETUP_MODE || "false";
+            const rawSetupMode = process.env.SETUP_MODE || "false";
             const isSetupMode = String(rawSetupMode).trim().toLowerCase() === "true";
 
             if (isSetupMode && isProtected) {
@@ -126,7 +161,7 @@ export const authConfig = {
                         token.isActive = false;
                     }
                 } catch (e) {
-                    // DB error in middleware/edge is common, safely continue with existing token
+                    console.warn('[AuthConfig] DB error during session enrichment, continuing with cached token:', e);
                 }
             }
 
@@ -155,6 +190,6 @@ export const authConfig = {
         }
     },
     providers: [], // Configured in auth.ts
-    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'initial-setup-secret-placeholder-change-this-later',
+    secret: resolveAuthSecret(),
     trustHost: true,
 } satisfies NextAuthConfig;

@@ -2,8 +2,8 @@
 
 import { useState, useRef, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { User, ShieldCheck, ShieldOff, AlertCircle, Loader2, Copy, CheckCircle, RefreshCw } from 'lucide-react';
-import { updateUserProfile } from '@/lib/actions/users';
+import { User, ShieldCheck, ShieldOff, AlertCircle, Loader2, Copy, CheckCircle, RefreshCw, Bell, BellOff } from 'lucide-react';
+import { updateUserProfile, updateAlertPreferenceAction } from '@/lib/actions/users';
 import { generateTwoFactorSetup, enableTwoFactor, disableTwoFactor, requestTwoFactorReconfiguration } from '@/lib/actions/two-factor';
 
 interface UserProfileFormProps {
@@ -13,15 +13,22 @@ interface UserProfileFormProps {
         role?: string;
         image?: string | null;
         twoFactorEnabled?: boolean;
+        muteExpiryAlerts?: boolean;
     };
     twoFactorMandatory?: boolean;
+    isAdminOrScopedAdmin?: boolean;
 }
 
-export default function UserProfileForm({ user, twoFactorMandatory = false }: UserProfileFormProps) {
+export default function UserProfileForm({ user, twoFactorMandatory = false, isAdminOrScopedAdmin = false }: UserProfileFormProps) {
     const [name, setName] = useState(user.name || '');
     const [imagePreview, setImagePreview] = useState<string | null>(user.image || null);
     const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Alert Preferences State
+    const [muteAlerts, setMuteAlerts] = useState(user.muteExpiryAlerts || false);
+    const [isUpdatingAlertPref, startAlertTransition] = useTransition();
+    const [alertPrefFeedback, setAlertPrefFeedback] = useState<string | null>(null);
 
     // 2FA State
     const [twoFAEnabled, setTwoFAEnabled] = useState(user.twoFactorEnabled || false);
@@ -132,6 +139,21 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
+    };
+
+    const handleToggleMuteAlerts = (newMute: boolean) => {
+        setMuteAlerts(newMute);
+        setAlertPrefFeedback(null);
+        startAlertTransition(async () => {
+            const res = await updateAlertPreferenceAction(newMute);
+            if (res.error) {
+                setMuteAlerts(!newMute);
+                setAlertPrefFeedback(res.error);
+            } else {
+                setAlertPrefFeedback(res.message || 'Preferences updated');
+                setTimeout(() => setAlertPrefFeedback(null), 3500);
+            }
+        });
     };
 
     return (
@@ -372,6 +394,87 @@ export default function UserProfileForm({ user, twoFactorMandatory = false }: Us
                     </div>
                 )}
 
+            </div>
+
+            {/* Alert & Notification Preferences Section */}
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        {muteAlerts ? (
+                            <BellOff className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                        ) : (
+                            <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                        )}
+                        <div>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                                Expiry Alert Notifications
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Automated email digests for credentials nearing expiration.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Feedback Toast/Badge */}
+                    {alertPrefFeedback && (
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 animate-fade-in">
+                            {alertPrefFeedback}
+                        </span>
+                    )}
+                </div>
+
+                {isAdminOrScopedAdmin ? (
+                    /* Mandatory Compliance Notice for Global Admin & Scope Admin */
+                    <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800 flex items-start gap-3">
+                        <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                        <div>
+                            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                                Mandatory Compliance
+                            </h4>
+                            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
+                                As a <strong>{user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? 'Global Admin' : 'Scope Admin'}</strong>, expiry alerts are mandatory to enforce organizational security compliance and prevent service outages. The opt-out toggle is disabled for administrative roles.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    /* User & Viewer Opt-Out Toggle */
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-750/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div className="space-y-0.5">
+                                <label htmlFor="muteExpiryAlertsToggle" className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer">
+                                    Mute Expiry Alerts
+                                </label>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Stop receiving automated daily email digests for credentials approaching expiration.
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {isUpdatingAlertPref && (
+                                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                                )}
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        id="muteExpiryAlertsToggle"
+                                        type="checkbox"
+                                        checked={muteAlerts}
+                                        onChange={(e) => handleToggleMuteAlerts(e.target.checked)}
+                                        disabled={isUpdatingAlertPref}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 px-1">
+                            <span>Status:</span>
+                            <span className={`font-semibold ${muteAlerts ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
+                                {muteAlerts ? 'Alerts Muted (You will not receive digests)' : 'Active (You receive scheduled digests)'}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

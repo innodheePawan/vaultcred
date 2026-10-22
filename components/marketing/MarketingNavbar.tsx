@@ -13,9 +13,10 @@ interface MarketingNavbarProps {
 
 const NAV_LINKS = [
     { label: "Platform", href: "/platform" },
-    { label: "Security", href: "/security" },
-    { label: "Use Cases", href: "/use-cases" },
     { label: "Features", href: "/features" },
+    { label: "Integrations", href: "/integrations" },
+    { label: "Use Cases", href: "/use-cases" },
+    { label: "Security", href: "/security" },
 ];
 
 export function MarketingNavbar({ applicationName, isLoggedIn }: MarketingNavbarProps) {

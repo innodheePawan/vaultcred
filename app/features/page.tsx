@@ -7,8 +7,14 @@ import { CapabilityMapVisual } from "@/components/marketing/CapabilityMapVisual"
 import { FeaturesSection, FeatureModuleData } from "@/components/marketing/FeaturesSection";
 import { FloatingCredentialWidget } from "@/components/shared/FloatingCredentialWidget";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowDown, Layers } from "lucide-react";
+import {
+    ArrowRight,
+    ArrowDown,
+    Layers,
+} from "lucide-react";
 import { constructMetadata } from "@/lib/seo";
+import type { GuessStageName } from "@/components/marketing/GuessStageBadge";
+import { SmoothScrollAnchor } from "@/components/marketing/SmoothScrollAnchor";
 
 export const metadata = constructMetadata({
     title: "Enterprise Credential Security Features",
@@ -24,6 +30,9 @@ export default async function FeaturesPage() {
         {
             id: "credential-vault",
             title: "Credential Vault",
+            subtitle: "Encrypted, structured storage for every credential type across your environment.",
+            guessStages: ["Store", "Secure"] as GuessStageName[],
+            guessEmphasis: ["Store", "Secure"] as GuessStageName[],
             items: [
                 "Six specialized credential types: Password, API/OAuth, Keys & Certificates, Token, Encrypted File, Secure Note",
                 "AES-256-GCM encryption with unique initialization vectors per record",
@@ -42,6 +51,9 @@ export default async function FeaturesPage() {
         {
             id: "identity-access-management",
             title: "Identity & Access Management",
+            subtitle: "Role-based access control with fine-grained permissions, scopes, and group policies.",
+            guessStages: ["Govern", "Secure"] as GuessStageName[],
+            guessEmphasis: ["Govern", "Secure"] as GuessStageName[],
             items: [
                 "Multi-tiered roles: User, Admin, Super Admin",
                 "Dynamic user groups with organizational classification",
@@ -60,6 +72,9 @@ export default async function FeaturesPage() {
         {
             id: "authentication-security",
             title: "Authentication & Security",
+            subtitle: "Mandatory 2FA, adaptive CAPTCHA, and session controls to protect every login.",
+            guessStages: ["Secure"] as GuessStageName[],
+            guessEmphasis: ["Secure"] as GuessStageName[],
             items: [
                 "Mandatory TOTP-based Two-Factor Authentication with encrypted secret storage",
                 "QR code generation for authenticator app enrollment",
@@ -76,6 +91,9 @@ export default async function FeaturesPage() {
         {
             id: "api-gateway",
             title: "API Gateway",
+            subtitle: "Programmatic credential access with OAuth 2.0, mTLS, and HMAC security tiers.",
+            guessStages: ["Exchange", "Secure"] as GuessStageName[],
+            guessEmphasis: ["Exchange", "Secure"] as GuessStageName[],
             items: [
                 "Global API access toggle for instant exposure control",
                 "Three security tiers: Standard (OAuth 2.0), Secure (+ mTLS), Enterprise (+ HMAC)",
@@ -94,6 +112,9 @@ export default async function FeaturesPage() {
         {
             id: "audit-compliance",
             title: "Audit & Compliance",
+            subtitle: "Immutable, differential audit logs with structured JSON output for every state change.",
+            guessStages: ["Govern", "Secure"] as GuessStageName[],
+            guessEmphasis: ["Govern", "Secure"] as GuessStageName[],
             items: [
                 "Transactional audit logging for all state-changing operations",
                 "Differential auditing with structured before/after change tracking",
@@ -101,7 +122,7 @@ export default async function FeaturesPage() {
                 "Login activity logging with outcome, category, reason code, and risk classification",
                 "Risk level derivation: Blocked → High, MFA failure → Medium, Standard failure → Low",
                 "Login log archival to cold storage with batch traceability",
-                "SIEM-ready structured JSON log output (Splunk, Datadog, CloudWatch compatible)",
+                "Structured JSON log output formatted for security monitoring ingestion (Splunk, Datadog, CloudWatch compatible)",
                 "Configurable personal credential audit policy",
                 "Audit throttling for repeated forbidden-access attempts to prevent log flooding",
             ],
@@ -109,11 +130,14 @@ export default async function FeaturesPage() {
         {
             id: "external-vendor-access",
             title: "External Vendor Access",
+            subtitle: "Time-bound, scope-limited credential access for third-party vendors and partners.",
+            guessStages: ["Govern", "Exchange"] as GuessStageName[],
+            guessEmphasis: ["Govern", "Exchange"] as GuessStageName[],
             items: [
                 "External user flag with vendor organization identification",
                 "Access type control: API or Portal modes",
-                "Time-bound access windows with automatic session termination on expiry",
-                "Credential-level scoping — vendors see only explicitly shared credential IDs",
+                "Time-bound access windows with automatic session termination on expiry within CredSecure",
+                "Credential-level scoping — vendors see only explicitly shared credential IDs without altering credentials in connected systems",
                 "Category and environment scoping for external users",
                 "Route-level restrictions blocking admin, settings, and internal features",
                 "External invite flow with pre-configured scope and vendor metadata",
@@ -123,6 +147,9 @@ export default async function FeaturesPage() {
         {
             id: "one-time-secret-sharing",
             title: "One-Time Secret Sharing",
+            subtitle: "Ephemeral, self-destructing secrets shared by link or email with configurable TTL.",
+            guessStages: ["Exchange", "Secure"] as GuessStageName[],
+            guessEmphasis: ["Exchange", "Secure"] as GuessStageName[],
             items: [
                 "Ephemeral encrypted secrets with configurable maximum view count",
                 "Time-to-live (TTL) in hours with automatic expiry",
@@ -137,6 +164,7 @@ export default async function FeaturesPage() {
         {
             id: "custom-branding-whitelabeling",
             title: "Custom Branding & Whitelabeling",
+            subtitle: "White-label the platform with your logo, colors, and application name.",
             items: [
                 "Configurable application name displayed across the entire platform",
                 "Company name for footer and branding contexts",
@@ -149,6 +177,9 @@ export default async function FeaturesPage() {
         {
             id: "database-management",
             title: "Database Management",
+            subtitle: "Schema drift detection, one-click sync, and connection health visibility.",
+            guessStages: ["Store"] as GuessStageName[],
+            guessEmphasis: ["Store"] as GuessStageName[],
             items: [
                 "Database info panel: type, host, port, user, SSL status, connection latency",
                 "Automated schema drift detection comparing definitions against live database",
@@ -161,6 +192,9 @@ export default async function FeaturesPage() {
         {
             id: "licensing-system-governance",
             title: "Licensing & System Governance",
+            subtitle: "Cryptographically signed license enforcement with graceful degradation and user limits.",
+            guessStages: ["Govern", "Secure"] as GuessStageName[],
+            guessEmphasis: ["Govern", "Secure"] as GuessStageName[],
             items: [
                 "Encrypted license parameter storage with individual key-value encryption",
                 "Cryptographic signature verification preventing offline tampering",
@@ -179,6 +213,36 @@ export default async function FeaturesPage() {
             <MarketingNavbar
                 applicationName={settings.applicationName || "CredSecure"}
                 isLoggedIn={!!session?.user}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebPage",
+                        "@id": "https://getcredsecure.com/features#webpage",
+                        "url": "https://getcredsecure.com/features",
+                        "name": "Enterprise Credential Security Features | CredSecure",
+                        "description": "Complete capability breakdown of CredSecure AES-256-GCM encryption, role-based access control, controlled API access, audit traceability, and provisioning.",
+                        "breadcrumb": {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                {
+                                    "@type": "ListItem",
+                                    "position": 1,
+                                    "name": "Home",
+                                    "item": "https://getcredsecure.com"
+                                },
+                                {
+                                    "@type": "ListItem",
+                                    "position": 2,
+                                    "name": "Features",
+                                    "item": "https://getcredsecure.com/features"
+                                }
+                            ]
+                        }
+                    })
+                }}
             />
 
             <main className="relative z-10 pt-16">
@@ -209,12 +273,12 @@ export default async function FeaturesPage() {
 
                             {/* CTA Actions */}
                             <div className="flex flex-wrap items-center gap-4 pt-2">
-                                <a href="#quick-feature-navigator">
-                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2">
+                                <SmoothScrollAnchor href="#quick-feature-navigator">
+                                    <Button className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all inline-flex items-center gap-2 cursor-pointer">
                                         Explore Capabilities
                                         <ArrowDown className="w-4 h-4" />
                                     </Button>
-                                </a>
+                                </SmoothScrollAnchor>
 
                                 <Link href="/request-demo">
                                     <Button variant="outline" className="h-11 px-6 border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg transition-colors">

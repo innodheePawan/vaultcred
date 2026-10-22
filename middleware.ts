@@ -1,5 +1,5 @@
 import NextAuth from "next-auth";
-import { authConfig } from "./lib/auth.config";
+import { authConfig, AUTH_SECRET_MISCONFIGURED } from "./lib/auth.config";
 import { NextResponse } from "next/server";
 
 const { auth } = NextAuth(authConfig);
@@ -21,7 +21,7 @@ const authHandler = auth((req) => {
     const isShare = path.startsWith('/share');
     const isActivation = path.startsWith('/activation');
     const isPublicAuth = isLogin || isInvite || isForgotPassword || isResetPassword || isEnvValue_auth || isReconfigure2fa || isShare || isActivation;
-    const isMarketing = path.startsWith('/platform') || path.startsWith('/security') || path.startsWith('/use-cases') || path.startsWith('/features') || path.startsWith('/request-demo') || path.startsWith('/contact-us') || path.startsWith('/privacy') || path.startsWith('/cookies') || path.startsWith('/data-protection') || path.startsWith('/responsible-disclosure') || path.startsWith('/subprocessors') || path.startsWith('/dpa') || path.startsWith('/terms');
+    const isMarketing = path.startsWith('/platform') || path.startsWith('/features') || path.startsWith('/integrations') || path.startsWith('/use-cases') || path.startsWith('/security') || path.startsWith('/request-demo') || path.startsWith('/contact-us') || path.startsWith('/privacy') || path.startsWith('/cookies') || path.startsWith('/data-protection') || path.startsWith('/responsible-disclosure') || path.startsWith('/subprocessors') || path.startsWith('/dpa') || path.startsWith('/terms');
 
     // Auth Session
     const isLoggedIn = !!req.auth;
@@ -98,7 +98,7 @@ const authHandler = auth((req) => {
 });
 
 export default async function middleware(req: any) {
-    const rawSetupMode = process.env.SETUP_MODE || process.env.NEXT_PUBLIC_SETUP_MODE || "false";
+    const rawSetupMode = process.env.SETUP_MODE || "false";
     const isSetupMode = String(rawSetupMode).trim().toLowerCase() === "true";
 
     const dbUrl = process.env.DATABASE_URL;
@@ -195,6 +195,45 @@ export default async function middleware(req: any) {
         awsBranch === "staging" ||
         (siteUrl.includes("amplifyapp.com") || (siteUrl.includes("uat") && !siteUrl.includes("getcredsecure.com")))
     );
+
+    // ── MISCONFIGURATION GUARD ───────────────────────────────────────────────
+    // If NEXTAUTH_SECRET is missing, auth is broken. Don't try to run the
+    // auth handler — redirect protected routes to /login with an error flag
+    // so the user sees a helpful message instead of a crash or blank page.
+    if (AUTH_SECRET_MISCONFIGURED && !isApiV1) {
+        const isPublicPage =
+            path === '/' ||
+            path.startsWith('/login') ||
+            path.startsWith('/setup') ||
+            path.startsWith('/invite') ||
+            path.startsWith('/contact-us') ||
+            path.startsWith('/request-demo') ||
+            path.startsWith('/features') ||
+            path.startsWith('/integrations') ||
+            path.startsWith('/platform') ||
+            path.startsWith('/use-cases') ||
+            path.startsWith('/security') ||
+            path.startsWith('/privacy') ||
+            path.startsWith('/terms') ||
+            path.startsWith('/cookies') ||
+            path.startsWith('/dpa') ||
+            path.startsWith('/subprocessors') ||
+            path.startsWith('/responsible-disclosure') ||
+            path.startsWith('/data-protection') ||
+            path.startsWith('/env-value') ||
+            path.startsWith('/share') ||
+            path.startsWith('/reconfigure-2fa') ||
+            path.startsWith('/api') ||
+            path.startsWith('/_next') ||
+            path.match(/\.(png|jpg|jpeg|gif|ico|svg|css|js|json|xml|txt)$/);
+
+        if (!isPublicPage) {
+            const loginUrl = new URL('/login', req.url);
+            loginUrl.searchParams.set('error', 'configuration');
+            return NextResponse.redirect(loginUrl);
+        }
+    }
+    // ───────────────────────────────────────────────────────────────────
 
     const res = isApiV1 ? NextResponse.next() : await (authHandler as any)(req);
 

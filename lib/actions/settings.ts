@@ -10,13 +10,22 @@ import { verifyConnection } from '@/lib/email';
 export async function getSystemSettings() {
     try {
         // Safe check for prisma instance
-        if (!prisma) return { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd', logoUrl: null };
+        if (!prisma) return { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt. Ltd.', logoUrl: null };
 
         let settings = await prisma.systemSettings.findFirst();
         if (!settings) {
             settings = await prisma.systemSettings.create({
-                data: { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd' }
+                data: { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt. Ltd.' }
             });
+        }
+
+        // Normalize company name if database contains legacy or typo variant
+        if (settings && (
+            !settings.companyName ||
+            settings.companyName.toUpperCase().includes('INNODHEE') ||
+            settings.companyName.toUpperCase().includes('INNNODHEE')
+        )) {
+            settings.companyName = 'Innodhee Services Pvt. Ltd.';
         }
 
         // Mask SMTP password for security
@@ -28,7 +37,7 @@ export async function getSystemSettings() {
     } catch (error) {
         // Log the specific error to help with debugging (e.g. 500 error cause)
         // Failed to fetch system settings
-        return { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt Ltd', logoUrl: null };
+        return { applicationName: 'CredSecure', companyName: 'Innodhee Services Pvt. Ltd.', logoUrl: null };
     }
 }
 

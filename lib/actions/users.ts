@@ -27,12 +27,29 @@ export async function updateUserProfile(formData: FormData) {
     }
 
     try {
+        const updateData: any = {
+            name,
+            profileImage: profileImage || null
+        };
+
+        // If muteExpiryAlerts is passed, only standard users and viewers can change it
+        const muteVal = formData.get('muteExpiryAlerts');
+        if (muteVal !== null) {
+            const isMuted = muteVal === 'true' || muteVal === 'on' || muteVal === '1';
+            const user = await prisma.user.findUnique({
+                where: { id: session.user.id },
+                include: { userGroups: { include: { group: true } } },
+            });
+            const groupNames = user?.userGroups.map(g => g.group.name) || [];
+            const isAdminOrScoped = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || groupNames.includes('Super Admin') || groupNames.includes('Scoped Admin');
+            if (!isAdminOrScoped) {
+                updateData.muteExpiryAlerts = isMuted;
+            }
+        }
+
         await prisma.user.update({
             where: { id: session.user.id },
-            data: {
-                name,
-                profileImage: profileImage || null
-            } as any
+            data: updateData
         });
 
         revalidatePath('/dashboard');
@@ -44,3 +61,41 @@ export async function updateUserProfile(formData: FormData) {
         return { error: 'Failed to update profile: ' + error.message };
     }
 }
+
+/**
+ * Toggles "Mute Expiry Alerts" preference for standard Users and Viewers.
+ * Global Admins and Scope Admins are strictly prevented from opting out (Mandatory Compliance).
+ */
+export async function updateAlertPreferenceAction(mute: boolean) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            include: { userGroups: { include: { group: true } } },
+        });
+
+        if (!user) return { error: 'User not found' };
+
+        const groupNames = user.userGroups.map(g => g.group.name);
+        const isAdminOrScoped = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || groupNames.includes('Super Admin') || groupNames.includes('Scoped Admin');
+
+        if (isAdminOrScoped) {
+            return { error: 'Mandatory Compliance: Administrators cannot opt out of expiry alerts.' };
+        }
+
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: { muteExpiryAlerts: mute } as any,
+        });
+
+        revalidatePath('/profile');
+        return { success: true, message: mute ? 'Expiry alerts muted.' : 'Expiry alerts unmuted.' };
+    } catch (err: any) {
+        return { error: 'Failed to update alert preference: ' + err.message };
+    }
+}
+

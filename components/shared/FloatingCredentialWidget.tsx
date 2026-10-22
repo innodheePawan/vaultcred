@@ -4,78 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy, RefreshCw, Check, KeyRound, Minus, ChevronUp, Sliders, Shield } from 'lucide-react';
 
-const UPPERCASE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const LOWERCASE_CHARS = 'abcdefghijklmnopqrstuvwxyz';
-const NUMBER_CHARS = '0123456789';
-const SPECIAL_CHARS = '!@#$%^*-_+=';
-
-function generateSecureCredential(
-    length: number,
-    uppercase: boolean,
-    lowercase: boolean,
-    numbers: boolean,
-    special: boolean
-): string {
-    let charPool = '';
-    const mandatoryChars: string[] = [];
-
-    const pickRandomChar = (charset: string) => {
-        const cryptoObj = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
-        if (cryptoObj) {
-            const randomValues = new Uint32Array(1);
-            cryptoObj.getRandomValues(randomValues);
-            return charset[randomValues[0] % charset.length];
-        }
-        return charset[Math.floor(Math.random() * charset.length)];
-    };
-
-    if (uppercase) {
-        charPool += UPPERCASE_CHARS;
-        mandatoryChars.push(pickRandomChar(UPPERCASE_CHARS));
-    }
-    if (lowercase) {
-        charPool += LOWERCASE_CHARS;
-        mandatoryChars.push(pickRandomChar(LOWERCASE_CHARS));
-    }
-    if (numbers) {
-        charPool += NUMBER_CHARS;
-        mandatoryChars.push(pickRandomChar(NUMBER_CHARS));
-    }
-    if (special) {
-        charPool += SPECIAL_CHARS;
-        mandatoryChars.push(pickRandomChar(SPECIAL_CHARS));
-    }
-
-    if (charPool.length === 0) return '';
-
-    let result = '';
-    // Add mandatory characters first to guarantee presence
-    for (const char of mandatoryChars) {
-        result += char;
-    }
-
-    // Fill remaining length
-    for (let i = result.length; i < length; i++) {
-        result += pickRandomChar(charPool);
-    }
-
-    // Shuffle the result securely
-    const resultArray = result.split('');
-    for (let i = resultArray.length - 1; i > 0; i--) {
-        const cryptoObj = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
-        let j = 0;
-        if (cryptoObj) {
-            const randomValues = new Uint32Array(1);
-            cryptoObj.getRandomValues(randomValues);
-            j = randomValues[0] % (i + 1);
-        } else {
-            j = Math.floor(Math.random() * (i + 1));
-        }
-        [resultArray[i], resultArray[j]] = [resultArray[j], resultArray[i]];
-    }
-
-    return resultArray.join('');
-}
+import { generateSecureCredential, SPECIAL_CHARS } from '@/lib/utils/password-generator';
 
 export function FloatingCredentialWidget() {
     const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -237,7 +166,7 @@ export function FloatingCredentialWidget() {
                     className="flex items-center gap-2 h-9 px-3.5 rounded-lg bg-white dark:bg-[#090d16] hover:bg-slate-50 dark:hover:bg-[#0f172a] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-md transition-all font-sans text-xs font-medium cursor-pointer"
                 >
                     <KeyRound className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                    <span>Credential Utility</span>
+                    <span>Password Generator</span>
                 </button>
             </div>
         );
@@ -263,8 +192,8 @@ export function FloatingCredentialWidget() {
                     <div className="flex items-center gap-2">
                         <KeyRound className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                         <div>
-                            <h3 className="text-[11px] font-bold text-slate-900 dark:text-white tracking-wider uppercase">Credential Utility</h3>
-                            <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wide">Generate Scoped Secret Payload</p>
+                            <h3 className="text-[11px] font-bold text-slate-900 dark:text-white tracking-wider uppercase">Password Generator</h3>
+                            <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wide">Secure credential generator</p>
                         </div>
                     </div>
                     <button

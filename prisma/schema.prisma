@@ -43,6 +43,9 @@ model User {
   allowedEnvironments  String?   @map("allowed_environments") @db.Text
   allowedCredentialIds String?   @map("allowed_credential_ids") @db.Text
 
+  // Expiry Alert Preferences
+  muteExpiryAlerts     Boolean   @default(false) @map("mute_expiry_alerts")
+
   createdAt     DateTime  @default(now()) @map("created_on")
   updatedAt     DateTime  @updatedAt
   lastLogin     DateTime? @map("last_login")
@@ -455,6 +458,12 @@ model SystemSettings {
   // Used for version-based cache invalidation of userContext and globalActiveFeatures
   rbacVersion Int @default(1) @map("rbac_version")
 
+  // Global Expiry Alert Policies
+  alertTier1Days        Int       @default(60) @map("alert_tier1_days")
+  alertTier2Days        Int       @default(30) @map("alert_tier2_days")
+  alertTier3Days        Int       @default(15) @map("alert_tier3_days")
+  lastAlertEvaluationAt DateTime? @map("last_alert_evaluation_at")
+
   @@map("system_settings")
 }
 
@@ -576,6 +585,23 @@ model LicenseAlertLog {
 
   @@unique([milestoneType, licenseVersion])
   @@map("license_alert_log")
+}
+
+model ExpiryAlertLog {
+  id              String   @id @default(uuid()) @map("log_id")
+  tier            Int      @map("tier") // 1, 2, 3
+  daysRemaining   Int      @map("days_remaining")
+  recipientEmail  String   @map("recipient_email")
+  recipientRole   String   @map("recipient_role")
+  credentialCount Int      @default(1) @map("credential_count")
+  credentialIds   String   @map("credential_ids") @db.Text
+  status          String   @default("SENT") @map("status") // SENT, FAILED
+  errorMessage    String?  @map("error_message") @db.Text
+  sentAt          DateTime @default(now()) @map("sent_at")
+
+  @@index([sentAt])
+  @@index([recipientEmail])
+  @@map("expiry_alert_logs")
 }
 
 // --------------------------------------

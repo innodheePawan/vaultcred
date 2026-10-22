@@ -47,6 +47,7 @@ export const FEATURES = {
     SYNC_TARGETS: 'SYNC_TARGETS',
     SYNC_HISTORY: 'SYNC_HISTORY',
     SYNC_HISTORY_RETRY: 'SYNC_HISTORY_RETRY',
+    GLOBAL_EXPIRY_ALERT: 'GLOBAL_EXPIRY_ALERT',
 };
 
 export function normalizeFeatureKey(key: string): string {
