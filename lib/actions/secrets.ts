@@ -19,6 +19,92 @@ export interface CreateSecretInput {
     recipientMessage?: string;
 }
 
+export interface ProvisionOtsCoreOptions {
+    secretData: string;
+    name?: string;
+    recipientName?: string;
+    recipientEmail?: string;
+    recipientMessage?: string;
+    sharedVia: 'LINK' | 'EMAIL';
+    maxViews: number;
+    ttlHours: number;
+    createdById: string;
+    apiClientId?: string;
+    referenceId?: string;
+    sendEmailNotification?: boolean;
+    senderName?: string;
+}
+
+/**
+ * Core One-Time Secret Provisioning Engine
+ * Reusable by both internal Server Actions and External API Route Handlers.
+ */
+export async function provisionOneTimeSecretCore(options: ProvisionOtsCoreOptions) {
+    const {
+        secretData,
+        name,
+        recipientName,
+        recipientEmail,
+        recipientMessage,
+        sharedVia,
+        maxViews,
+        ttlHours,
+        createdById,
+        apiClientId,
+        referenceId,
+        sendEmailNotification = false,
+        senderName
+    } = options;
+
+    const token = randomBytes(32).toString('hex');
+    const encryptedData = encrypt(secretData);
+
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + ttlHours);
+
+    const secret = await prisma.oneTimeSecret.create({
+        data: {
+            name,
+            recipientName,
+            recipientEmail,
+            referenceId,
+            secretData: encryptedData,
+            token,
+            expiresAt,
+            maxViews,
+            sharedVia,
+            createdById,
+            apiClientId
+        }
+    });
+
+    // Governance Audit Log (Sanitized metadata only — never log secretData or raw token)
+    await logAudit({
+        action: apiClientId ? 'CREATE_ONE_TIME_SECRET_API' : 'CREATE_ONE_TIME_SECRET',
+        details: `Created one-time secret '${name || 'Untitled'}' shared via ${sharedVia}`,
+        userId: createdById,
+        apiClientId: apiClientId,
+        newValue: JSON.stringify({
+            otsId: secret.id,
+            referenceId: secret.referenceId,
+            recipientEmail: secret.recipientEmail,
+            recipientName: secret.recipientName,
+            maxViews: secret.maxViews,
+            expiresAt: secret.expiresAt.toISOString()
+        })
+    });
+
+    if (sendEmailNotification && sharedVia === 'EMAIL' && recipientEmail) {
+        await sendOneTimeSecretEmail(recipientEmail, token, senderName || 'A user', recipientMessage, expiresAt, maxViews);
+    }
+
+    try {
+        revalidatePath('/one-time-secrets');
+    } catch (_) {}
+
+    return { success: true, secret, token };
+}
+
 /**
  * Creates a new One-Time Secret.
  */
@@ -45,40 +131,22 @@ export async function createOneTimeSecret(input: CreateSecretInput) {
     if (sharedVia === 'EMAIL' && !recipientEmail) return { error: 'Recipient email is required for email sharing' };
 
     try {
-        const token = randomBytes(32).toString('hex');
-        const encryptedData = encrypt(secretData);
-
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + ttlHours);
-
-        const secret = await prisma.oneTimeSecret.create({
-            data: {
-                name,
-                secretData: encryptedData,
-                token,
-                expiresAt,
-                maxViews,
-                sharedVia,
-                recipientEmail,
-                createdById: session.user.id
-            }
+        const result = await provisionOneTimeSecretCore({
+            secretData,
+            name,
+            maxViews,
+            ttlHours,
+            sharedVia,
+            recipientEmail,
+            recipientMessage,
+            createdById: session.user.id,
+            sendEmailNotification: sharedVia === 'EMAIL',
+            senderName: session.user.name || 'A user'
         });
 
-        await logAudit({
-            action: 'CREATE_ONE_TIME_SECRET',
-            details: `Created one-time secret '${name || 'Untitled'}' shared via ${sharedVia}`,
-            userId: session.user.id
-        });
-
-        if (sharedVia === 'EMAIL' && recipientEmail) {
-            await sendOneTimeSecretEmail(recipientEmail, token, session.user.name || 'A user', recipientMessage, expiresAt, maxViews);
-        }
-
-        revalidatePath('/one-time-secrets');
-        return { success: true, token, id: secret.id };
+        return { success: true, token: result.token, id: result.secret.id };
 
     } catch (error) {
-
         return { error: 'Failed to create secret' };
     }
 }

@@ -57,7 +57,7 @@ async function getCachedApiSettings() {
 export async function rateLimitApi(
     clientIdOrIp: string, 
     ipAddress: string,
-    endpointType: 'auth_token' | 'credentials' | 'credential_reveal' | 'credential_file',
+    endpointType: 'auth_token' | 'credentials' | 'credential_reveal' | 'credential_file' | 'one_time_secrets',
 ) {
     const settings = await getCachedApiSettings();
     
@@ -80,6 +80,7 @@ export async function rateLimitApi(
             case 'credentials': limit = settings.apiLimitCredentials; break;
             case 'credential_reveal': limit = settings.apiLimitCredentialReveal; break;
             case 'credential_file': limit = settings.apiLimitCredentialFile; break;
+            case 'one_time_secrets': limit = settings.apiLimitCredentials; break;
         }
     } else {
         // Hardcoded fallbacks if DB fails
@@ -88,6 +89,7 @@ export async function rateLimitApi(
             case 'credentials': limit = 50; break;
             case 'credential_reveal': limit = 200; break;
             case 'credential_file': limit = 30; break;
+            case 'one_time_secrets': limit = 50; break;
         }
     }
 
