@@ -214,3 +214,144 @@ export async function validateExternalApiPipeline(req: Request, credentialId: st
 
     return { errorResponse: null, clientRow, credential, clientContext, logActivity, authType, rateLimitHeaders: headers };
 }
+
+export async function authenticateExternalApiClient(
+    req: Request,
+    endpointType: 'auth_token' | 'credentials' | 'credential_reveal' | 'credential_file' | 'one_time_secrets' = 'one_time_secrets',
+    action: string = 'CREATE_ONE_TIME_SECRET'
+) {
+    const endpoint = new URL(req.url).pathname;
+    const method = req.method;
+    const ipAddress = extractClientIp(req);
+    const userAgent = req.headers.get("user-agent") || "";
+    const requestId = crypto.randomUUID();
+
+    const logActivity = async (options: {
+        apiClientId?: string; clientName?: string; authType?: string;
+        responseStatus: "SUCCESS" | "FAILURE"; httpStatusCode: number;
+        errorMessage?: string;
+    }) => {
+        try {
+            await prisma.apiActivityLog.create({
+                data: {
+                    apiClientId: options.apiClientId, clientName: options.clientName,
+                    endpoint, method, requestId, authType: options.authType,
+                    responseStatus: options.responseStatus, httpStatusCode: options.httpStatusCode,
+                    errorMessage: options.errorMessage, action,
+                    ipAddress, userAgent
+                }
+            });
+        } catch (e) {
+            console.error("[API Pipeline] Failed to persist API activity log:", e);
+        }
+    };
+
+    // 1. Token Auth
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+        await logActivity({ responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Missing or invalid Bearer token" });
+        return { errorResponse: NextResponse.json({ error: "Missing or invalid Bearer token" }, { status: 401 }) };
+    }
+    const token = authHeader.split(" ")[1];
+
+    // 2. JWT Verification
+    const clientContext = await verifyApiJwt(token);
+    const clientIdForRateLimit = clientContext?.clientId || ipAddress;
+
+    // 3. Rate Limiting
+    const { rateLimitApi } = await import('@/lib/api-rate-limit');
+    const rateLimitResult = await rateLimitApi(clientIdForRateLimit, ipAddress, endpointType);
+
+    if (rateLimitResult.disabled) {
+        await logActivity({ responseStatus: "FAILURE", httpStatusCode: 404, errorMessage: "Feature disabled globally" });
+        return { errorResponse: new NextResponse(STANDARD_404_HTML, { status: 404, headers: { 'Content-Type': 'text/html' } }) };
+    }
+
+    if (rateLimitResult.isIpBlocked) {
+        return { errorResponse: NextResponse.json({ error: "Forbidden. IP is blocked due to abuse." }, { status: 403 }) };
+    }
+
+    const headers: Record<string, string> = {};
+    if (rateLimitResult.exposeHeaders) {
+        headers['X-RateLimit-Limit'] = rateLimitResult.limit.toString();
+        headers['X-RateLimit-Remaining'] = rateLimitResult.remaining.toString();
+        if (!rateLimitResult.allowed) {
+            headers['X-RateLimit-Reset'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+            headers['Retry-After'] = Math.ceil(rateLimitResult.retryAfterMs / 1000).toString();
+        }
+    }
+
+    if (!rateLimitResult.allowed) {
+        let dbClientId = undefined;
+        let dbClientName = undefined;
+        if (clientIdForRateLimit && clientIdForRateLimit !== ipAddress) {
+            try {
+                const clientRecord = await prisma.apiClient.findUnique({ where: { clientId: clientIdForRateLimit } });
+                if (clientRecord) {
+                    dbClientId = clientRecord.id;
+                    dbClientName = clientRecord.name;
+                }
+            } catch(e) {
+                console.error("[API Pipeline] Failed to fetch client record during rate limiting check:", e);
+            }
+        }
+        await logActivity({ apiClientId: dbClientId, clientName: dbClientName, responseStatus: "FAILURE", httpStatusCode: 429, errorMessage: "Rate limit exceeded" });
+        return { errorResponse: NextResponse.json({ 
+            error: "Too Many Requests", 
+            message: "Rate limit exceeded. Please try again later.",
+            retryAfter: Math.ceil(rateLimitResult.retryAfterMs / 1000)
+        }, { status: 429, headers }) };
+    }
+
+    if (!clientContext) {
+        await logActivity({ responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Unauthorized or expired token" });
+        return { errorResponse: NextResponse.json({ error: "Unauthorized or expired token" }, { status: 401 }) };
+    }
+
+    // 4. Client Check via Prisma ORM
+    const clientRecord = await prisma.apiClient.findUnique({
+        where: { clientId: clientContext.clientId }
+    });
+    if (!clientRecord) {
+        await logActivity({ apiClientId: clientContext.clientId, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Client not found" });
+        return { errorResponse: NextResponse.json({ error: "Client not found" }, { status: 401 }) };
+    }
+    if (!clientRecord.isActive) {
+        await logActivity({ apiClientId: clientRecord.id, clientName: clientRecord.name, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Client is disabled" });
+        return { errorResponse: NextResponse.json({ error: "Client is disabled" }, { status: 401 }) };
+    }
+
+    // 5. Security Mode validation
+    const mode: string = clientRecord.securityMode || "BASIC";
+    const authType = mode === "ENTERPRISE" ? "OAUTH_CERT_VALIDATION" : mode === "SECURE" ? "OAUTH_CERT" : "OAUTH_ONLY";
+
+    if (mode === "SECURE" || mode === "ENTERPRISE") {
+        const verifyHeader = req.headers.get("x-client-verify");
+        if (verifyHeader !== "SUCCESS") {
+            await logActivity({ apiClientId: clientRecord.id, clientName: clientRecord.name, authType, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "mTLS authentication failed" });
+            return { errorResponse: NextResponse.json({ error: "mTLS authentication failed required by SECURE mode" }, { status: 401 }) };
+        }
+    }
+
+    if (mode === "ENTERPRISE") {
+        const signature = req.headers.get("x-api-signature");
+        const timestamp = req.headers.get("x-api-timestamp");
+        if (!signature || !timestamp) {
+            await logActivity({ apiClientId: clientRecord.id, clientName: clientRecord.name, authType, responseStatus: "FAILURE", httpStatusCode: 401, errorMessage: "Missing HMAC signature headers" });
+            return { errorResponse: NextResponse.json({ error: "Missing HMAC signature headers required by Enterprise Mode" }, { status: 401 }) };
+        }
+
+        let secretPlain = "";
+        try { secretPlain = decrypt(clientRecord.clientSecretHash); } catch(e) {
+            console.error("[API Pipeline] Decryption of client secret failed for HMAC validation:", e);
+        }
+        const reqUrlObject = new URL(req.url);
+        const isValidSignature = validateApiHmacContext(reqUrlObject.pathname, signature, timestamp, secretPlain);
+        if (!isValidSignature) {
+            await logActivity({ apiClientId: clientRecord.id, clientName: clientRecord.name, authType, responseStatus: "FAILURE", httpStatusCode: 403, errorMessage: "HMAC Signature mismatch or expired" });
+            return { errorResponse: NextResponse.json({ error: "HMAC Signature mismatch or expired timestamp" }, { status: 403 }) };
+        }
+    }
+
+    return { errorResponse: null, clientRecord, clientContext, logActivity, authType, rateLimitHeaders: headers, ipAddress, userAgent, requestId };
+}

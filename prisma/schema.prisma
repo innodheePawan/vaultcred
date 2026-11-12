@@ -555,11 +555,18 @@ model OneTimeSecret {
   
   sharedVia      String    @default("LINK") @map("shared_via") // LINK, EMAIL
   recipientEmail String?   @map("recipient_email")
+  recipientName  String?   @map("recipient_name")
+  referenceId    String?   @map("reference_id") @db.VarChar(100)
   
   createdById    String    @map("created_by")
   createdBy      User      @relation(fields: [createdById], references: [id])
   createdAt      DateTime  @default(now()) @map("created_on")
 
+  apiClientId    String?   @map("api_client_id")
+  apiClient      ApiClient? @relation(fields: [apiClientId], references: [id], onDelete: SetNull)
+
+  @@unique([apiClientId, referenceId], name: "uq_ots_client_reference")
+  @@index([createdById])
   @@map("one_time_secrets")
 }
 
@@ -630,6 +637,7 @@ model ApiClient {
   updatedAt             DateTime  @updatedAt @map("updated_on")
 
   auditLogs             AuditLog[]
+  oneTimeSecrets        OneTimeSecret[]
 
   @@map("api_clients")
 }

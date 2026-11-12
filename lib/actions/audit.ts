@@ -26,6 +26,8 @@ export async function logAudit(data: {
     newValue?: string;
     userId?: string; // Optional override if session not available (e.g. during login)
     isPersonal?: boolean;
+    ipAddress?: string;
+    apiClientId?: string;
 }) {
     try {
         // Skip logging if Database is not configured (Setup Mode)
@@ -47,15 +49,26 @@ export async function logAudit(data: {
 
         // If no userId provided, try to get from session
         if (!userId) {
-            const session = await auth();
-            if (session?.user?.id) {
-                userId = session.user.id;
+            try {
+                const session = await auth();
+                if (session?.user?.id) {
+                    userId = session.user.id;
+                }
+            } catch {
+                // Outside session request context
             }
         }
 
         // Get IP Address safely (prevent basic X-Forwarded-For spoofing if Behind proper proxy)
-        const headersList = await headers();
-        const ip = extractClientIp(headersList);
+        let ip = data.ipAddress;
+        if (!ip) {
+            try {
+                const headersList = await headers();
+                ip = extractClientIp(headersList);
+            } catch {
+                // headers() not available outside request store
+            }
+        }
 
         // Create Log
         await prisma.auditLog.create({
@@ -66,6 +79,7 @@ export async function logAudit(data: {
                 performedById: userId,
                 credentialId: data.credentialId,
                 ipAddress: ip,
+                apiClientId: data.apiClientId
             }
         });
     } catch (error) {
