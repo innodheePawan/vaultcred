@@ -22,6 +22,8 @@ const CreateOtsSchema = z.object({
         .optional()
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     const authResult = await authenticateExternalApiClient(req, 'one_time_secrets', 'CREATE_ONE_TIME_SECRET');
     if (authResult.errorResponse) {
